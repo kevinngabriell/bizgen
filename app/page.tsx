@@ -1,8 +1,7 @@
 "use client";
 
 import TopNavbar from "@/components/ui/TopNavBar";
-import { Button, Card, Flex, Heading, SimpleGrid, Text } from "@chakra-ui/react";
-import Image from "next/image";
+import { Button, Card, Flex, Heading, Image, SimpleGrid, Text } from "@chakra-ui/react";
 
 export default function Home() {
   return (
@@ -15,31 +14,30 @@ export default function Home() {
           align="center"
           justify="space-between"
           flexDir={{ base: "column", md: "row" }}
-          gap={{ base: "32px", md: "64px" }}
+          gap={{ base: "32px", md: "24px" }}
         >
           {/* LEFT — Product Overview */}
-          <Flex flexDir="column" maxW={{ base: "100%", md: "520px" }}>
+          <Flex flexDir="column" maxW={{ base: "100%", md: "80%" }}>
             <Text fontWeight="700" fontSize={{ base: "12px", md: "14px" }} color="#E77A1F" bg="#FFE8D2" w="fit-content" px="10px" py="4px" rounded="full" mb="10px">BizGen ERP — Export & Import Trading System</Text>
 
-            <Heading fontWeight="800" fontSize={{ base: "32px", md: "46px" }} lineHeight="120%" color="#1C1C1C" mb="14px">Scale Your Trading & Export‑Import Operations with One Powerful ERP Platform</Heading>
-            <Text fontSize={{ base: "14px", md: "16px" }} color="#4B4B4B" lineHeight="150%" mb="22px">BizGen is an ERP system designed for high‑volume trading and export‑import businesses — helping you manage procurement, inventory, logistics, orders, finance, and reporting in one integrated platform.</Text>
+            <Heading fontWeight="800" fontSize={{ base: "32px", md: "36px" }} lineHeight="120%" color="#1C1C1C" mb="14px">Scale Your Trading & Export‑Import Operations with One Powerful ERP Platform</Heading>
+            <Text fontSize={{ base: "12px", md: "14px" }} color="#4B4B4B" lineHeight="150%" mb="22px">BizGen is an ERP system designed for high‑volume trading and export‑import businesses — helping you manage procurement, inventory, logistics, orders, finance, and reporting in one integrated platform.</Text>
 
-            <Text fontSize={{ base: "13px", md: "14px" }} color="#6B6B6B" mb="18px">Plans start from <b>&nbsp;Rp 150.000 / month</b> — upgrade up tomulti‑user teams and extended features for growing operations.</Text>
+            <Text fontSize={{ base: "12px", md: "13px" }} color="#6B6B6B" mb="18px">Plans start from <b>&nbsp;Rp 150.000 / month</b> — upgrade up tomulti‑user teams and extended features for growing operations.</Text>
 
             {/* CTA Buttons */}
             <Flex gap="14px" wrap="wrap">
               <Button px="18px" py="10px" bg="#E77A1F" color="white" fontWeight="700" rounded="lg" _hover={{ opacity: 0.9 }} cursor="pointer">Subscribe Now</Button>
-              <Button px="18px" py="10px" border="1.5px solid #E77A1F" color="#E77A1F" fontWeight="700" rounded="lg" _hover={{ bg: "#FFF3E8" }} cursor="pointer">Contact Us</Button>
+              <Button px="18px" py="10px" border="1.5px solid #E77A1F" bg={"transparent"} color="#E77A1F" fontWeight="700" rounded="lg" _hover={{ bg: "#FFF3E8" }} cursor="pointer">Contact Us</Button>
             </Flex>
           </Flex>
 
           {/* RIGHT — Illustration / Product Visual */}
           <Flex maxW={{ base: "100%", md: "480px" }} w="100%" justify="center">
             <Image
-              src="/assets/bizgen-hero.png"
+              src="/assets/homepage.jpg"
               alt="BizGen ERP Export Import Dashboard"
-              width={520}
-              height={420}
+              w={{base: "90%", md: "100%", lg: "70%"}}
               style={{ borderRadius: 16 }}
             />
           </Flex>
@@ -56,8 +54,8 @@ export default function Home() {
           gap="24px"
         >
           <Flex flexDir="column" align={{ base: "center", md: "flex-start" }}>
-            <Text fontWeight="800" fontSize={{ base: "26px", md: "36px" }} color="#1C1C1C" mb="6px" textAlign={{ base: "center", md: "left" }}>Pricing Plans</Text>
-            <Text fontSize={{ base: "14px", md: "16px" }} color="#4B4B4B" textAlign={{ base: "center", md: "left" }}>Choose a plan that fits your trading & export‑import operations.</Text>
+            <Text fontWeight="800" fontSize={{ base: "26px", md: "27px" }} color="#1C1C1C" mb="6px" textAlign={{ base: "center", md: "left" }}>Pricing Plans</Text>
+            <Text fontSize={{ base: "12px", md: "14px" }} color="#4B4B4B" textAlign={{ base: "center", md: "left" }}>Choose a plan that fits your trading & export‑import operations.</Text>
           </Flex>
 
           <SimpleGrid columns={{base: 1, md: 2, lg: 3}} gap={"30px"}>

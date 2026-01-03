@@ -19,14 +19,14 @@ export default function Login() {
     }
 
     async function LoginOnClick(){
-        router.push("/home");
+        router.push("/bizgen/dashboard");
     }
 
     return (
         <Flex w="100vw" minH="100vh" bg="white" bgGradient="linear(to-br, #FFF7ED, #FFE6C9)" align="center" justify="center" p={{ base: 6, md: 10 }}>
         <SimpleGrid columns={{ base: 1, lg: 2 }} w="100%" maxW="1100px" alignItems="center" gap={8}>
             <Flex justify="center" align="center" w="100%" display={{ base: "none", lg: "flex" }}>
-                <Image src="/assets/bizgen-hero.png" w="90%" rounded="2xl" shadow="xl" alt="BizGen Illustration"/>
+                <Image src="/assets/login.jpg" w="90%" rounded="2xl" shadow="xl" alt="BizGen Illustration"/>
             </Flex>
 
             <Card.Root bg="whiteAlpha.900" shadow="xl" rounded="2xl" backdropFilter="auto" backdropBlur="8px" border="1px solid rgba(0,0,0,0.06)">
@@ -72,15 +72,15 @@ export default function Login() {
                     </InputGroup>
                 </Field.Root>
 
-                <Button size="lg" rounded="lg" bg="#E77A1F" color="white" _hover={{ bg: "#cf6a17" }} _active={{ bg: "#b85c13" }}>
+                <Button onClick={LoginOnClick} size="lg" rounded="lg" bg="#E77A1F" color="white" _hover={{ bg: "#cf6a17" }} _active={{ bg: "#b85c13" }}>
                     Sign in
                 </Button>
 
-                <Flex justify="space-between" fontSize="sm" color="gray.600">
-                    <Text _hover={{ color: "#E77A1F", cursor: "pointer" }} onClick={ForgotPasswordOnClick}>
+                <Flex justify="space-between" fontSize={{base: "10px", md: "14px"}} color="gray.600">
+                    <Text _hover={{ color: "#E77A1F", cursor: "pointer" }} onClick={ForgotPasswordOnClick} fontSize={{base: "10px", md: "14px"}}>
                     Forgot your password?
                     </Text>
-                    <Text _hover={{ color: "#E77A1F", cursor: "pointer" }} onClick={RegisterOnClick}>
+                    <Text _hover={{ color: "#E77A1F", cursor: "pointer" }} onClick={RegisterOnClick} fontSize={{base: "10px", md: "14px"}}>
                     Don’t have an account? Register here
                     </Text>
                 </Flex>
