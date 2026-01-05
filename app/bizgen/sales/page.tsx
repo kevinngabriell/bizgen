@@ -2,9 +2,37 @@
 
 import SidebarWithHeader from "@/components/ui/SidebarWithHeader";
 import { Button, Card, Flex, Heading, Text, SimpleGrid, Badge, Icon } from "@chakra-ui/react";
+import { useRouter } from "next/navigation";
 import { FiArrowRight, FiFolder, FiFileText, FiCheckSquare, FiClipboard, FiDollarSign, FiShoppingCart, FiTruck, FiTrendingUp } from "react-icons/fi";
 
 export default function Sales (){
+  const router = useRouter();
+  
+  const handleDirectToDetailInquiry = () => {
+    router.push('/bizgen/sales/inquiry');
+  }
+
+  const handleDirectToDetailQuotation = () => {
+    router.push('/bizgen/sales/quotation');
+  }
+
+  const handleDirectToBooking = () => {
+    router.push('/bizgen/sales/booking-confirmation');
+  }
+
+  const handleDirectToShipment = () => {
+    router.push('/bizgen/sales/shipment-process');
+  }
+
+  const handleDriectToCostingExpense = () => {
+    router.push('/bizgen/sales/costing-expense');
+  }
+
+  const handleDirectToSalesOrder = () => {
+    router.push('/bizgen/sales/sales-order');
+  }
+
+
     return (
       <SidebarWithHeader username="kevin">
           <Flex gap={2} mb="6" mt="2" alignItems="center" justifyContent="space-between">
@@ -48,7 +76,7 @@ export default function Sales (){
                 </Flex>
                 <Flex justify="space-between">
                   <Button size="sm" bg={"transparent"} borderColor={"#E77A1F"} color={"#E77A1F"} cursor={"pointer"}>See All</Button>
-                  <Button size="sm" bg={"#E77A1F"} color={"white"} cursor={"pointer"}>Create</Button>
+                  <Button size="sm" bg={"#E77A1F"} color={"white"} cursor={"pointer"} onClick={handleDirectToDetailInquiry} >Create</Button>
                 </Flex>
               </Card.Body>
             </Card.Root>
@@ -84,7 +112,7 @@ export default function Sales (){
                 </Flex>
                 <Flex justify="space-between">
                   <Button size="sm" bg={"transparent"} borderColor={"#E77A1F"} color={"#E77A1F"} cursor={"pointer"}>See All</Button>
-                  <Button size="sm" bg={"#E77A1F"} color={"white"} cursor={"pointer"}>Create</Button>
+                  <Button size="sm" bg={"#E77A1F"} color={"white"} cursor={"pointer"} onClick={handleDirectToDetailQuotation}>Create</Button>
                 </Flex>
               </Card.Body>
             </Card.Root>
@@ -120,7 +148,7 @@ export default function Sales (){
                 </Flex>
                 <Flex justify="space-between">
                   <Button size="sm" bg={"transparent"} borderColor={"#E77A1F"} color={"#E77A1F"} cursor={"pointer"}>See All</Button>
-                  <Button size="sm" bg={"#E77A1F"} color={"white"} cursor={"pointer"}>Create</Button>
+                  <Button size="sm" bg={"#E77A1F"} color={"white"} cursor={"pointer"} onClick={handleDirectToBooking}>Create</Button>
                 </Flex>
               </Card.Body>
             </Card.Root>
@@ -156,7 +184,7 @@ export default function Sales (){
                 </Flex>
                 <Flex justify="space-between">
                   <Button size="sm" bg={"transparent"} borderColor={"#E77A1F"} color={"#E77A1F"} cursor={"pointer"}>See All</Button>
-                  <Button size="sm" bg={"#E77A1F"} color={"white"} cursor={"pointer"}>Update</Button>
+                  <Button size="sm" bg={"#E77A1F"} color={"white"} cursor={"pointer"} onClick={handleDirectToShipment}>Update</Button>
                 </Flex>
               </Card.Body>
             </Card.Root>
@@ -192,7 +220,7 @@ export default function Sales (){
                 </Flex>
                 <Flex justify="space-between">
                   <Button size="sm" bg={"transparent"} borderColor={"#E77A1F"} color={"#E77A1F"} cursor={"pointer"}>See All</Button>
-                  <Button size="sm" bg={"#E77A1F"} color={"white"} cursor={"pointer"}>Record</Button>
+                  <Button size="sm" bg={"#E77A1F"} color={"white"} cursor={"pointer"} onClick={handleDriectToCostingExpense}>Record</Button>
                 </Flex>
               </Card.Body>
             </Card.Root>
@@ -228,7 +256,7 @@ export default function Sales (){
                 </Flex>
                 <Flex justify="space-between">
                   <Button size="sm" bg={"transparent"} borderColor={"#E77A1F"} color={"#E77A1F"} cursor={"pointer"}>See All</Button>
-                  <Button size="sm" bg={"#E77A1F"} color={"white"} cursor={"pointer"}>Generate</Button>
+                  <Button size="sm" bg={"#E77A1F"} color={"white"} cursor={"pointer"} onClick={handleDirectToSalesOrder}>Generate</Button>
                 </Flex>
               </Card.Body>
             </Card.Root>
