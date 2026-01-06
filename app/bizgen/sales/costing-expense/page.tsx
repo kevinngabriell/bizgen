@@ -1,29 +1,7 @@
-
-
 'use client';
 
-import React, { useState } from 'react';
-import {
-  Box,
-  Button,
-  Card,
-  Flex,
-  Grid,
-  GridItem,
-  HStack,
-  Heading,
-  IconButton,
-  Input,
-  NumberInput,
-  Select,
-  Stack,
-  Text,
-  Textarea,
-  Tag,
-  TagLabel,
-  SimpleGrid,
-  Separator,
-} from '@chakra-ui/react';
+import { useState } from 'react';
+import { Box, Button, Card, Flex, Grid, GridItem, HStack, Heading, IconButton, Input, Stack, Text, Textarea, SimpleGrid, Separator } from '@chakra-ui/react';
 import SidebarWithHeader from '@/components/ui/SidebarWithHeader';
 // import { AddIcon, DeleteIcon } from '@chakra-ui/icons';
 
@@ -105,7 +83,7 @@ export default function CostingExpensePage() {
 
   return (
     <SidebarWithHeader username='---'>
-        <Stack gap={6}>
+      <Stack gap={6}>
       <Heading size="lg">Costing &amp; Expense Capture (Actualization)</Heading>
 
       {/* Shipment Context Header */}
@@ -115,20 +93,8 @@ export default function CostingExpensePage() {
         </Card.Header>
         <Card.Body>
           <SimpleGrid columns={{ base: 1, md: 3 }} gap={4}>
-            <Input
-              placeholder="Job / Booking Number"
-              value={shipmentInfo.joNumber}
-              onChange={(e) =>
-                setShipmentInfo({ ...shipmentInfo, joNumber: e.target.value })
-              }
-            />
-            <Input
-              placeholder="Customer"
-              value={shipmentInfo.customer}
-              onChange={(e) =>
-                setShipmentInfo({ ...shipmentInfo, customer: e.target.value })
-              }
-            />
+            <Input placeholder="Job / Booking Number" value={shipmentInfo.joNumber} onChange={(e) => setShipmentInfo({ ...shipmentInfo, joNumber: e.target.value })}/>
+            <Input placeholder="Customer" value={shipmentInfo.customer} onChange={(e) => setShipmentInfo({ ...shipmentInfo, customer: e.target.value })}/>
             {/* <Select
               placeholder="Mode"
               value={shipmentInfo.mode}
@@ -141,24 +107,9 @@ export default function CostingExpensePage() {
               <option value="LAND">Land / Trucking</option>
             </Select> */}
 
-            <Input
-              placeholder="Origin Port / Location"
-              value={shipmentInfo.origin}
-              onChange={(e) =>
-                setShipmentInfo({ ...shipmentInfo, origin: e.target.value })
-              }
-            />
-            <Input
-              placeholder="Destination Port / Location"
-              value={shipmentInfo.destination}
-              onChange={(e) =>
-                setShipmentInfo({ ...shipmentInfo, destination: e.target.value })
-              }
-            />
-            <Textarea
-              placeholder="Notes (optional)"
-              rows={1}
-            />
+            <Input placeholder="Origin Port / Location" value={shipmentInfo.origin} onChange={(e) => setShipmentInfo({ ...shipmentInfo, origin: e.target.value })} />
+            <Input placeholder="Destination Port / Location" value={shipmentInfo.destination} onChange={(e) => setShipmentInfo({ ...shipmentInfo, destination: e.target.value })}/>
+            <Textarea placeholder="Notes (optional)" rows={1}/>
           </SimpleGrid>
         </Card.Body>
       </Card.Root>
@@ -168,12 +119,7 @@ export default function CostingExpensePage() {
         <Card.Header>
           <Flex justify="space-between" align="center">
             <Heading size="sm">Actual Expense Items</Heading>
-            <Button
-            //   leftIcon={<AddIcon />}
-              size="sm"
-              variant="solid"
-              onClick={handleAddRow}
-            >
+            <Button size="sm" variant="solid" onClick={handleAddRow} >
               Add Cost Item
             </Button>
           </Flex>
@@ -182,12 +128,7 @@ export default function CostingExpensePage() {
         <Card.Body>
           <Stack gap={4}>
             {costItems.map((item, idx) => (
-              <Box
-                key={item.id}
-                borderWidth="1px"
-                borderRadius="md"
-                p={4}
-              >
+              <Box key={item.id} borderWidth="1px" borderRadius="md" p={4}>
                 <Flex justify="space-between" align="center" mb={2}>
                   <HStack>
                     {/* <Tag size="sm" colorScheme="gray">
@@ -197,20 +138,14 @@ export default function CostingExpensePage() {
                   </HStack>
 
                   {costItems.length > 1 && (
-                    <IconButton
-                      aria-label="Remove row"
+                    <IconButton aria-label="Remove row"
                     //   icon={<DeleteIcon />}
-                      size="xs"
-                      variant="ghost"
-                      colorScheme="red"
-                      onClick={() => handleRemoveRow(item.id)}
-                    />
+                      size="xs" variant="ghost" colorScheme="red" onClick={() => handleRemoveRow(item.id)}/>
                   )}
                 </Flex>
 
-                <Grid templateColumns={{ base: '1fr', md: '1.2fr 1.8fr 1fr 0.7fr 1fr' }} gap={3}>
-                  <GridItem>
-                    {/* <Select
+                <SimpleGrid column={{ base: '1fr', md: '1.2fr 1.8fr 1fr 0.7fr 1fr' }} gap={3}>
+                  {/* <Select
                       placeholder="Cost Category"
                       value={item.category}
                       onChange={(e) =>
@@ -225,30 +160,11 @@ export default function CostingExpensePage() {
                       <option value="DOCS">Documentation</option>
                       <option value="OTHER">Other Cost</option>
                     </Select> */}
-                  </GridItem>
+                  
+                  <Input placeholder="Description" value={item.description} onChange={(e) => handleChange(item.id, 'description', e.target.value)}/>
+                  <Input placeholder="Vendor / Supplier" value={item.vendor} onChange={(e) => handleChange(item.id, 'vendor', e.target.value)}/>
 
-                  <GridItem>
-                    <Input
-                      placeholder="Description"
-                      value={item.description}
-                      onChange={(e) =>
-                        handleChange(item.id, 'description', e.target.value)
-                      }
-                    />
-                  </GridItem>
-
-                  <GridItem>
-                    <Input
-                      placeholder="Vendor / Supplier"
-                      value={item.vendor}
-                      onChange={(e) =>
-                        handleChange(item.id, 'vendor', e.target.value)
-                      }
-                    />
-                  </GridItem>
-
-                  <GridItem>
-                    {/* <Select
+                  {/* <Select
                       value={item.currency}
                       onChange={(e) =>
                         handleChange(item.id, 'currency', e.target.value)
@@ -259,9 +175,7 @@ export default function CostingExpensePage() {
                       <option value="SGD">SGD</option>
                       <option value="EUR">EUR</option>
                     </Select> */}
-                  </GridItem>
 
-                  <GridItem>
                     {/* <NumberInput.Root
                       min={0}
                       value={item.amount}
@@ -271,17 +185,10 @@ export default function CostingExpensePage() {
                     >
                       <NumberInputField placeholder="Amount" />
                     </NumberInput.Root> */}
-                  </GridItem>
-                </Grid>
+                </SimpleGrid>
 
                 <Box mt={3}>
-                  <Textarea
-                    placeholder="Remarks / reference (optional)"
-                    value={item.remarks}
-                    onChange={(e) =>
-                      handleChange(item.id, 'remarks', e.target.value)
-                    }
-                  />
+                  <Textarea placeholder="Remarks / reference (optional)" value={item.remarks} onChange={(e) => handleChange(item.id, 'remarks', e.target.value)}/>
                 </Box>
               </Box>
             ))}

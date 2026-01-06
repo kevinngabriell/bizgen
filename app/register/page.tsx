@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Box, Button, Flex, Heading, HStack, Icon, Input, InputGroup, SimpleGrid, Stack, Text, VStack, RadioGroup, Field, Steps, ButtonGroup, Badge, Textarea } from "@chakra-ui/react";
+import { Box, Button, Flex, Heading, Input, InputGroup, SimpleGrid, Stack, Text, Field, Steps, ButtonGroup, Badge, Textarea } from "@chakra-ui/react";
 import { LuLock } from "react-icons/lu";
 import { PasswordInput } from "@/components/ui/password-input";
 
@@ -80,14 +80,14 @@ export default function Register() {
 
   return (
     <Flex w="100vw" minH="100vh" bg="white" bgGradient="linear(to-br, #FFF7ED, #FFE6C9)" align="center" justify="center" p={{ base: 6, md: 10 }}>
-      <Box w="100%" maxW="1000px" bg="white" rounded="2xl" shadow="lg" p={{ base: 6, md: 10 }}>
-        <VStack gap={2} mb={8}>
+      <Box w="70%" maxW="100vw" bg="white" rounded="2xl" shadow="lg" p={{ base: 6, md: 10 }}>
+        {/* Title */}
+        <Flex flexDir={"column"} gap={2} mb={8} alignItems={"center"}>
           <Heading size="lg" color={"gray.800"}>Register Bizgen</Heading>
-          <Text color="gray.600">
-            Empowering Trading & Export-Import Business with Smart ERP
-          </Text>
-        </VStack>
+          <Text color="gray.600">Empowering Trading & Export-Import Business with Smart ERP</Text>
+        </Flex>
 
+        
         <Steps.Root defaultStep={0} count={steps.length} step={activeStep} onStepChange={(details) => setActiveStep(details.step)} colorPalette={"orange"} >
           <Steps.List>
             {steps.map((s, index) => (

@@ -15,7 +15,7 @@ export function ColorModeProvider(props: ColorModeProviderProps) {
   )
 }
 
-export type ColorMode = "light" | "light"
+export type ColorMode = "light"
 
 export interface UseColorModeReturn {
   colorMode: ColorMode
@@ -24,26 +24,25 @@ export interface UseColorModeReturn {
 }
 
 export function useColorMode(): UseColorModeReturn {
-  const { resolvedTheme, setTheme, forcedTheme } = useTheme()
-  const colorMode = forcedTheme || resolvedTheme
-  const toggleColorMode = () => {
-    setTheme(resolvedTheme === "light" ? "light" : "light")
-  }
+  const colorMode: ColorMode = "light"
+  const setColorMode = () => {}
+  const toggleColorMode = () => {}
+
   return {
-    colorMode: colorMode as ColorMode,
-    setColorMode: setTheme,
+    colorMode,
+    setColorMode,
     toggleColorMode,
   }
 }
 
 export function useColorModeValue<T>(light: T, dark: T) {
   const { colorMode } = useColorMode()
-  return colorMode === "light" ? light : light
+  return light
 }
 
 export function ColorModeIcon() {
   const { colorMode } = useColorMode()
-  return colorMode === "light" ? <LuMoon /> : <LuSun />
+  return <LuSun />
 }
 
 interface ColorModeButtonProps extends Omit<IconButtonProps, "aria-label"> {}
@@ -56,7 +55,6 @@ export const ColorModeButton = React.forwardRef<
   return (
     <ClientOnly fallback={<Skeleton boxSize="9" />}>
       <IconButton
-        onClick={toggleColorMode}
         variant="ghost"
         aria-label="Toggle color mode"
         size="sm"

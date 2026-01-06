@@ -1,15 +1,156 @@
 "use client";
 
 import SidebarWithHeader from "@/components/ui/SidebarWithHeader";
-import { Button, Card, Flex, Heading, Text, Grid, Box, Stack, HStack, Badge} from "@chakra-ui/react";
+import {
+  Button,
+  Card,
+  Flex,
+  Heading,
+  Text,
+  Grid,
+  Box,
+  Stack,
+  HStack,
+  Badge,
+  useDisclosure,
+  SimpleGrid,
+  Icon,
+  Dialog,
+} from "@chakra-ui/react";
+
 
 export default function Purchase (){
+  const { open: isOpen, onOpen, onClose } = useDisclosure();
+
     return (
         <SidebarWithHeader username="kevin">
           <Flex gap={2} display={"flex"} mb={"6"} mt={"2"} alignItems={"center"}>
             <Heading flex="1">Purchase Module</Heading>
-            <Button bg={"#E77A1F"} color={"white"} cursor={"pointer"}>+ Create New</Button>
+            <Button bg={"#E77A1F"} color={"white"} cursor={"pointer"} onClick={onOpen}>+ Create New</Button>
           </Flex>
+
+          {/* Create New — Quick Action Dialog */}
+          <Dialog.Root open={isOpen} onOpenChange={onClose}>
+            <Dialog.Content>
+              <Dialog.Header>
+                <Heading size="md">Create New</Heading>
+              </Dialog.Header>
+
+              <Dialog.Body>
+                <SimpleGrid columns={{ base: 1, md: 2 }} gap={4}>
+                  <Box
+                    borderWidth="1px"
+                    borderRadius="md"
+                    p={3}
+                    cursor="pointer"
+                    _hover={{ bg: "gray.50" }}
+                    onClick={() => {
+                      // TODO: route to create RFQ page
+                      onClose();
+                    }}
+                  >
+                    <Heading size="sm" mb={1}>Request for Quotation</Heading>
+                    <Text fontSize="sm" color="gray.600">
+                      Create a new supplier quotation request
+                    </Text>
+                  </Box>
+
+                  <Box
+                    borderWidth="1px"
+                    borderRadius="md"
+                    p={3}
+                    cursor="pointer"
+                    _hover={{ bg: "gray.50" }}
+                    onClick={() => {
+                      // TODO: route to create Purchase Requisition page
+                      onClose();
+                    }}
+                  >
+                    <Heading size="sm" mb={1}>Purchase Requisition</Heading>
+                    <Text fontSize="sm" color="gray.600">
+                      Internal request before issuing PO
+                    </Text>
+                  </Box>
+
+                  <Box
+                    borderWidth="1px"
+                    borderRadius="md"
+                    p={3}
+                    cursor="pointer"
+                    _hover={{ bg: "gray.50" }}
+                    onClick={() => {
+                      // TODO: route to create Local PO page
+                      onClose();
+                    }}
+                  >
+                    <Heading size="sm" mb={1}>Purchase Order — Local</Heading>
+                    <Text fontSize="sm" color="gray.600">
+                      Create PO for domestic suppliers
+                    </Text>
+                  </Box>
+
+                  <Box
+                    borderWidth="1px"
+                    borderRadius="md"
+                    p={3}
+                    cursor="pointer"
+                    _hover={{ bg: "gray.50" }}
+                    onClick={() => {
+                      // TODO: route to create Import PO page
+                      onClose();
+                    }}
+                  >
+                    <Heading size="sm" mb={1}>Purchase Order — Import</Heading>
+                    <Text fontSize="sm" color="gray.600">
+                      Create PO with shipment & currency details
+                    </Text>
+                  </Box>
+
+                  <Box
+                    borderWidth="1px"
+                    borderRadius="md"
+                    p={3}
+                    cursor="pointer"
+                    _hover={{ bg: "gray.50" }}
+                    onClick={() => {
+                      // TODO: route to create Receiving / GR page
+                      onClose();
+                    }}
+                  >
+                    <Heading size="sm" mb={1}>Receiving Items / GR</Heading>
+                    <Text fontSize="sm" color="gray.600">
+                      Record item receipt to warehouse
+                    </Text>
+                  </Box>
+
+                  <Box
+                    borderWidth="1px"
+                    borderRadius="md"
+                    p={3}
+                    cursor="pointer"
+                    _hover={{ bg: "gray.50" }}
+                    onClick={() => {
+                      // TODO: route to create Purchase Invoice page
+                      onClose();
+                    }}
+                  >
+                    <Heading size="sm" mb={1}>Purchase Invoice</Heading>
+                    <Text fontSize="sm" color="gray.600">
+                      Register supplier billing document
+                    </Text>
+                  </Box>
+                </SimpleGrid>
+              </Dialog.Body>
+
+              <Dialog.Footer>
+                <Button variant="outline" onClick={onClose}>
+                  Close
+                </Button>
+              </Dialog.Footer>
+
+              <Dialog.CloseTrigger />
+            </Dialog.Content>
+          </Dialog.Root>
 
           {/* Cards grid — lighter, less compact */}
           <Grid

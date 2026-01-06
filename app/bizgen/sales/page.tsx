@@ -3,7 +3,7 @@
 import SidebarWithHeader from "@/components/ui/SidebarWithHeader";
 import { Button, Card, Flex, Heading, Text, SimpleGrid, Badge, Icon } from "@chakra-ui/react";
 import { useRouter } from "next/navigation";
-import { FiArrowRight, FiFolder, FiFileText, FiCheckSquare, FiClipboard, FiDollarSign, FiShoppingCart, FiTruck, FiTrendingUp } from "react-icons/fi";
+import { FiFolder, FiFileText, FiCheckSquare, FiClipboard, FiDollarSign, FiShoppingCart, FiTruck, FiTrendingUp } from "react-icons/fi";
 
 export default function Sales (){
   const router = useRouter();

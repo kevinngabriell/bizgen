@@ -1,60 +1,32 @@
-
-
 'use client';
 
 import SidebarWithHeader from '@/components/ui/SidebarWithHeader';
-import {
-  Box,
-  Button,
-  Card,
-  CardBody,
-  CardHeader,
-  Flex,
-  Grid,
-  GridItem,
-  Heading,
-  HStack,
-  Icon,
-  Input,
-  Select,
-  Stack,
-  Text,
-  Textarea,
-  Badge,
-  SimpleGrid,
-  Separator,
-} from '@chakra-ui/react';
+import { Box, Button, Card, Flex, Grid, GridItem, Heading, Icon, Input, Stack, Text, Textarea, Badge, SimpleGrid, Separator, Field } from '@chakra-ui/react';
 import { useState } from 'react';
-import { FiFileText, FiSave, FiSend, FiArrowLeft } from 'react-icons/fi';
+import { FiFileText } from 'react-icons/fi';
 
 export default function BookingConfirmationPage() {
   const [isEdit, setIsEdit] = useState(true);
 
   return (
     <SidebarWithHeader username='--'>
-        <Box p={{ base: 4, md: 6 }} maxW="1280px" mx="auto">
+      
+      <Box p={{ base: 4, md: 6 }} maxW="1280px" mx="auto">
       {/* Header */}
       <Flex justify="space-between" align="center" mb={4}>
         <Heading size="lg">Booking Confirmation / Job Order</Heading>
 
-        <HStack gap={3}>
-          <Badge colorScheme="purple" fontSize="sm">
+        <SimpleGrid gap={3}>
+          <Badge fontSize="sm">
             Draft
           </Badge>
-          <Button
-            // leftIcon={<FiSave />}
-            colorScheme="gray"
-            variant="outline"
-            onClick={() => setIsEdit(false)}
-          >
+          <Button variant="outline" onClick={() => setIsEdit(false)}>
             Save Draft
           </Button>
-          <Button 
-            // leftIcon={<FiSend />} 
-            colorScheme="blue">
+          <Button >
             Confirm & Create Job
           </Button>
-        </HStack>
+        </SimpleGrid>
       </Flex>
 
       <Stack gap={6}>
@@ -65,54 +37,41 @@ export default function BookingConfirmationPage() {
           </Card.Header>
           <Card.Body>
             <SimpleGrid columns={{ base: 1, md: 3 }} gap={4}>
-              <Box>
-                <Text fontSize="sm" mb={1}>
-                  Booking No
-                </Text>
+              <Field.Root>
+                <Field.Label fontSize="sm" mb={1}> Booking No </Field.Label>
                 <Input placeholder="Auto / Manual"  />
-              </Box>
+              </Field.Root>
 
-              <Box>
-                <Text fontSize="sm" mb={1}>
-                  Job Type
-                </Text>
+              <Field.Root>
+                <Field.Label fontSize="sm" mb={1}> Job Type </Field.Label>
                 {/* <Select placeholder="Select job type">
                   <option>Export</option>
                   <option>Import</option>
                   <option>Domestic</option>
                 </Select> */}
-              </Box>
+              </Field.Root>
 
-              <Box>
-                <Text fontSize="sm" mb={1}>
-                  Service
-                </Text>
+              <Field.Root>
+                <Field.Label fontSize="sm" mb={1}> Service </Field.Label>
                 {/* <Select placeholder="Select service">
                   <option>Sea Freight</option>
                   <option>Air Freight</option>
                   <option>Trucking</option>
                 </Select> */}
-              </Box>
+              </Field.Root>
             </SimpleGrid>
 
-            <Grid
-              templateColumns={{ base: '1fr', md: '1fr 1fr' }}
-              gap={4}
-              mt={4}
-            >
-              <GridItem>
-                <Text fontSize="sm" mb={1}>
-                  Estimated Departure
-                </Text>
+            <SimpleGrid column={{ base: '1fr', md: '1fr 1fr' }} gap={4} mt={4}>
+              <Field.Root>
+                <Field.Label fontSize="sm" mb={1}> Estimated Departure </Field.Label>
                 <Input type="date" />
-              </GridItem>
-              <GridItem>
-                <Text fontSize="sm" mb={1}>
-                  Estimated Arrival
-                </Text>
+              </Field.Root>
+
+              <Field.Root>
+                <Field.Label fontSize="sm" mb={1}> Estimated Arrival </Field.Label>
                 <Input type="date" />
-              </GridItem>
-            </Grid>
+              </Field.Root>
+            </SimpleGrid>
           </Card.Body>
         </Card.Root>
 
@@ -122,29 +81,29 @@ export default function BookingConfirmationPage() {
             <Heading size="sm">Parties Information</Heading>
           </Card.Header>
           <Card.Body>
-            <Grid templateColumns={{ base: '1fr', md: '1fr 1fr' }} gap={6}>
-              <GridItem>
-                <Heading size="xs" mb={2}>
-                  Shipper
-                </Heading>
-                <Stack gap={2}>
-                  <Input placeholder="Company Name" />
-                  <Input placeholder="Contact Person" />
-                  <Textarea placeholder="Address" rows={3} />
-                </Stack>
-              </GridItem>
+            <SimpleGrid column={{ base: '1fr', md: '1fr 1fr' }} gap={6}>
 
-              <GridItem>
-                <Heading size="xs" mb={2}>
-                  Consignee
-                </Heading>
+
+              <Field.Root>
+                <Field.Label mb={2}>
+                  Shipper
+                </Field.Label>
                 <Stack gap={2}>
                   <Input placeholder="Company Name" />
                   <Input placeholder="Contact Person" />
                   <Textarea placeholder="Address" rows={3} />
                 </Stack>
-              </GridItem>
-            </Grid>
+              </Field.Root>
+
+              <Field.Root>
+                <Field.Label mb={2}> Consignee </Field.Label>
+                <Stack gap={2}>
+                  <Input placeholder="Company Name" />
+                  <Input placeholder="Contact Person" />
+                  <Textarea placeholder="Address" rows={3} />
+                </Stack>
+              </Field.Root>
+            </SimpleGrid>
           </Card.Body>
         </Card.Root>
 
@@ -155,59 +114,45 @@ export default function BookingConfirmationPage() {
           </Card.Header>
           <Card.Body>
             <SimpleGrid columns={{ base: 1, md: 3 }} gap={4}>
-              <Box>
-                <Text fontSize="sm" mb={1}>
-                  Origin Port / Location
-                </Text>
+              <Field.Root>
+                <Field.Label fontSize="sm" mb={1}>Origin Port / Location</Field.Label>
                 <Input placeholder="Origin" />
-              </Box>
+              </Field.Root>
 
-              <Box>
-                <Text fontSize="sm" mb={1}>
-                  Destination Port / Location
-                </Text>
+              <Field.Root>
+                <Field.Label fontSize="sm" mb={1}> Destination Port / Location </Field.Label>
                 <Input placeholder="Destination" />
-              </Box>
+              </Field.Root>
 
-              <Box>
-                <Text fontSize="sm" mb={1}>
-                  Incoterm
-                </Text>
+              <Field.Root>
+                <Field.Label fontSize="sm" mb={1}> Incoterm </Field.Label>
                 {/* <Select placeholder="Select incoterm">
                   <option>FOB</option>
                   <option>CIF</option>
                   <option>EXW</option>
                 </Select> */}
-              </Box>
+              </Field.Root>
             </SimpleGrid>
 
             <Separator my={4} />
 
             <SimpleGrid columns={{ base: 1, md: 4 }} gap={4}>
-              <Box>
-                <Text fontSize="sm" mb={1}>
-                  Package Type
-                </Text>
+              <Field.Root>
+                <Field.Label fontSize="sm" mb={1}> Package Type </Field.Label>
                 <Input placeholder="Carton / Pallet / Loose" />
-              </Box>
-              <Box>
-                <Text fontSize="sm" mb={1}>
-                  Total Packages
-                </Text>
+              </Field.Root>
+              <Field.Root>
+                <Field.Label fontSize="sm" mb={1}> Total Packages </Field.Label>
                 <Input type="number" placeholder="0" />
-              </Box>
-              <Box>
-                <Text fontSize="sm" mb={1}>
-                  Gross Weight (KG)
-                </Text>
+              </Field.Root>
+              <Field.Root>
+                <Field.Label fontSize="sm" mb={1}> Gross Weight (KG) </Field.Label>
                 <Input type="number" placeholder="0" />
-              </Box>
-              <Box>
-                <Text fontSize="sm" mb={1}>
-                  CBM / Volume
-                </Text>
+              </Field.Root>
+              <Field.Root>
+                <Field.Label fontSize="sm" mb={1}> CBM / Volume </Field.Label>
                 <Input type="number" placeholder="0.00" />
-              </Box>
+              </Field.Root>
             </SimpleGrid>
           </Card.Body>
         </Card.Root>
@@ -219,32 +164,32 @@ export default function BookingConfirmationPage() {
           </Card.Header>
           <Card.Body>
             <SimpleGrid columns={{ base: 1, md: 3 }} gap={4}>
-              <Box>
+              <Field.Root>
                 <Text fontSize="sm" mb={1}>
                   Freight Charge
                 </Text>
                 <Input type="number" placeholder="0" />
-              </Box>
-              <Box>
+              </Field.Root>
+              <Field.Root>
                 <Text fontSize="sm" mb={1}>
                   Local Charge
                 </Text>
                 <Input type="number" placeholder="0" />
-              </Box>
-              <Box>
+              </Field.Root>
+              <Field.Root>
                 <Text fontSize="sm" mb={1}>
                   Other Charge
                 </Text>
                 <Input type="number" placeholder="0" />
-              </Box>
+              </Field.Root>
             </SimpleGrid>
 
-            <Box mt={4}>
+            <Field.Root mt={4}>
               <Text fontSize="sm" mb={1}>
                 Remarks / Special Instruction
               </Text>
               <Textarea rows={3} placeholder="Optional notes" />
-            </Box>
+            </Field.Root>
           </Card.Body>
         </Card.Root>
 
