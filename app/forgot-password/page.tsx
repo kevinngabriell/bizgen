@@ -75,7 +75,7 @@ export default function ForgotPassword() {
       <SimpleGrid columns={{ base: 1, lg: 2 }} w="100%" maxW="100vw" alignItems="center" gap={8}>
         {/* Image Illustration */}
         <Flex justify="center" align="center" w="100%" display={{ base: "none", lg: "flex" }}>
-          <Image src="/assets/bizgen-hero.png" w="70%" rounded="2xl" shadow="xl" alt="BizGen Illustration"/>
+          <Image src="/assets/login.jpg" w="70%" rounded="2xl" shadow="xl" alt="BizGen Illustration"/>
         </Flex>
 
         {/* Reset Password Area */}
@@ -85,7 +85,7 @@ export default function ForgotPassword() {
             
             {/* Heading and Logo */}
             <Flex direction="column" align="center" textAlign="center" mb={8}>
-              <Image src="/assets/bizgen-logo.png" alt="BizGen Logo" w="72px" mb={2}/>
+              <Image src="/assets/logo.png" alt="BizGen Logo" w="72px" mb={2}/>
               <Heading size="lg" color="#1E1E1E">Reset Password </Heading>
 
               <Text color="gray.600" fontSize="sm">Reset password akun kamu melalui verifikasi Whatsapp</Text>

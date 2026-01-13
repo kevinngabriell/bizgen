@@ -1,16 +1,7 @@
 'use client';
 
-import { Box, Button,
-  Card, Flex,
-  HStack,
-  Heading,
-  Input,
-  Stack,
-  Text,
-  Textarea,
-  Field,
-  Separator,
-} from '@chakra-ui/react';
+import SidebarWithHeader from '@/components/ui/SidebarWithHeader';
+import {Button, Card, Flex, Heading, Input, Text, Textarea, Field, Separator, NumberInput} from '@chakra-ui/react';
 import { useState } from 'react';
 
 type LineItem = {
@@ -20,8 +11,6 @@ type LineItem = {
 };
 
 export default function CreateDeliveryOrderPage() {
-//   const toast = useToast();
-
   const [currency, setCurrency] = useState<'USD' | 'EUR' | 'IDR'>('USD');
   const [exchangeRate, setExchangeRate] = useState<number>(15500); // editable currency rate
   const [lineItems, setLineItems] = useState<LineItem[]>([
@@ -57,164 +46,100 @@ export default function CreateDeliveryOrderPage() {
         subtotalIDR,
       },
     };
-
-    // TODO: call API
-    console.log('SUBMIT SPPB/DO', payload);
-
-    // toast({
-    //   title: 'Delivery Order created',
-    //   description: 'SPPB / Delivery Order saved successfully.',
-    //   status: 'success',
-    // });
   };
 
   return (
-    <Box p={6}>
-      <Heading size="lg" mb={4}>
-        Create SPPB / Delivery Order
-      </Heading>
+    <SidebarWithHeader username='---'>
+      <Heading size="lg" mb={4}>Create SPPB / Delivery Order</Heading>
 
-      <Card.Root variant="outline">
+      <Card.Root>
         <Card.Header>
           <Heading size="sm">Document Information</Heading>
         </Card.Header>
-        <Card.Body as={Stack} gap={4}>
-          <HStack>
-            <Field.Root>
-              <Field.Label>DO / SPPB Number</Field.Label>
-              <Input placeholder="e.g. DO-2026-0001" />
-            </Field.Root>
+        <Card.Body>
+          <Field.Root>
+            <Field.Label>DO / SPPB Number</Field.Label>
+            <Input placeholder="e.g. DO-2026-0001" />
+          </Field.Root>
+          <Field.Root mt={4}>
+            <Field.Label>Issue Date</Field.Label>
+            <Input type="date" />
+          </Field.Root>
+          <Field.Root mt={4}>
+            <Field.Label>Reference (SO / Job)</Field.Label>
+            <Input placeholder="Link to Sales / Job Order" />
+          </Field.Root>
 
-            <Field.Root>
-              <Field.Label>Issue Date</Field.Label>
-              <Input type="date" />
-            </Field.Root>
+          <Separator mt={4} mb={4}/>
 
-            <Field.Root>
-              <Field.Label>Reference (SO / Job)</Field.Label>
-              <Input placeholder="Link to Sales / Job Order" />
-            </Field.Root>
-          </HStack>
+          <Heading size="sm" mb={3}>Currency &amp; Exchange Rate</Heading>
 
-          <Separator />
+          <Field.Root maxW="200px">
+            <Field.Label>Currency</Field.Label>
+          </Field.Root>
 
-          <Heading size="sm">Currency &amp; Exchange Rate</Heading>
-          <HStack>
-            <Field.Root maxW="200px">
-              <Field.Label>Currency</Field.Label>
-              {/* <Select
-                value={currency}
-                onChange={(e) => setCurrency(e.target.value as any)}
-              >
-                <option value="USD">USD</option>
-                <option value="EUR">EUR</option>
-                <option value="IDR">IDR</option>
-              </Select> */}
-            </Field.Root>
+          <Field.Root>
+            <Field.Label>Exchange Rate (to IDR)</Field.Label>
+            <NumberInput.Root>
+              <NumberInput.Control/>
+              <NumberInput.Input/>
+            </NumberInput.Root>
+            <Text fontSize="sm" color="gray.500">You can manually adjust this rate when customs / bank rate differs.</Text>
+          </Field.Root>
 
-            <Field.Root>
-              <Field.Label>Exchange Rate (to IDR)</Field.Label>
-              {/* <NumberInput
-                value={exchangeRate}
-                min={0}
-                onChange={(_, v) => setExchangeRate(v || 0)}
-              >
-                <NumberInputField />
-              </NumberInput> */}
-              <Text fontSize="sm" color="gray.500">
-                You can manually adjust this rate when customs / bank rate differs.
-              </Text>
-            </Field.Root>
-          </HStack>
+          <Separator mt={5} mb={5}/>
 
-          <Separator />
+          <Heading size="sm" mb={4}>Items / Charges</Heading>
 
-          <Heading size="sm">Items / Charges</Heading>
-          <Stack gap={3}>
-            {lineItems.map((li, i) => (
-              <Card.Root key={i} variant="subtle">
-                <Card.Body as={Stack} gap={3}>
-                  <Field.Root>
-                    <Field.Label>Description</Field.Label>
-                    <Input
-                      value={li.description}
-                      onChange={(e) =>
-                        handleLineChange(i, 'description', e.target.value)
-                      }
-                      placeholder="Cargo / Charge description"
-                    />
-                  </Field.Root>
+          {lineItems.map((li, i) => (
+            <Card.Root key={i} variant="subtle" mb={2}>
+              <Card.Body gap={3}>
+                <Field.Root>
+                  <Field.Label>Description</Field.Label>
+                  <Input value={li.description} onChange={(e) => handleLineChange(i, 'description', e.target.value)} placeholder="Cargo / Charge description"/>
+                </Field.Root>
+                <Field.Root maxW="140px">
+                  <Field.Label>Qty</Field.Label>
+                  <NumberInput.Root>
+                    <NumberInput.Control/>
+                    <NumberInput.Input/>
+                  </NumberInput.Root>
+                </Field.Root>
+                <Field.Root>
+                  <Field.Label>Unit Price ({currency})</Field.Label>
+                  <NumberInput.Root>
+                    <NumberInput.Control/>
+                    <NumberInput.Input/>
+                  </NumberInput.Root>
+                </Field.Root>
 
-                  <HStack>
-                    <Field.Root maxW="140px">
-                      <Field.Label>Qty</Field.Label>
-                      {/* <NumberInput
-                        min={1}
-                        value={li.qty}
-                        onChange={(_, v) => handleLineChange(i, 'qty', v || 1)}
-                      >
-                        <NumberInputField />
-                      </NumberInput> */}
-                    </Field.Root>
+                <Field.Root>
+                  <Field.Label>Line Total ({currency})</Field.Label>
+                  <Input value={(li.qty * li.unitPriceForeign).toFixed(2)}/>
+                </Field.Root>
 
-                    <Field.Root>
-                      <Field.Label>Unit Price ({currency})</Field.Label>
-                      {/* <NumberInput
-                        min={0}
-                        value={li.unitPriceForeign}
-                        onChange={(_, v) =>
-                          handleLineChange(i, 'unitPriceForeign', v || 0)
-                        }
-                      >
-                        <NumberInputField />
-                      </NumberInput> */}
-                    </Field.Root>
+                <Button color="red" variant="ghost" onClick={() => removeRow(i)}>Remove</Button>
+              </Card.Body>
+            </Card.Root>
+          ))}
 
-                    <Field.Root>
-                      <Field.Label>Line Total ({currency})</Field.Label>
-                      <Input
-                        value={(li.qty * li.unitPriceForeign).toFixed(2)}
-                        
-                      />
-                    </Field.Root>
+          <Button mt={4} mb={4} onClick={addRow} variant="outline">Add Item / Charge</Button>
 
-                    <Button
-                      colorScheme="red"
-                      variant="ghost"
-                      onClick={() => removeRow(i)}
-                    >
-                      Remove
-                    </Button>
-                  </HStack>
-                </Card.Body>
-              </Card.Root>
-            ))}
+          <Separator mt={4} mb={4} />
+          
+          <Heading size="sm" mb={6}>Totals</Heading>
 
-            <Button onClick={addRow} variant="outline">
-              Add Item / Charge
-            </Button>
-          </Stack>
-
-          <Separator />
-
-          <Heading size="sm">Totals</Heading>
-          <Flex gap={6} wrap="wrap">
-            <Box>
-              <Text fontWeight="medium">
-                Subtotal ({currency}): {subtotalForeign.toFixed(2)}
-              </Text>
-              <Text color="gray.600" fontSize="sm">
-                Converted to IDR using editable exchange rate
-              </Text>
-            </Box>
-            <Box>
-              <Text fontWeight="medium">
-                Subtotal (IDR): {subtotalIDR.toLocaleString('id-ID')}
-              </Text>
-            </Box>
+          <Flex flexDirection={"column"}>
+            <>
+              <Text fontWeight="md">Subtotal ({currency}): {subtotalForeign.toFixed(2)}</Text>
+              <Text color="gray.600" fontSize="sm">Converted to IDR using editable exchange rate</Text>
+            </>
+            <>
+              <Text fontWeight="medium" mt={4} mb={5}>Subtotal (IDR): {subtotalIDR.toLocaleString('id-ID')}</Text>
+            </>
           </Flex>
 
-          <Separator />
+          <Separator mb={4} />
 
           <Field.Root>
             <Field.Label>Remarks</Field.Label>
@@ -223,12 +148,12 @@ export default function CreateDeliveryOrderPage() {
 
           <Flex justify="flex-end" gap={3} mt={4}>
             <Button variant="ghost">Cancel</Button>
-            <Button colorScheme="blue" onClick={handleSubmit}>
-              Save Delivery Order
-            </Button>
+            <Button colorScheme="blue" onClick={handleSubmit}>Save Delivery Order</Button>
           </Flex>
         </Card.Body>
       </Card.Root>
-    </Box>
+
+    </SidebarWithHeader>
+    
   );
 }

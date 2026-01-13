@@ -1,25 +1,9 @@
 "use client";
 
-import {
-  Box,
-  Button,
-  Card,
-  Separator,
-  Flex,
-  Field,
-  Grid,
-  GridItem,
-  HStack,
-  IconButton,
-  Input,
-  NumberInput,
-  Select,
-  Stack,
-  Text,
-  Textarea,
-} from "@chakra-ui/react";
+import SidebarWithHeader from "@/components/ui/SidebarWithHeader";
+import { Button, Card, Separator, Flex, Field, IconButton, Input, NumberInput, Text, Textarea, Heading, SimpleGrid,} from "@chakra-ui/react";
 import { useState } from "react";
-// import { AddIcon, DeleteIcon } from "@chakra-ui/icons";
+import { FaTrash } from "react-icons/fa";
 
 interface LineItem {
   id: string;
@@ -30,8 +14,6 @@ interface LineItem {
 }
 
 export default function CreateVendorBillPage() {
-//   const toast = useToast();
-
   const [vendor, setVendor] = useState("");
   const [billNo, setBillNo] = useState("");
   const [billDate, setBillDate] = useState("");
@@ -75,30 +57,19 @@ export default function CreateVendorBillPage() {
   const grandTotal = subtotal + taxTotal;
 
   const handleSave = (mode: "draft" | "post") => {
-    // TODO: integrate API submit
-    // toast({
-    //   title: mode === "draft" ? "Saved as draft" : "Vendor bill posted",
-    //   status: "success",
-    //   duration: 2000,
-    // });
+
   };
 
   return (
-    <Box p={6}>
-      <Card.Root>
-        <Card.Header>
-          <Text fontSize="lg" fontWeight="bold">
-            Create Vendor Bill
-          </Text>
-        </Card.Header>
-        <Separator />
+    <SidebarWithHeader username="---">
+      <Heading>Create Vendor Bill</Heading>
+
+      <Card.Root mt={4}>
         <Card.Body>
-          <Stack gap={6}>
-            <Grid templateColumns={{ base: "1fr", md: "1fr 1fr" }} gap={6}>
-              <GridItem>
-                <Field.Root>
-                  <Field.Label>Vendor</Field.Label>
-                  {/* <Select
+          <SimpleGrid columns={{base: 1, md: 2}} gap={8}>
+            <Field.Root>
+              <Field.Label>Vendor</Field.Label>
+              {/* <Select
                     placeholder="Select vendor"
                     value={vendor}
                     onChange={(e) => setVendor(e.target.value)}
@@ -106,240 +77,119 @@ export default function CreateVendorBillPage() {
                     <option value="vendor-1">Vendor A</option>
                     <option value="vendor-2">Vendor B</option>
                   </Select> */}
-                </Field.Root>
-              </GridItem>
+            </Field.Root>
 
-              <GridItem>
-                <Field.Root>
-                  <Field.Label>Reference (PO / GR / Job)</Field.Label>
-                  <Input
-                    placeholder="Optional reference"
-                    value={reference}
-                    onChange={(e) => setReference(e.target.value)}
-                  />
-                </Field.Root>
-              </GridItem>
+            <Field.Root>
+              <Field.Label>Reference (PO / GR / Job)</Field.Label>
+              <Input placeholder="Optional reference" value={reference} onChange={(e) => setReference(e.target.value)}/>
+            </Field.Root>
 
-              <GridItem>
-                <Field.Root>
-                  <Field.Label>Bill No.</Field.Label>
-                  <Input
-                    value={billNo}
-                    onChange={(e) => setBillNo(e.target.value)}
-                    placeholder="Invoice number from vendor"
-                  />
-                </Field.Root>
-              </GridItem>
+            <Field.Root>
+              <Field.Label>Bill No.</Field.Label>
+              <Input value={billNo} onChange={(e) => setBillNo(e.target.value)} placeholder="Invoice number from vendor"/>
+            </Field.Root>
 
-              <GridItem>
-                <Field.Root>
-                  <Field.Label>Bill Date</Field.Label>
-                  <Input
-                    type="date"
-                    value={billDate}
-                    onChange={(e) => setBillDate(e.target.value)}
-                  />
-                </Field.Root>
-              </GridItem>
+            <Field.Root>
+              <Field.Label>Bill Date</Field.Label>
+              <Input type="date" value={billDate} onChange={(e) => setBillDate(e.target.value)}/>
+            </Field.Root>
 
-              <GridItem>
-                <Field.Root>
-                  <Field.Label>Due Date</Field.Label>
-                  <Input
-                    type="date"
-                    value={dueDate}
-                    onChange={(e) => setDueDate(e.target.value)}
-                  />
-                </Field.Root>
-              </GridItem>
+            <Field.Root>
+              <Field.Label>Due Date</Field.Label>
+              <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)}/>
+            </Field.Root>
 
-              <GridItem>
-                <Field.Root>
-                  <Field.Label>Currency</Field.Label>
-                  <HStack>
-                    {/* <Select
-                      w="40%"
-                      value={currency}
-                      onChange={(e) => setCurrency(e.target.value)}
-                    >
-                      <option value="IDR">IDR</option>
-                      <option value="USD">USD</option>
-                      <option value="SGD">SGD</option>
-                    </Select>
-                    <NumberInput
-                      value={exchangeRate}
-                      min={0}
-                      onChange={(_, v) => setExchangeRate(v || 0)}
-                    >
-                      <NumberInputField placeholder="Rate" />
-                    </NumberInput> */}
-                  </HStack>
-                </Field.Root>
-              </GridItem>
-            </Grid>
+            <Field.Root>
+              <Field.Label>Currency</Field.Label>
+              <Flex>
+                {/* Select Currency */}
+                <NumberInput.Root>
+                  <NumberInput.Control/>
+                  <NumberInput.Input/>
+                </NumberInput.Root>
+              </Flex>
+            </Field.Root>
+          </SimpleGrid>
 
-            <Box>
-              <Text fontWeight="semibold" mb={2}>
-                Line Items
-              </Text>
+          <Heading fontSize={"md"} mt={6} mb={2}>Line Items</Heading>
 
-              <Stack gap={3}>
-                {items.map((item) => (
-                  <Card.Root key={item.id} variant="outline">
-                    <Card.Body>
-                      <Grid
-                        templateColumns={{
-                          base: "1fr",
-                          md: "2fr 1fr 1fr 1fr auto",
-                        }}
-                        gap={3}
-                        alignItems="center"
-                      >
-                        <GridItem>
-                          <Field.Root>
-                            <Field.Label>Description</Field.Label>
-                            <Input
-                              value={item.description}
-                              onChange={(e) =>
-                                updateItem(item.id, "description", e.target.value)
-                              }
-                              placeholder="Item / service description"
-                            />
-                          </Field.Root>
-                        </GridItem>
+          {items.map((item) => (
+            <Card.Root key={item.id} variant="outline" mt={3}>
+              <Card.Body>
+                <SimpleGrid templateColumns={{base: "1fr", md: "2fr 1fr 1fr 1fr auto",}} gap={3} alignItems="center">
+                  <Field.Root>
+                    <Field.Label>Description</Field.Label>
+                    <Input value={item.description} onChange={(e) => updateItem(item.id, "description", e.target.value)} placeholder="Item / service description"/>
+                  </Field.Root>
 
-                        <GridItem>
-                          <Field.Root>
-                            <Field.Label>Qty</Field.Label>
-                            {/* <NumberInput
-                              min={1}
-                              value={item.qty}
-                              onChange={(_, v) =>
-                                updateItem(item.id, "qty", v || 0)
-                              }
-                            >
-                              <NumberInputField />
-                            </NumberInput> */}
-                          </Field.Root>
-                        </GridItem>
+                  <Field.Root>
+                    <Field.Label>Qty</Field.Label>
+                    <NumberInput.Root>
+                      <NumberInput.Control/>
+                      <NumberInput.Input/>
+                    </NumberInput.Root>
+                  </Field.Root>
 
-                        <GridItem>
-                          <Field.Root>
-                            <Field.Label>Unit Price</Field.Label>
-                            {/* <NumberInput
-                              min={0}
-                              value={item.unitPrice}
-                              onChange={(_, v) =>
-                                updateItem(item.id, "unitPrice", v || 0)
-                              }
-                            >
-                              <NumberInputField />
-                            </NumberInput> */}
-                          </Field.Root>
-                        </GridItem>
+                  <Field.Root>
+                    <Field.Label>Unit Price</Field.Label>
+                    <NumberInput.Root>
+                      <NumberInput.Control/>
+                      <NumberInput.Input/>
+                    </NumberInput.Root>
+                  </Field.Root>
 
-                        <GridItem>
-                          <Field.Root>
-                            <Field.Label>Tax %</Field.Label>
-                            {/* <NumberInput
-                              min={0}
-                              max={100}
-                              value={item.tax}
-                              onChange={(_, v) =>
-                                updateItem(item.id, "tax", v || 0)
-                              }
-                            >
-                              <NumberInputField />
-                            </NumberInput> */}
-                          </Field.Root>
-                        </GridItem>
+                  <Field.Root>
+                    <Field.Label>Tax %</Field.Label>
+                    <NumberInput.Root>
+                      <NumberInput.Control/>
+                      <NumberInput.Input/>
+                    </NumberInput.Root>
+                  </Field.Root>
 
-                        <GridItem>
-                          <IconButton
-                            aria-label="Remove row"
-                            // icon={<DeleteIcon />}
-                            variant="ghost"
-                            colorScheme="red"
-                            onClick={() => removeItem(item.id)}
-                          />
-                        </GridItem>
-                      </Grid>
-                    </Card.Body>
-                  </Card.Root>
-                ))}
+                  <IconButton aria-label="Remove row" variant="ghost" color={"red"} onClick={() => removeItem(item.id)}>
+                    <FaTrash/>
+                  </IconButton>
+                </SimpleGrid>
+              </Card.Body>
+            </Card.Root>
+          ))}
 
-                <Button
-                //   leftIcon={<AddIcon />}
-                  variant="outline"
-                  onClick={addItem}
-                  alignSelf="flex-start"
-                >
-                  Add Line Item
-                </Button>
-              </Stack>
-            </Box>
+          <Button mt={4} variant="outline" onClick={addItem} alignSelf="flex-start">Add Line Item</Button>
 
-            <Grid templateColumns={{ base: "1fr", md: "1fr 300px" }} gap={6}>
-              <GridItem>
-                <Field.Root>
-                  <Field.Label>Notes</Field.Label>
-                  <Textarea
-                    rows={4}
-                    value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
-                    placeholder="Optional notes for internal / finance"
-                  />
-                </Field.Root>
-              </GridItem>
+          <SimpleGrid templateColumns={{ base: "1fr", md: "1fr 300px" }} gap={6} mt={6}>
+            <Field.Root>
+              <Field.Label>Notes</Field.Label>
+              <Textarea rows={4} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Optional notes for internal / finance"/>
+            </Field.Root>
+            <Card.Root variant="outline">
+              <Card.Body>
+                <Flex flexDir={"column"}>
+                  <Flex justify={"space-between"} mb={3}>
+                    <Text color="gray.600" fontSize={"sm"}>Subtotal</Text>
+                    <Text fontWeight="semibold" fontSize={"sm"}> {subtotal.toLocaleString()}</Text>
+                  </Flex>
+                  <Flex justify={"space-between"} mb={3}>
+                    <Text color="gray.600" fontSize={"sm"}>Tax</Text>
+                    <Text fontWeight="semibold" fontSize={"sm"}>{taxTotal.toLocaleString()}</Text>
+                  </Flex>
+                  <Separator mb={3}/>
+                  <Flex justify={"space-between"}>
+                    <Text fontWeight="bold" fontSize={"sm"}>Grand Total</Text>
+                    <Text fontWeight="bold" fontSize={"sm"}>{grandTotal.toLocaleString()}</Text>
+                  </Flex>
+                </Flex>
+              </Card.Body>
+            </Card.Root>
+          </SimpleGrid>
 
-              <GridItem>
-                <Card.Root variant="outline">
-                  <Card.Body>
-                    <Stack gap={2}>
-                      <HStack justify="space-between">
-                        <Text color="gray.600">Subtotal</Text>
-                        <Text fontWeight="semibold">
-                          {subtotal.toLocaleString()}
-                        </Text>
-                      </HStack>
-                      <HStack justify="space-between">
-                        <Text color="gray.600">Tax</Text>
-                        <Text fontWeight="semibold">
-                          {taxTotal.toLocaleString()}
-                        </Text>
-                      </HStack>
-                      <Separator />
-                      <HStack justify="space-between">
-                        <Text fontWeight="bold">Grand Total</Text>
-                        <Text fontWeight="bold">
-                          {grandTotal.toLocaleString()}
-                        </Text>
-                      </HStack>
-                    </Stack>
-                  </Card.Body>
-                </Card.Root>
-              </GridItem>
-            </Grid>
-
-            <Flex justify="space-between">
-              <Button
-                variant="outline"
-                onClick={() => handleSave("draft")}
-              >
-                Save as Draft
-              </Button>
-              <HStack>
-                <Button
-                  colorScheme="blue"
-                  onClick={() => handleSave("post")}
-                >
-                  Post Vendor Bill
-                </Button>
-              </HStack>
-            </Flex>
-          </Stack>
+          <Flex justify="space-between" mt={5}>
+            <Button variant="outline" onClick={() => handleSave("draft")}>Save as Draft</Button>
+            <Button colorScheme="blue" onClick={() => handleSave("post")}>Post Vendor Bill</Button>
+          </Flex>
         </Card.Body>
       </Card.Root>
-    </Box>
+
+    </SidebarWithHeader>
+    
   );
 }

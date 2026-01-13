@@ -1,7 +1,7 @@
 'use client';
 
 import SidebarWithHeader from '@/components/ui/SidebarWithHeader';
-import { Box, Button, Card, Flex, Grid, GridItem, Heading, Icon, Input, Stack, Text, Textarea, Badge, SimpleGrid, Separator, Field } from '@chakra-ui/react';
+import { Box, Button, Card, Flex, Heading, Icon, Input, Stack, Text, Textarea, Badge, SimpleGrid, Separator, Field } from '@chakra-ui/react';
 import { useState } from 'react';
 import { FiFileText } from 'react-icons/fi';
 

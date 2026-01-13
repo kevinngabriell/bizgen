@@ -2,23 +2,12 @@
 
 "use client";
 
-import {
-  Box,
-  Button,
-  Flex,
-  Heading,
-  SimpleGrid,
-  Field,
-  Input,
-  Select,
-  NumberInput,
-  IconButton,
-  Separator,
-  Text,
-  Stack,
-} from "@chakra-ui/react";
+import SidebarWithHeader from "@/components/ui/SidebarWithHeader";
+import { Box, Button, Flex, Heading, SimpleGrid, Field, Input, IconButton, Separator, Text, Stack, Card, NumberInput } from "@chakra-ui/react";
 // import { AddIcon, DeleteIcon } from "@chakra-ui/icons";
 import { useState, useMemo } from "react";
+import { FaTrash } from "react-icons/fa";
+import { FiDelete } from "react-icons/fi";
 
 type ItemRow = {
   sku: string;
@@ -81,50 +70,43 @@ export default function CreatePurchaseImportPage() {
   );
 
   return (
-    <Box p={6}>
-      <Flex mb={4} align="center" justify="space-between">
-        <Heading size="lg">Create Purchase — Import</Heading>
-      </Flex>
+    <SidebarWithHeader username="--">
+      {/* Heading Area */}
+      <Heading size="lg">Create Purchase — Import</Heading>
 
-      <Stack gap={8}>
-        {/* Header Info */}
-        <Box borderWidth="1px" borderRadius="lg" p={4}>
-          <Heading size="sm" mb={3}>
-            Purchase Details
-          </Heading>
-          <SimpleGrid columns={[1, 2, 3]} gap={4}>
+      {/* Purchase details & import details card */}
+      <Card.Root mt={4}>
+        <Card.Body>
+          {/* Purchase Details Header */}
+          <Heading size="sm" mb={3}>Purchase Details</Heading>
+
+          {/* PO Number, PO Date, and Supplier Name */}
+          <SimpleGrid columns={{base: 1, md: 2, lg: 3}} gap={"20px"} mt={3} mb={8}>
+            {/* PO Number */}
             <Field.Root>
               <Field.Label>PO Number</Field.Label>
-              <Input
-                value={poNumber}
-                onChange={(e) => setPoNumber(e.target.value)}
-                placeholder="AUTO / Manual"
-              />
+              <Input value={poNumber} onChange={(e) => setPoNumber(e.target.value)} placeholder="AUTO / Manual"/>
             </Field.Root>
+            {/* PO Date */}
             <Field.Root>
               <Field.Label>PO Date</Field.Label>
-              <Input
-                type="date"
-                value={poDate}
-                onChange={(e) => setPoDate(e.target.value)}
-              />
+              <Input value={poNumber} onChange={(e) => setPoNumber(e.target.value)} placeholder="AUTO / Manual"/>
             </Field.Root>
+            {/* Supplier Name */}
             <Field.Root>
-              <Field.Label>Supplier</Field.Label>
-              <Input
-                value={supplier}
-                onChange={(e) => setSupplier(e.target.value)}
-                placeholder="Supplier Name"
-              />
+              <Field.Label>Supplier Name</Field.Label>
+              <Input value={supplier} onChange={(e) => setSupplier(e.target.value)} placeholder="AUTO / Manual"/>
             </Field.Root>
           </SimpleGrid>
 
-          <Separator my={4} />
+          <Separator/>
 
-          <Heading size="sm" mb={3}>
-            Import Details
-          </Heading>
-          <SimpleGrid columns={[1, 2, 3]} gap={4}>
+          {/* Import Details Header */}
+          <Heading size="sm" mb={3} mt={6}>Import Details</Heading>
+          
+          {/* Currency, exchange rate, incoterm, port of loading, port of dicharge, freight cost, customs/duty cost */}
+          <SimpleGrid columns={{base: 1, md: 2, lg: 3}} gap={"20px"} mt={3} mb={3}>
+            {/* Currency */}
             <Field.Root>
               <Field.Label>Currency</Field.Label>
               {/* <Select
@@ -137,7 +119,7 @@ export default function CreatePurchaseImportPage() {
                 <option value="IDR">IDR</option>
               </Select> */}
             </Field.Root>
-
+            {/* Exchange Rate */}
             <Field.Root>
               <Field.Label>Exchange Rate (to IDR)</Field.Label>
               {/* <NumberInput
@@ -148,7 +130,7 @@ export default function CreatePurchaseImportPage() {
                 <NumberInputField />
               </NumberInput> */}
             </Field.Root>
-
+            {/* Incoterm */}
             <Field.Root>
               <Field.Label>Incoterm</Field.Label>
               {/* <Select
@@ -160,27 +142,19 @@ export default function CreatePurchaseImportPage() {
                 <option value="EXW">EXW</option>
               </Select> */}
             </Field.Root>
-
+            {/* Port of Loading */}
             <Field.Root>
               <Field.Label>Port of Loading</Field.Label>
-              <Input
-                value={portOfLoading}
-                onChange={(e) => setPortOfLoading(e.target.value)}
-                placeholder="e.g. Shanghai"
-              />
+              <Input value={portOfLoading} onChange={(e) => setPortOfLoading(e.target.value)} placeholder="e.g. Shanghai"/>
             </Field.Root>
-
+            {/* Port of Discharge */}
             <Field.Root>
               <Field.Label>Port of Discharge</Field.Label>
-              <Input
-                value={portOfDischarge}
-                onChange={(e) => setPortOfDischarge(e.target.value)}
-                placeholder="e.g. Jakarta"
-              />
+              <Input value={portOfDischarge} onChange={(e) => setPortOfDischarge(e.target.value)} placeholder="e.g. Jakarta"/>
             </Field.Root>
-
+            {/* Freight Cost (USD) */}
             <Field.Root>
-              <Field.Label>Freight Cost ({currency})</Field.Label>
+              <Field.Label>Freight Cost (USD)</Field.Label>
               {/* <NumberInput
                 value={freightCost}
                 min={0}
@@ -189,9 +163,9 @@ export default function CreatePurchaseImportPage() {
                 <NumberInputField />
               </NumberInput> */}
             </Field.Root>
-
+            {/* Customer/Duty Cost (USD) */}
             <Field.Root>
-              <Field.Label>Customs / Duty Cost ({currency})</Field.Label>
+              <Field.Label>Custom/Duty Cost (USD)</Field.Label>
               {/* <NumberInput
                 value={customsCost}
                 min={0}
@@ -201,127 +175,82 @@ export default function CreatePurchaseImportPage() {
               </NumberInput> */}
             </Field.Root>
           </SimpleGrid>
-        </Box>
 
-        {/* Items */}
-        <Box borderWidth="1px" borderRadius="lg" p={4}>
-          <Flex justify="space-between" align="center" mb={3}>
+        </Card.Body>
+      </Card.Root>
+      
+      {/* Items card */}
+      <Card.Root mt={6}>
+        <Card.Body>
+          {/* Heading and add item button */}
+          <Flex alignItems={"center"} justifyContent={"space-between"} mb={8}>
             <Heading size="sm">Items</Heading>
-            <Button
-            //   leftIcon={<AddIcon />}
-              size="sm"
-              variant="outline"
-              onClick={addItem}
-            >
-              Add Item
-            </Button>
+            <Button size="sm" variant="outline" onClick={addItem}>Add Item</Button>
           </Flex>
 
-          <Stack gap={3}>
-            {items.map((row, i) => (
-              <Box
-                key={i}
-                p={3}
-                borderWidth="1px"
-                borderRadius="md"
-                bg="gray.50"
-              >
-                <SimpleGrid columns={[1, 2, 4]} gap={3}>
-                  <Field.Root>
-                    <Field.Label>SKU</Field.Label>
-                    <Input
-                      value={row.sku}
-                      onChange={(e) =>
-                        updateItem(i, "sku", e.target.value)
-                      }
-                    />
-                  </Field.Root>
+          {items.map((row, i) => (
+            <Card.Root key={i} mb={5}>
+              <Card.Body>
+                  <SimpleGrid columns={{base: 1, md: 2, lg: 4}} gap={"20px"}>
+                    <Field.Root>
+                      <Field.Label>SKU</Field.Label>
+                      <Input value={row.sku} onChange={(e) => updateItem(i, "sku", e.target.value)}/>
+                    </Field.Root>
 
-                  <Field.Root>
-                    <Field.Label>Description</Field.Label>
-                    <Input
-                      value={row.description}
-                      onChange={(e) =>
-                        updateItem(i, "description", e.target.value)
-                      }
-                    />
-                  </Field.Root>
+                    <Field.Root>
+                      <Field.Label>Description</Field.Label>
+                      <Input value={row.description} onChange={(e) => updateItem(i, "description", e.target.value)}/>
+                    </Field.Root>
 
-                  <Field.Root>
-                    <Field.Label>Qty</Field.Label>
-                    {/* <NumberInput
-                      value={row.qty}
-                      min={1}
-                      onChange={(_, v) => updateItem(i, "qty", v || 0)}
-                    >
-                      <NumberInputField />
-                    </NumberInput> */}
-                  </Field.Root>
+                    <Field.Root>
+                      <Field.Label>Qty</Field.Label>
+                      <NumberInput.Root min={0}>
+                        <NumberInput.Control/>
+                        <NumberInput.Input />
+                      </NumberInput.Root>
+                    </Field.Root>
 
-                  <Field.Root>
-                    <Field.Label>Unit Price ({currency})</Field.Label>
-                    {/* <NumberInput
-                      value={row.unitPrice}
-                      min={0}
-                      onChange={(_, v) =>
-                        updateItem(i, "unitPrice", v || 0)
-                      }
-                    >
-                      <NumberInputField />
-                    </NumberInput> */}
-                  </Field.Root>
-                </SimpleGrid>
+                    <Field.Root>
+                      <Field.Label>Unit Price (USD)</Field.Label>
+                      <NumberInput.Root min={0}>
+                        <NumberInput.Control/>
+                        <NumberInput.Input />
+                      </NumberInput.Root>
+                    </Field.Root>
+                  </SimpleGrid>
 
-                <Flex justify="space-between" mt={2} align="center">
-                  <Text fontSize="sm" color="gray.600">
-                    Line Total:{" "}
-                    {(row.qty || 0) * (row.unitPrice || 0)} {currency}
-                  </Text>
-                  {items.length > 1 && (
-                    <IconButton
-                      aria-label="Remove item"
-                    //   icon={<DeleteIcon />}
-                      size="sm"
-                      colorScheme="red"
-                      variant="ghost"
-                      onClick={() => removeItem(i)}
-                    />
-                  )}
-                </Flex>
-              </Box>
-            ))}
-          </Stack>
-        </Box>
+                  <Flex justify="space-between" mt={2} align="center">
+                    <Text fontSize="sm" color="gray.600"> Line Total:{" "} {(row.qty || 0) * (row.unitPrice || 0)} {currency}</Text>
+                    {items.length > 1 && (
+                      <IconButton p={3} aria-label="Remove item" size="sm" color={"red"} variant="ghost" onClick={() => removeItem(i)}>
+                        <FaTrash/>
+                        <Text>Delete Item</Text>
+                      </IconButton>
+                    )}
+                  </Flex>
+              </Card.Body>
+            </Card.Root>
+          ))}
+        </Card.Body>
+      </Card.Root>
 
-        {/* Totals */}
-        <Box borderWidth="1px" borderRadius="lg" p={4}>
-          <Heading size="sm" mb={3}>
-            Cost Summary
-          </Heading>
-          <Stack gap={1}>
-            <Text>
-              Items Subtotal: {itemsSubtotal.toLocaleString()} {currency}
-            </Text>
-            <Text>
-              Freight + Customs:{" "}
-              {(Number(freightCost) + Number(customsCost)).toLocaleString()}{" "}
-              {currency}
-            </Text>
-            <Text fontWeight="semibold">
-              Landed Cost: {landedCost.toLocaleString()} {currency}
-            </Text>
-            <Text color="gray.600">
-              Local Currency (IDR): {localCurrencyTotal.toLocaleString("id-ID")}
-            </Text>
-          </Stack>
-        </Box>
+      <Card.Root mt={6}>
+        <Card.Body>
+          <Heading size="sm" mb={3}>Cost Summary</Heading>
+          
+          <Text fontSize={"md"}>Items Subtotal: {itemsSubtotal.toLocaleString()} {currency}</Text>
+          <Text>Freight + Customs:{" "} {(Number(freightCost) + Number(customsCost)).toLocaleString()}{" "}{currency}</Text>
+          <Text fontWeight="semibold">Landed Cost: {landedCost.toLocaleString()} {currency}</Text>
+          <Text color="gray.600">Local Currency (IDR): {localCurrencyTotal.toLocaleString("id-ID")}</Text>
+        </Card.Body>
+      </Card.Root>
 
-        {/* Actions */}
-        <Flex gap={3} justify="flex-end">
-          <Button variant="outline">Save Draft</Button>
-          <Button colorScheme="blue">Submit Purchase</Button>
-        </Flex>
-      </Stack>
-    </Box>
+      <Flex gap={3} justify="flex-end" mt={4}>
+        <Button variant="outline">Save Draft</Button>
+        <Button colorScheme="blue">Submit Purchase</Button>
+      </Flex>
+
+    </SidebarWithHeader>
+    
   );
 }

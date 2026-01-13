@@ -43,8 +43,8 @@ const TopNavbar = () => {
         {/* Logo kiri */}
         <HStack gap={3} align="center">
           <Image
-            src="/raki.png"
-            alt="RAKI"
+            src="/assets/logo.png"
+            alt="Bizgen"
             w={{ base: '30%', sm: '48px', md: '60px' }}
             h="auto"
             objectFit="contain"

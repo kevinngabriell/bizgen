@@ -1,172 +1,197 @@
 "use client";
 
 import SidebarWithHeader from "@/components/ui/SidebarWithHeader";
-import {
-  Button,
-  Card,
-  Flex,
-  Heading,
-  Text,
-  Grid,
-  Box,
-  Stack,
-  HStack,
-  Badge,
-  useDisclosure,
-  SimpleGrid,
-  Icon,
-  Dialog,
-} from "@chakra-ui/react";
-
+import { Button, Card, Flex, Heading, Text, Grid, Box, Stack, Badge, SimpleGrid, Dialog, Portal, CloseButton } from "@chakra-ui/react";
+import { useRouter } from "next/navigation";
 
 export default function Purchase (){
-  const { open: isOpen, onOpen, onClose } = useDisclosure();
+  const router = useRouter();
 
-    return (
-        <SidebarWithHeader username="kevin">
-          <Flex gap={2} display={"flex"} mb={"6"} mt={"2"} alignItems={"center"}>
-            <Heading flex="1">Purchase Module</Heading>
-            <Button bg={"#E77A1F"} color={"white"} cursor={"pointer"} onClick={onOpen}>+ Create New</Button>
-          </Flex>
+  const navigateToPurchaseImport = () => {
+    router.push('/bizgen/purchase/purchase-import')
+  }
 
-          {/* Create New — Quick Action Dialog */}
-          <Dialog.Root open={isOpen} onOpenChange={onClose}>
-            <Dialog.Content>
-              <Dialog.Header>
-                <Heading size="md">Create New</Heading>
-              </Dialog.Header>
+  const navigateToPurchaseInvoice = () => {
+    router.push('/bizgen/purchase/purchase-invoice')
+  }
 
-              <Dialog.Body>
-                <SimpleGrid columns={{ base: 1, md: 2 }} gap={4}>
-                  <Box
-                    borderWidth="1px"
-                    borderRadius="md"
-                    p={3}
-                    cursor="pointer"
-                    _hover={{ bg: "gray.50" }}
-                    onClick={() => {
-                      // TODO: route to create RFQ page
-                      onClose();
-                    }}
-                  >
-                    <Heading size="sm" mb={1}>Request for Quotation</Heading>
-                    <Text fontSize="sm" color="gray.600">
-                      Create a new supplier quotation request
-                    </Text>
-                  </Box>
+  const navigateToPurchaseLocal = () => {
+    router.push('/bizgen/purchase/purchase-local')
+  }
 
-                  <Box
-                    borderWidth="1px"
-                    borderRadius="md"
-                    p={3}
-                    cursor="pointer"
-                    _hover={{ bg: "gray.50" }}
-                    onClick={() => {
-                      // TODO: route to create Purchase Requisition page
-                      onClose();
-                    }}
-                  >
-                    <Heading size="sm" mb={1}>Purchase Requisition</Heading>
-                    <Text fontSize="sm" color="gray.600">
-                      Internal request before issuing PO
-                    </Text>
-                  </Box>
+  const navigateToPurchaseRequisition = () => {
+    router.push('/bizgen/purchase/purchase-requisition')
+  }
 
-                  <Box
-                    borderWidth="1px"
-                    borderRadius="md"
-                    p={3}
-                    cursor="pointer"
-                    _hover={{ bg: "gray.50" }}
-                    onClick={() => {
-                      // TODO: route to create Local PO page
-                      onClose();
-                    }}
-                  >
-                    <Heading size="sm" mb={1}>Purchase Order — Local</Heading>
-                    <Text fontSize="sm" color="gray.600">
-                      Create PO for domestic suppliers
-                    </Text>
-                  </Box>
+  const navigateToReceivingItems = () => {
+    router.push('/bizgen/purchase/receiving-items')
+  }
 
-                  <Box
-                    borderWidth="1px"
-                    borderRadius="md"
-                    p={3}
-                    cursor="pointer"
-                    _hover={{ bg: "gray.50" }}
-                    onClick={() => {
-                      // TODO: route to create Import PO page
-                      onClose();
-                    }}
-                  >
-                    <Heading size="sm" mb={1}>Purchase Order — Import</Heading>
-                    <Text fontSize="sm" color="gray.600">
-                      Create PO with shipment & currency details
-                    </Text>
-                  </Box>
+  const navigateToRequestQuotation = () => {
+    router.push('/bizgen/purchase/request-quotation')
+  }
 
-                  <Box
-                    borderWidth="1px"
-                    borderRadius="md"
-                    p={3}
-                    cursor="pointer"
-                    _hover={{ bg: "gray.50" }}
-                    onClick={() => {
-                      // TODO: route to create Receiving / GR page
-                      onClose();
-                    }}
-                  >
-                    <Heading size="sm" mb={1}>Receiving Items / GR</Heading>
-                    <Text fontSize="sm" color="gray.600">
-                      Record item receipt to warehouse
-                    </Text>
-                  </Box>
+  return (
+    <SidebarWithHeader username="kevin">
+      {/* Heading and Create Button */}
+      <Flex gap={2} display={"flex"} mb={"6"} mt={"2"} alignItems={"center"}>
+        <Heading flex="1">Purchase Module</Heading>
+        
+        {/* Create New — Quick Action Dialog */}
+        <Dialog.Root>
+          {/* Trigger Dialog */}
+          <Dialog.Trigger asChild>
+            <Button variant="outline" size="sm" bg={"#E77A1F"} color={"white"} cursor={"pointer"}>+ Create New</Button>
+          </Dialog.Trigger>
+          {/* Dialog Content */}
+          <Portal>
+            <Dialog.Backdrop/>
+            <Dialog.Positioner>
+              <Dialog.Content>
+                {/* Dialog Header */}
+                <Dialog.Header>
+                  <Heading size="md">Create New</Heading>
+                </Dialog.Header>
 
-                  <Box
-                    borderWidth="1px"
-                    borderRadius="md"
-                    p={3}
-                    cursor="pointer"
-                    _hover={{ bg: "gray.50" }}
-                    onClick={() => {
-                      // TODO: route to create Purchase Invoice page
-                      onClose();
-                    }}
-                  >
-                    <Heading size="sm" mb={1}>Purchase Invoice</Heading>
-                    <Text fontSize="sm" color="gray.600">
-                      Register supplier billing document
-                    </Text>
-                  </Box>
-                </SimpleGrid>
-              </Dialog.Body>
+                {/* Dialog Body */}
+                <Dialog.Body>
+                  <SimpleGrid columns={{ base: 1, md: 2 }} gap={4}>
+                    {/* Request Quotation Card */}
+                    <Card.Root _hover={{ bg: "gray.50" }} cursor="pointer" onClick={navigateToRequestQuotation}>
+                      <Card.Body>
+                        <Heading size="sm" mb={1}>Request for Quotation</Heading>
+                        <Text fontSize="sm" color="gray.600" onClick={() => {}}>Create a new supplier quotation request</Text>
+                      </Card.Body>
+                    </Card.Root>
 
-              <Dialog.Footer>
-                <Button variant="outline" onClick={onClose}>
-                  Close
-                </Button>
-              </Dialog.Footer>
+                    {/* Purchase Requisition Card */}
+                    <Card.Root _hover={{ bg: "gray.50" }} cursor="pointer" onClick={navigateToPurchaseRequisition}>
+                      <Card.Body>
+                        <Heading size="sm" mb={1}>Purchase Requisition</Heading>
+                        <Text fontSize="sm" color="gray.600">Internal request before issuing PO</Text>
+                      </Card.Body>
+                    </Card.Root>
 
-              <Dialog.CloseTrigger />
-            </Dialog.Content>
-          </Dialog.Root>
+                    {/* Purchase Local Card */}
+                    <Card.Root _hover={{ bg: "gray.50" }} cursor="pointer" onClick={navigateToPurchaseLocal}>
+                      <Card.Body>
+                        <Heading size="sm" mb={1}>Purchase Order — Local</Heading>
+                        <Text fontSize="sm" color="gray.600">Create PO for domestic suppliers</Text>
+                      </Card.Body>
+                    </Card.Root>
 
-          {/* Cards grid — lighter, less compact */}
-          <Grid
+                    {/* Purchase Import Card */}
+                    <Card.Root _hover={{ bg: "gray.50" }} cursor="pointer" onClick={navigateToPurchaseImport}>
+                      <Card.Body>
+                        <Heading size="sm" mb={1}>Purchase Order — Import</Heading>
+                        <Text fontSize="sm" color="gray.600">Create PO with shipment & currency details</Text>
+                      </Card.Body>
+                    </Card.Root>
+
+                    {/* Receiving Items Card */}
+                    <Card.Root _hover={{ bg: "gray.50" }} cursor="pointer" onClick={navigateToReceivingItems}>
+                      <Card.Body>
+                        <Heading size="sm" mb={1}>Receiving Items / GR</Heading>
+                        <Text fontSize="sm" color="gray.600">Record item receipt to warehouse</Text>
+                      </Card.Body>
+                    </Card.Root>
+
+                    {/* Receiving Items Card */}
+                    <Card.Root _hover={{ bg: "gray.50" }} cursor="pointer" onClick={navigateToPurchaseInvoice}>
+                      <Card.Body>
+                        <Heading size="sm" mb={1}>Purchase Invoice</Heading>
+                        <Text fontSize="sm" color="gray.600">Register supplier billing document</Text>
+                      </Card.Body>
+                    </Card.Root>
+                  </SimpleGrid>
+                </Dialog.Body>
+
+                {/* Dialog Close Trtigger */}
+                <Dialog.CloseTrigger asChild>
+                  <CloseButton size="sm" />
+                </Dialog.CloseTrigger>
+              </Dialog.Content>
+            </Dialog.Positioner>      
+          </Portal>
+        </Dialog.Root>
+      </Flex>
+
+      {/* Data Area */}
+      <SimpleGrid gap={6} columns={{ base: 1, lg: 2 }}>
+        {/* Request for Quotation */}
+        <Card.Root>
+          <Card.Body>
+              <Flex>
+                <Heading size="md" flex="1">Request for Quotation</Heading>
+                <Text fontSize="sm" cursor="pointer">See All</Text>
+              </Flex>
+          </Card.Body>
+        </Card.Root>
+
+        {/* Purchase Requisition */}
+        <Card.Root>
+          <Card.Body>
+              <Flex>
+                <Heading size="md" flex="1">Purchase Requisition</Heading>
+                <Text fontSize="sm" cursor="pointer">See All</Text>
+              </Flex>
+          </Card.Body>
+        </Card.Root>
+
+        {/* Purchase Local */}
+        <Card.Root>
+          <Card.Body>
+              <Flex>
+                <Heading size="md" flex="1">Purchase Order Local</Heading>
+                <Text fontSize="sm" cursor="pointer">See All</Text>
+              </Flex>
+          </Card.Body>
+        </Card.Root>
+
+        {/* Purchase Import */}
+        <Card.Root>
+          <Card.Body>
+              <Flex>
+                <Heading size="md" flex="1">Purchase Order Import</Heading>
+                <Text fontSize="sm" cursor="pointer">See All</Text>
+              </Flex>
+          </Card.Body>
+        </Card.Root>
+
+        {/* Receiving Items */}
+        <Card.Root>
+          <Card.Body>
+              <Flex>
+                <Heading size="md" flex="1">Receiving Items</Heading>
+                <Text fontSize="sm" cursor="pointer">See All</Text>
+              </Flex>
+          </Card.Body>
+        </Card.Root>
+
+        {/* Purchase Invoice */}
+        <Card.Root>
+          <Card.Body>
+              <Flex>
+                <Heading size="md" flex="1">Purchase Invoice</Heading>
+                <Text fontSize="sm" cursor="pointer">See All</Text>
+              </Flex>
+          </Card.Body>
+        </Card.Root>
+
+      </SimpleGrid>
+
+          {/* <Grid
             gap={6}
             gridTemplateColumns={{ base: "1fr", lg: "1fr 1fr" }}
           >
 
-            {/* Request for Quotation */}
+            
             <Card.Root>
               <Card.Body>
                 <Flex mb="4" alignItems="center">
                   <Heading size="md" flex="1">Request for Quotation</Heading>
                   <Text fontSize="sm" cursor="pointer">See All</Text>
                 </Flex>
-
-                {/* Last 3 records preview */}
                 <Stack gap="3">
                   <Box borderWidth="1px" borderRadius="md" px="3" py="2">
                     <Flex justify="space-between" align="center">
@@ -201,7 +226,6 @@ export default function Purchase (){
               </Card.Body>
             </Card.Root>
 
-            {/* Purchase Requisition */}
             <Card.Root>
               <Card.Body>
                 <Flex mb="4" alignItems="center">
@@ -243,7 +267,6 @@ export default function Purchase (){
               </Card.Body>
             </Card.Root>
 
-            {/* Purchase Order Local */}
             <Card.Root>
               <Card.Body>
                 <Flex mb="4" alignItems="center">
@@ -285,7 +308,6 @@ export default function Purchase (){
               </Card.Body>
             </Card.Root>
 
-            {/* Purchase Order Import */}
             <Card.Root>
               <Card.Body>
                 <Flex mb="4" alignItems="center">
@@ -327,7 +349,6 @@ export default function Purchase (){
               </Card.Body>
             </Card.Root>
 
-            {/* Receiving Items */}
             <Card.Root>
               <Card.Body>
                 <Flex mb="4" alignItems="center">
@@ -369,7 +390,6 @@ export default function Purchase (){
               </Card.Body>
             </Card.Root>
 
-            {/* Purchase Invoice */}
             <Card.Root>
               <Card.Body>
                 <Flex mb="4" alignItems="center">
@@ -411,7 +431,7 @@ export default function Purchase (){
               </Card.Body>
             </Card.Root>
 
-          </Grid>
+          </Grid> */}
         </SidebarWithHeader>
     );
 }

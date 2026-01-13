@@ -1,24 +1,10 @@
-
-
 "use client";
 
 import React, { useState } from "react";
-import {
-  Box,
-  Heading,
-  Stack,
-  SimpleGrid,
-  Field,
-  Input,
-  Select,
-  Textarea,
-  Button,
-  HStack,
-  Separator,
-} from "@chakra-ui/react";
+import { Heading, SimpleGrid, Field, Input, Textarea, Button, Flex, Text, Card } from "@chakra-ui/react";
+import SidebarWithHeader from "@/components/ui/SidebarWithHeader";
 
 export default function CreateStockOutPage() {
-//   const toast = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -28,32 +14,18 @@ export default function CreateStockOutPage() {
     // TODO: wire to API
     setTimeout(() => {
       setIsSubmitting(false);
-    //   toast({
-    //     title: "Stock Out recorded",
-    //     description: "The stock out transaction has been saved.",
-    //     status: "success",
-    //   });
     }, 800);
   };
 
   return (
-    <Box px={{ base: 4, md: 8 }} py={6}>
-      <Heading size="lg" mb={2}>
-        Create Stock Out
-      </Heading>
-      <Box color="gray.500" mb={6}>
-        Record goods leaving warehouse (sales delivery, transfer, sample, damaged, etc.)
-      </Box>
+    <SidebarWithHeader username="====">
+      <Flex flexDir={"column"}>
+        <Heading mb={1}>Create Stock Out</Heading>
+        <Text color="gray.500" fontSize={"sm"}>Record goods leaving warehouse (sales delivery, transfer, sample, damaged, etc.)</Text>
+      </Flex>
 
-      <Box
-        as="form"
-        onSubmit={handleSubmit}
-        borderWidth="1px"
-        borderRadius="lg"
-        p={{ base: 4, md: 6 }}
-        bg="white"
-      >
-        <Stack gap={6}>
+      <Card.Root mt={5}>
+        <Card.Body>
           <SimpleGrid columns={{ base: 1, md: 2 }} gap={6}>
             <Field.Root >
               <Field.Label>Stock Out Type</Field.Label>
@@ -102,27 +74,19 @@ export default function CreateStockOutPage() {
             </Field.Root>
           </SimpleGrid>
 
-          <Separator />
-
-          <Field.Root>
+          <Field.Root mt={4}>
             <Field.Label>Reason / Notes</Field.Label>
             <Textarea rows={4} placeholder="Describe reason for stock out (optional)" />
           </Field.Root>
 
-          <HStack justify="flex-end" gap={3}>
-            <Button variant="outline" type="button">
-              Cancel
-            </Button>
-            <Button
-              colorScheme="blue"
-              type="submit"
-            //   isLoading={isSubmitting}
-            >
-              Save Stock Out
-            </Button>
-          </HStack>
-        </Stack>
-      </Box>
-    </Box>
+          <Flex justify="flex-end" mt={6} gap={6}>
+              <Button variant="outline" type="button">Cancel</Button>
+            <Button type="submit">Save Stock Out</Button>
+
+          </Flex>
+        </Card.Body>
+      </Card.Root>
+    </SidebarWithHeader>
+    
   );
 }

@@ -1,26 +1,10 @@
-
-
 "use client";
 
-import {
-  Box,
-  Button,
-  Card,
-  Flex,
-  Field,
-  HStack,
-  Heading,
-  Input,
-  NumberInput,
-  Select,
-  Stack,
-  Textarea,
-} from "@chakra-ui/react";
+import SidebarWithHeader from "@/components/ui/SidebarWithHeader";
+import {Button, Card, Flex, Field, Heading, Input, NumberInput, Textarea, SimpleGrid} from "@chakra-ui/react";
 import { useState } from "react";
 
 export default function CreateSampleStockOutPage() {
-//   const toast = useToast();
-
   const [form, setForm] = useState({
     referenceNo: "",
     lotNo: "",
@@ -38,124 +22,66 @@ export default function CreateSampleStockOutPage() {
 
   const handleSubmit = () => {
     // TODO: connect to API later
-    // toast({
-    //   title: "Sample stock-out recorded",
-    //   description:
-    //     "Sample item has been deducted from warehouse stock successfully.",
-    //   status: "success",
-    // });
   };
 
   return (
-    <Flex justify="center" px={{ base: 4, md: 8 }} py={6}>
-      <Card.Root maxW="960px" w="100%">
+    <SidebarWithHeader username="---">
+      <Card.Root>
         <Card.Header>
           <Heading size="md">Create Stock Out — Sample</Heading>
         </Card.Header>
 
         <Card.Body>
-          <Stack gap={6}>
-            <HStack gap={4}>
-              <Field.Root>
-                <Field.Label>Reference No</Field.Label>
-                <Input
-                  placeholder="Auto / Optional"
-                  value={form.referenceNo}
-                  onChange={(e) =>
-                    handleChange("referenceNo", e.target.value)
-                  }
-                />
-              </Field.Root>
-
-              <Field.Root >
-                <Field.Label>LOT / Batch No</Field.Label>
-                <Input
-                  placeholder="LOT-2026-001"
-                  value={form.lotNo}
-                  onChange={(e) => handleChange("lotNo", e.target.value)}
-                />
-              </Field.Root>
-            </HStack>
+          <SimpleGrid columns={{base: 1, md: 2}} gap={5}>
+            <Field.Root>
+              <Field.Label>Reference No</Field.Label>
+              <Input placeholder="Auto / Optional" value={form.referenceNo} onChange={(e) => handleChange("referenceNo", e.target.value)}/>
+            </Field.Root>
 
             <Field.Root >
-              <Field.Label>Product Name</Field.Label>
-              <Input
-                placeholder="Type / select product"
-                value={form.productName}
-                onChange={(e) => handleChange("productName", e.target.value)}
-              />
+              <Field.Label>LOT / Batch No</Field.Label>
+              <Input placeholder="LOT-2026-001" value={form.lotNo} onChange={(e) => handleChange("lotNo", e.target.value)}/>
             </Field.Root>
+          </SimpleGrid>
 
-            <HStack gap={4}>
-              <Field.Root >
-                <Field.Label>Quantity</Field.Label>
-                {/* <NumberInput
-                  min={1}
-                  value={form.qty}
-                  onChange={(_, v) => handleChange("qty", v)}
-                >
-                  <NumberInputField />
-                </NumberInput> */}
-              </Field.Root>
+          <Field.Root mt={4}>
+            <Field.Label>Product Name</Field.Label>
+            <Input placeholder="Type / select product" value={form.productName} onChange={(e) => handleChange("productName", e.target.value)}/>
+          </Field.Root>
 
-              <Field.Root >
-                <Field.Label>Unit</Field.Label>
-                {/* <Select
-                  value={form.unit}
-                  onChange={(e) => handleChange("unit", e.target.value)}
-                >
-                  <option value="PCS">PCS</option>
-                  <option value="BOX">BOX</option>
-                  <option value="PACK">PACK</option>
-                </Select> */}
-              </Field.Root>
-            </HStack>
-
-            <HStack gap={4}>
-              <Field.Root >
-                <Field.Label>Requested By</Field.Label>
-                <Input
-                  placeholder="Staff / Department"
-                  value={form.requestedBy}
-                  onChange={(e) => handleChange("requestedBy", e.target.value)}
-                />
-              </Field.Root>
-
-              <Field.Root >
-                <Field.Label>Purpose of Sample</Field.Label>
-                {/* <Select
-                  placeholder="Select purpose"
-                  value={form.purpose}
-                  onChange={(e) => handleChange("purpose", e.target.value)}
-                >
-                  <option value="marketing">Marketing / Demo</option>
-                  <option value="qc-test">QC Test</option>
-                  <option value="customer-evaluation">
-                    Customer Evaluation
-                  </option>
-                  <option value="internal-use">Internal Use</option>
-                </Select> */}
-              </Field.Root>
-            </HStack>
-
+          <SimpleGrid columns={{base: 1, md: 2}} gap={5} mt={4}>
             <Field.Root>
-              <Field.Label>Notes</Field.Label>
-              <Textarea
-                placeholder="Additional remarks (optional)"
-                value={form.notes}
-                onChange={(e) => handleChange("notes", e.target.value)}
-              />
+              <Field.Label>Quantity</Field.Label>
+              <NumberInput.Root>
+                <NumberInput.Control/>
+                <NumberInput.Input/>
+              </NumberInput.Root>
             </Field.Root>
+            <Field.Root>
+              <Field.Label>Unit</Field.Label>
+              {/* Select */}
+            </Field.Root>
+            <Field.Root>
+              <Field.Label>Requested By</Field.Label>
+              <Input placeholder="Staff / Department" value={form.requestedBy} onChange={(e) => handleChange("requestedBy", e.target.value)}/>
+            </Field.Root>
+            <Field.Root >
+              <Field.Label>Purpose of Sample</Field.Label>
+              {/* select */}
+            </Field.Root>
+          </SimpleGrid>
 
-            <Flex justify="flex-end" gap={3}>
-              <Button variant="outline">Cancel</Button>
-              <Button colorScheme="teal" onClick={handleSubmit}>
-                Save Sample Stock Out
-              </Button>
-            </Flex>
-          </Stack>
+          <Field.Root mt={4}>
+            <Field.Label>Notes</Field.Label>
+            <Textarea placeholder="Additional remarks (optional)" value={form.notes} onChange={(e) => handleChange("notes", e.target.value)}/>
+          </Field.Root>
+
+          <Flex justify="flex-end" gap={3} mt={5}>
+            <Button variant="outline">Cancel</Button>
+            <Button colorScheme="teal" onClick={handleSubmit}>Save Sample Stock Out</Button>
+          </Flex>
         </Card.Body>
       </Card.Root>
-    </Flex>
+    </SidebarWithHeader>
   );
 }

@@ -38,7 +38,7 @@ export default function Login() {
                         
                         {/* Logo and Welcome Text */}
                         <Flex direction="column" align="center" textAlign="center" mb={8}>
-                            <Image src="/assets/bizgen-logo.png" alt="BizGen Logo" w="72px" mb={2}/>
+                            <Image src="/assets/logo.png" alt="BizGen Logo" w="72px" mb={2}/>
                             <Heading size="lg" color="#1E1E1E">Welcome back 👋</Heading>
                             <Text color="gray.600" fontSize="sm">Sign in to continue managing your trading operations</Text>
                         </Flex>

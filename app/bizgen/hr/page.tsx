@@ -1,36 +1,17 @@
 "use client";
 
 import SidebarWithHeader from "@/components/ui/SidebarWithHeader";
-import {
-  Box,
-  Flex,
-  Heading,
-  SimpleGrid,
-  Stat,
-  Card,
-  Text,
-  Avatar,
-  HStack,
-  Button,
-  Badge,
-} from "@chakra-ui/react";
+import { Box, Flex, Heading, SimpleGrid, Stat, Card, Text, HStack, Button, Badge, Separator } from "@chakra-ui/react";
 
 export default function HR() {
   return (
     <SidebarWithHeader username="kevin">
-      <Flex direction="column" gap={6} p={4}>
-        {/* Header */}
-        <Flex justify="space-between" align="center">
-          <Box>
-            <Heading size="lg">HR Dashboard</Heading>
-            <Text fontSize="sm" color="gray.500">
-              Lightweight HR overview for team & compliance
-            </Text>
-          </Box>
-        </Flex>
+      <Flex direction="column" mb={4}>
+        <Heading size="lg" mb={1}>HR Dashboard</Heading>
+        <Text fontSize="sm" color="gray.500">Lightweight HR overview for team & compliance</Text>
+      </Flex>
 
-        {/* Summary Cards */}
-        <SimpleGrid columns={{ base: 1, md: 3 }} gap={4}>
+      <SimpleGrid columns={{ base: 1, md: 3 }} gap={4} mb={6}>
           <Card.Root>
             <Card.Body>
               <Stat.Root>
@@ -62,16 +43,13 @@ export default function HR() {
           </Card.Root>
         </SimpleGrid>
 
-        {/* Two Column Section */}
-        <SimpleGrid columns={{ base: 1, lg: 2 }} gap={4}>
+<SimpleGrid columns={{ base: 1, lg: 2 }} gap={4}>
           {/* Employee Directory Preview */}
           <Card.Root>
             <Card.Header>
               <Flex justify="space-between" align="center">
                 <Heading size="sm">Employee Directory</Heading>
-                <Button size="sm" bg={"transparent"} borderColor={"#E77A1F"} color={"#E77A1F"} cursor={"pointer"}>
-                  See all
-                </Button>
+                <Button size="sm" bg={"transparent"} borderColor={"#E77A1F"} color={"#E77A1F"} cursor={"pointer"}>See all</Button>
               </Flex>
             </Card.Header>
             <Card.Body>
@@ -131,33 +109,23 @@ export default function HR() {
               <Flex direction="column" gap={4}>
                 <Box>
                   <Text fontWeight="medium">Expiring Documents</Text>
-                  <Text fontSize="sm" color="gray.500">
-                    Driver License — 2 expiring soon
-                  </Text>
-                  <Text fontSize="sm" color="gray.500">
-                    ID & Employment Docs — 1 pending renewal
-                  </Text>
+                  <Text fontSize="sm" color="gray.500">Driver License — 2 expiring soon</Text>
+                  <Text fontSize="sm" color="gray.500">ID & Employment Docs — 1 pending renewal</Text>
                 </Box>
 
-                {/* <Divider /> */}
+                <Separator />
 
                 <Box>
                   <Text fontWeight="medium">Recent HR Updates</Text>
-                  <Text fontSize="sm" color="gray.600">
-                    • New employee added to Operations team
-                  </Text>
-                  <Text fontSize="sm" color="gray.600">
-                    • Warehouse staff contract updated
-                  </Text>
-                  <Text fontSize="sm" color="gray.600">
-                    • Driver license verification completed
-                  </Text>
+                  <Text fontSize="sm" color="gray.600">• New employee added to Operations team</Text>
+                  <Text fontSize="sm" color="gray.600">• Warehouse staff contract updated</Text>
+                  <Text fontSize="sm" color="gray.600">• Driver license verification completed</Text>
                 </Box>
               </Flex>
             </Card.Body>
           </Card.Root>
         </SimpleGrid>
-      </Flex>
+     
     </SidebarWithHeader>
   );
 }

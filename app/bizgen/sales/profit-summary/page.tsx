@@ -1,24 +1,7 @@
-
-
 "use client";
 
-import {
-  Box,
-  Button,
-  Flex,
-  Heading,
-  HStack,
-  Input,
-  Select,
-  SimpleGrid,
-  Stack,
-  Text,
-  Textarea,
-  Separator,
-  NumberInput,
-  Badge,
-  Card,
-} from "@chakra-ui/react";
+import SidebarWithHeader from "@/components/ui/SidebarWithHeader";
+import {Button, Flex, Heading, Input, SimpleGrid, Text, Separator, NumberInput, Badge, Card, Field} from "@chakra-ui/react";
 import { useState } from "react";
 
 type LineItem = {
@@ -90,7 +73,7 @@ export default function CreateProfitSummaryPage() {
   };
 
   return (
-    <Box p={6}>
+    <SidebarWithHeader username="---">
       <Flex justify="space-between" align="center" mb={4}>
         <Heading size="lg">Create Profit Summary</Heading>
         <Badge colorScheme="blue">Sales &amp; Costing</Badge>
@@ -102,37 +85,21 @@ export default function CreateProfitSummaryPage() {
         </Card.Header>
         <Card.Body>
           <SimpleGrid columns={{ base: 1, md: 2 }} gap={4}>
-            <Box>
-              <Text mb={1}>Reference No</Text>
-              <Input
-                placeholder="PS-2026-001"
-                value={referenceNo}
-                onChange={(e) => setReferenceNo(e.target.value)}
-              />
-            </Box>
-
-            <Box>
-              <Text mb={1}>Job Order / Booking No</Text>
-              <Input
-                placeholder="JO-2026-0012"
-                value={jobOrderNo}
-                onChange={(e) => setJobOrderNo(e.target.value)}
-              />
-            </Box>
-
-            <Box>
-              <Text mb={1}>Customer</Text>
-              <Input
-                placeholder="Customer Name"
-                value={customer}
-                onChange={(e) => setCustomer(e.target.value)}
-              />
-            </Box>
-
-            <HStack>
-              <Box flex="1">
-                <Text mb={1}>Currency</Text>
-                {/* <Select
+            <Field.Root mb={2}>
+              <Field.Label>Reference No</Field.Label>
+              <Input placeholder="PS-2026-001" value={referenceNo} onChange={(e) => setReferenceNo(e.target.value)}/>
+            </Field.Root>
+            <Field.Root mb={2}>
+              <Field.Label>Job Order / Booking No</Field.Label>
+              <Input placeholder="JO-2026-0012" value={jobOrderNo} onChange={(e) => setJobOrderNo(e.target.value)}/>
+            </Field.Root>
+            <Field.Root mb={2}>
+              <Field.Label>Customer</Field.Label>
+              <Input placeholder="Customer Name" value={customer} onChange={(e) => setCustomer(e.target.value)}/>
+            </Field.Root>
+            <Field.Root mb={2}>
+              <Field.Label>Currency</Field.Label>
+              {/* <Select
                   value={currency}
                   onChange={(e) => setCurrency(e.target.value)}
                 >
@@ -140,165 +107,98 @@ export default function CreateProfitSummaryPage() {
                   <option value="EUR">EUR</option>
                   <option value="IDR">IDR</option>
                 </Select> */}
-              </Box>
-
-              <Box flex="1">
-                <Text mb={1}>Exchange Rate to IDR</Text>
-                {/* <NumberInput
-                  value={exchangeRate}
-                  min={1}
-                  onChange={(_, v) => setExchangeRate(v || 0)}
-                >
-                  <NumberInputField />
-                  <NumberInputStepper>
-                    <NumberIncrementStepper />
-                    <NumberDecrementStepper />
-                  </NumberInputStepper>
-                </NumberInput> */}
-              </Box>
-            </HStack>
+            </Field.Root>
+            <Field.Root mb={2}>
+              <Field.Label>Exchange Rate to IDR</Field.Label>
+              <NumberInput.Root>
+                <NumberInput.Control/>
+                <NumberInput.Input/>
+              </NumberInput.Root>
+            </Field.Root>
           </SimpleGrid>
         </Card.Body>
       </Card.Root>
 
-      <Stack gap={6}>
-        <Card.Root>
-          <Card.Header>
-            <Flex justify="space-between" align="center">
-              <Heading size="sm">Revenue</Heading>
-              <Button size="sm" onClick={addRevenue}>
-                + Add Revenue Line
-              </Button>
+      <Card.Root>
+        <Card.Header>
+          <Flex justify="space-between" align="center">
+            <Heading size="sm">Revenue</Heading>
+            <Button size="sm" onClick={addRevenue}>+ Add Revenue Line</Button>
+          </Flex>
+        </Card.Header>
+        <Card.Body>
+          {revenue.map((item) => (
+            <Flex key={item.id} gap={3}>
+              <Input placeholder="Description" value={item.label} onChange={(e) => updateItem(revenue, setRevenue, item.id, "label", e.target.value)}/>
+              {/* Harusnya selection untuk currency */}
+              <NumberInput.Root>
+                <NumberInput.Control/>
+                <NumberInput.Input/>
+              </NumberInput.Root>
             </Flex>
-          </Card.Header>
-          <Card.Body>
-            <Stack gap={3}>
-              {revenue.map((item) => (
-                <Flex key={item.id} gap={3}>
-                  <Input
-                    placeholder="Description"
-                    value={item.label}
-                    onChange={(e) =>
-                      updateItem(revenue, setRevenue, item.id, "label", e.target.value)
-                    }
-                  />
-                  {/* <Select
-                    w="110px"
-                    value={item.currency}
-                    onChange={(e) =>
-                      updateItem(revenue, setRevenue, item.id, "currency", e.target.value)
-                    }
-                  >
-                    <option value="USD">USD</option>
-                    <option value="EUR">EUR</option>
-                    <option value="IDR">IDR</option>
-                  </Select>
-                  <NumberInput
-                    flex="1"
-                    value={item.amount}
-                    min={0}
-                    onChange={(_, v) =>
-                      updateItem(revenue, setRevenue, item.id, "amount", v || 0)
-                    }
-                  >
-                    <NumberInputField />
-                  </NumberInput> */}
-                </Flex>
-              ))}
-              <Separator />
-              <Flex justify="space-between">
-                <Text fontWeight="semibold">Revenue Total ({currency})</Text>
-                <Text fontWeight="bold">{revenueTotal.toLocaleString()}</Text>
-              </Flex>
-            </Stack>
-          </Card.Body>
-        </Card.Root>
+          ))}
+          <Separator />
+          <Flex justify="space-between">
+            <Text fontWeight="semibold">Revenue Total ({currency})</Text>
+            <Text fontWeight="bold">{revenueTotal.toLocaleString()}</Text>
+          </Flex>
+        </Card.Body>
+      </Card.Root>
 
-        <Card.Root>
-          <Card.Header>
-            <Flex justify="space-between" align="center">
-              <Heading size="sm">Costs / Expenses</Heading>
-              <Button size="sm" onClick={addCost}>
-                + Add Cost Line
-              </Button>
+       <Card.Root mt={5}>
+        <Card.Header>
+          <Flex justify="space-between" align="center">
+            <Heading size="sm">Costs / Expenses</Heading>
+            <Button size="sm" onClick={addCost}>+ Add Cost Line</Button>
+          </Flex>
+        </Card.Header>
+        <Card.Body>
+          {costs.map((item) => (
+            <Flex key={item.id} gap={3}>
+              <Input placeholder="Description" value={item.label} onChange={(e) => updateItem(costs, setCosts, item.id, "label", e.target.value)}/>
+              {/* Harusnya selection untuk currency */}
+              <NumberInput.Root>
+                <NumberInput.Control/>
+                <NumberInput.Input/>
+              </NumberInput.Root>
             </Flex>
-          </Card.Header>
-          <Card.Body>
-            <Stack gap={3}>
-              {costs.map((item) => (
-                <Flex key={item.id} gap={3}>
-                  <Input
-                    placeholder="Description"
-                    value={item.label}
-                    onChange={(e) =>
-                      updateItem(costs, setCosts, item.id, "label", e.target.value)
-                    }
-                  />
-                  {/* <Select
-                    w="110px"
-                    value={item.currency}
-                    onChange={(e) =>
-                      updateItem(costs, setCosts, item.id, "currency", e.target.value)
-                    }
-                  >
-                    <option value="USD">USD</option>
-                    <option value="EUR">EUR</option>
-                    <option value="IDR">IDR</option>
-                  </Select> */}
-                  {/* <NumberInput
-                    flex="1"
-                    value={item.amount}
-                    min={0}
-                    onChange={(_, v) =>
-                      updateItem(costs, setCosts, item.id, "amount", v || 0)
-                    }
-                  >
-                    <NumberInputField />
-                  </NumberInput> */}
-                </Flex>
-              ))}
-              <Separator />
-              <Flex justify="space-between">
-                <Text fontWeight="semibold">Cost Total ({currency})</Text>
-                <Text fontWeight="bold">{costTotal.toLocaleString()}</Text>
-              </Flex>
-            </Stack>
-          </Card.Body>
-        </Card.Root>
+          ))}
+          <Separator />
+          <Flex justify="space-between">
+            <Text fontWeight="semibold">Cost Total ({currency})</Text>
+            <Text fontWeight="bold">{costTotal.toLocaleString()}</Text>
+          </Flex>
+        </Card.Body>
+       </Card.Root>
 
-        <Card.Root>
-          <Card.Header>
-            <Heading size="sm">Profit Summary Result</Heading>
-          </Card.Header>
-          <Card.Body>
-            <Stack gap={2}>
-              <Flex justify="space-between">
-                <Text>Gross Profit ({currency})</Text>
-                <Text fontWeight="bold">
-                  {grossProfit.toLocaleString(undefined, {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  })}
-                </Text>
-              </Flex>
+       <Card.Root mt={5}>
+        <Card.Header>
+          <Heading size="sm">Profit Summary Result</Heading>
+        </Card.Header>
+        <Card.Body>
+          <Flex justify="space-between">
+            <Text>Gross Profit ({currency})</Text>
+            <Text fontWeight="bold">
+              {grossProfit.toLocaleString(undefined, {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              })}
+            </Text>
+          </Flex>
 
-              <Flex justify="space-between">
-                <Text>Gross Profit (IDR)</Text>
-                <Text fontWeight="bold">
-                  {grossProfitIdr.toLocaleString()}
-                </Text>
-              </Flex>
-            </Stack>
-          </Card.Body>
-        </Card.Root>
-      </Stack>
+          <Flex justify="space-between">
+            <Text>Gross Profit (IDR)</Text>
+            <Text fontWeight="bold">{grossProfitIdr.toLocaleString()}</Text>
+          </Flex>
+        </Card.Body>
+      </Card.Root>
 
       <Flex justify="flex-end" mt={8} gap={3}>
         <Button variant="outline">Cancel</Button>
-        <Button colorScheme="green" onClick={handleSubmit}>
-          Save Profit Summary
-        </Button>
+        <Button colorScheme="green" onClick={handleSubmit}>Save Profit Summary</Button>
       </Flex>
-    </Box>
+
+    </SidebarWithHeader>
+    
   );
 }

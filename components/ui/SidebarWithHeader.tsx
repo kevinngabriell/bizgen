@@ -71,7 +71,7 @@ const SidebarContent = ({ onClose, ...rest }: SidebarProps) => {
             {...rest}
         >
             <Flex h="20" alignItems="center" mx="8" justifyContent="space-between"> 
-                <Image src={"logo.png"} w={"30%"} />
+                <Image src={"/assets/logo.png"} w={"30%"} />
                 <CloseButton display={{ base: 'flex', md: 'none' }} onClick={onClose} />
             </Flex>
 
@@ -163,6 +163,7 @@ const MobileNav = ({ onOpen, username, daysToExpire, ...rest }: MobileProps) => 
               {/* Notification menu — open on hover */}
               <Box
                 position="relative"
+                zIndex="dropdown"
                 onMouseEnter={onOpenNotif}
                 onMouseLeave={onCloseNotif}
               >
@@ -192,7 +193,7 @@ const MobileNav = ({ onOpen, username, daysToExpire, ...rest }: MobileProps) => 
                     3
                   </Box>
 
-                  <MenuContent minW="280px">
+                  <MenuContent minW="280px" zIndex="popover" boxShadow="lg">
                     <MenuItem value="" fontWeight="semibold">Notifications</MenuItem>
                     <MenuSeparator />
                     <MenuItem value="">🔔 Unread notification 1</MenuItem>
@@ -209,15 +210,17 @@ const MobileNav = ({ onOpen, username, daysToExpire, ...rest }: MobileProps) => 
               </Box>
                 <Flex alignItems="center">
                   <HStack>
-                    <VStack display={{base: 'none', md: 'flex'}}
-                      alignItems="flex-start" wordSpacing="1px"
+                    <VStack
+                      display={{ base: 'none', md: 'flex' }}
+                      alignItems="flex-start"
                       ml="2"
+                      // spacing="1"
                     >
                       <Text fontSize="sm" onClick={handleProfile}>{username}</Text>
                       {typeof daysToExpire === "number" && (
                         <Box
                           px="2"
-                          py="1"
+                          py="0.5"
                           borderRadius="md"
                           bg={daysToExpire <= 2 ? "red.500" : daysToExpire <= 7 ? "orange.400" : "gray.500"}
                           color="white"

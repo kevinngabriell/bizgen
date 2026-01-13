@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Box, Button, Card, Flex, Grid, GridItem, HStack, Heading, IconButton, Input, Stack, Text, Textarea, SimpleGrid, Separator } from '@chakra-ui/react';
+import { Box, Button, Card, Flex, HStack, Heading, IconButton, Input, Stack, Text, Textarea, SimpleGrid, Separator } from '@chakra-ui/react';
 import SidebarWithHeader from '@/components/ui/SidebarWithHeader';
 // import { AddIcon, DeleteIcon } from '@chakra-ui/icons';
 
