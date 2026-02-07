@@ -1,19 +1,44 @@
 "use client";
 
 import UpgradeRequiredDialog from "@/components/dialog/UpgradeRequiredDialog";
+import Loading from "@/components/loading";
 import SidebarWithHeader from "@/components/ui/SidebarWithHeader";
+import { checkAuthOrRedirect, DecodedAuthToken, getAuthInfo } from "@/lib/auth/auth";
+import { getLang } from "@/lib/i18n";
 import { Avatar, Badge, Box, Button, Card, Flex, Heading, HStack, SimpleGrid, Stack, Text } from "@chakra-ui/react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 export default function Settings (){
+    const [auth, setAuth] = useState<DecodedAuthToken | null>(null);
+    const [loading, setLoading] = useState(false);
+
+    const t = getLang("en"); 
+    
+    const init = async () => {
+        setLoading(true);
+
+        const valid = await checkAuthOrRedirect();
+        if(!valid) return;
+        
+        const info = getAuthInfo();
+        setAuth(info);
+
+        setLoading(false);
+    }
+
+    useEffect(() => {
+        init();
+    }, []);
+
+    if(loading) return <Loading/>
+    
     return (
-        <SidebarWithHeader username="kevin">
+        <SidebarWithHeader username={auth?.username ?? "Unknown"} daysToExpire={auth?.days_remaining ?? 0}>
             <Card.Root mb={8}>
                 <Card.Body>
                     <Flex align="center" justify="space-between" wrap="wrap" gap={4}>
                         <HStack gap={4}>
-                            {/* <Avatar src="/assets/company-logo.png" name="Company" size="lg" /> */}
                             <Box>
                                 <Heading size="md">PT Bizgen Indonesia</Heading>
                                 <HStack gap={2} mt={1}>
@@ -26,10 +51,10 @@ export default function Settings (){
 
                         <HStack>
                             <Button bg={"transparent"} borderColor={"#E77A1F"} color={"#E77A1F"} cursor={"pointer"} onClick={() => { window.location.href = "/bizgen/settings/company"; }}>
-                                View Company Profile
+                                {t.settings_menu.view_company}
                             </Button>
                             <Button bg={"#E77A1F"} color={"white"} cursor={"pointer"} onClick={() => { window.location.href = "/bizgen/billing"; }}>
-                                Manage Subscription
+                                {t.settings_menu.manage_subscription}
                             </Button>
                         </HStack>
                     </Flex>
@@ -40,102 +65,95 @@ export default function Settings (){
 
             <SimpleGrid columns={{ base: 1, md: 2, lg: 4 }} gap="20px">
                 <SettingCard 
-                    title="Users" 
-                    description={"This menu will help you to manage your user well. Use this menu to create, search, reset, and delete user."} 
+                    title={t.settings_menu.user} 
+                    description={t.settings_menu.user_description} 
                     link={"/bizgen/settings/users"} 
                     _package={"Starter"}
-                    imageSrc="assets/group.png" 
+                    imageSrc="/assets/user.svg" 
                 />
                 <SettingCard 
-                    title="Product" 
-                    description={"This menu will help you to manage your product well. Use this menu to create, search, reset, and delete product."} 
+                    title={t.settings_menu.product} 
+                    description={t.settings_menu.product_description} 
                     link={"/bizgen/settings/product"} 
                     _package={"Starter"}
-                    imageSrc="assets/sack.png" 
+                    imageSrc="/assets/product.svg" 
                 />
                 <SettingCard 
-                    title="Customer" 
-                    description={"This menu will help you to manage your customer well. Use this menu to create, search, reset, and delete customer."} 
+                    title={t.settings_menu.customer} 
+                    description={t.settings_menu.customer_description} 
                     link={"/bizgen/settings/customer"} 
                     _package={"Starter"}
-                    imageSrc="assets/costumer.png" 
+                    imageSrc="/assets/customer.svg" 
                 />
                 <SettingCard 
-                    title="Finance" 
-                    description={"This menu will help you to manage your account code, bank account, and finance category."} 
+                    title={t.settings_menu.finance} 
+                    description={t.settings_menu.finance_description} 
                     link={"/bizgen/settings/finance"} 
                     _package={"Starter"}
-                    imageSrc="assets/budget.png" 
+                    imageSrc="/assets/deposit.svg" 
                 />
                 <SettingCard 
-                    title="Company" 
-                    description={"This menu will help you to manage your company well. Use this menu to update your company data and company target."} 
-                    link={"/bizgen/settings/company"} 
-                    _package={"Starter"}
-                    imageSrc="assets/office.png" 
-                />
-                <SettingCard 
-                    title="Supplier" 
-                    description={"This menu will help you to manage your supplier well. Use this menu to create, search, reset, and delete supplier."} 
+                    title={t.settings_menu.supplier} 
+                    description={t.settings_menu.supplier_description} 
                     link={"/bizgen/settings/supplier"} 
                     _package={"Starter"}
-                    imageSrc="assets/wholesale.png" 
+                    imageSrc="/assets/delivery.svg" 
                 />
                 <SettingCard 
-                    title="Term" 
-                    description={"This menu will help you to manage your term well. Use this menu to create, search, reset, and delete term."} 
+                    title={t.settings_menu.term} 
+                    description={t.settings_menu.term_description} 
                     link={"/bizgen/settings/term"} 
                     _package={"Starter"}
-                    imageSrc="assets/agreement.png" 
+                    imageSrc="/assets/document-folder.svg" 
                 />
                 <SettingCard 
-                    title="Origin" 
-                    description={"This menu will help you to find the origin country and the area. This menu also provide free trade area."} 
+                    title={t.settings_menu.origin} 
+                    description={t.settings_menu.origin_description} 
                     link={"/bizgen/settings/origin"} 
                     _package={"Starter"}
-                    imageSrc="assets/countries.png" 
+                    imageSrc="/assets/city.svg" 
                 />
                 <SettingCard 
-                    title="Payment" 
-                    description={"This menu will help you to manage your payment well. Use this menu to create, search, reset, and delete payment."} 
+                    title={t.settings_menu.payment} 
+                    description={t.settings_menu.payment_description} 
                     link={"/bizgen/settings/payment"} 
                     _package={"Starter"}
-                    imageSrc="assets/credit.png" 
+                    imageSrc="/assets/bank-card-one.svg" 
                 />
                 <SettingCard 
-                    title="Currency" 
-                    description={"This menu will help you to manage your currency well. Use this menu to create, search, reset, and delete currency."} 
+                    title={t.settings_menu.currency} 
+                    description={t.settings_menu.currency_description} 
                     link={"/bizgen/settings/currency"} 
                     _package={"Starter"}
-                    imageSrc="assets/coin.png" 
+                    imageSrc="/assets/currency.svg" 
                 />
                 <SettingCard 
-                    title="Tax" 
-                    description={"This menu will help you to manage your tax settings well. Use this menu to create, search, reset, and delete tax."} 
+                    title={t.settings_menu.tax} 
+                    description={t.settings_menu.tax_description} 
                     link={"/bizgen/settings/tax"} 
                     _package={"Starter"}
-                    imageSrc="assets/tax.png" 
+                    imageSrc="/assets/bill.svg" 
                 />
                 <SettingCard 
-                    title="Shipment" 
-                    description={"This menu will help you to manage your shipment settings well. Use this menu to create, search, reset, and delete shipment."} 
+                    title={t.settings_menu.shipment} 
+                    description={t.settings_menu.shipment_description} 
                     link={"/bizgen/settings/shipment"} 
                     _package={"Starter"}
-                    imageSrc="assets/fast.png" 
+                    imageSrc="/assets/calendar.svg" 
                 />
                 <SettingCard 
-                    title="Ship Via" 
-                    description={"This menu will help you to manage your ship via settings well. Use this menu to create, search, reset, and delete ship via."} 
+                    title={t.settings_menu.ship} 
+                    description={t.settings_menu.ship_description} 
                     link={"/bizgen/settings/shipvia"} 
                     _package={"Starter"}
-                    imageSrc="assets/cargo.png" 
+                    imageSrc="/assets/ship.svg" 
                 />
                 <SettingCard 
-                    title="Unit of Measurement" 
-                    description={"This menu will help you to manage your uom settings well. Use this menu to create, search, reset, and delete uom."} 
+                    title={t.settings_menu.uom} 
+                    description={t.settings_menu.uom_description} 
                     link={"/bizgen/settings/uom"} 
                     _package={"Starter"}
-                    imageSrc="assets/weight.png" 
+                    imageSrc="/assets/weight.svg" 
                 />
             </SimpleGrid>
         </SidebarWithHeader>

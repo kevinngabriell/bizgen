@@ -1,6 +1,7 @@
 "use client";
+import { getLang } from "@/lib/i18n";
 import { Dialog, Portal, Field, Input, Button, SimpleGrid, CloseButton, Textarea } from "@chakra-ui/react";
-import { ReactNode, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
 interface ProductDialogProps {
     isOpen: boolean;
@@ -10,9 +11,14 @@ interface ProductDialogProps {
         product_id?: string;
         product_code?: string;
         product_name?: string;
-        product_desc?: string;
+        product_description?: string;
     };
-    onSubmit?: (data: {product_id?: string; product_code: string; product_name: string; product_desc: string;}) => void;
+    onSubmit?: (data: {
+        product_id?: string; 
+        product_code: string; 
+        product_name: string; 
+        product_description: string;
+    }) => void;
 }
 
 export default function ProductDialog({
@@ -25,20 +31,20 @@ export default function ProductDialog({
     const [productName, setProductName] = useState("");
     const [productDesc, setProductDesc] = useState("");
     const [productID, setProductID] = useState("");
+
+    const t = getLang("en"); 
     
     useEffect(() => {
-        setProductCode("");
-        setProductName("");
-        setProductDesc("");
-        setProductID("");
+        if (!isOpen) return;
+        
+        setProductID(placeholders?.product_id ?? "");
+        setProductCode(placeholders?.product_code ?? "");
+        setProductName(placeholders?.product_name ?? "");
+        setProductDesc(placeholders?.product_description ?? "");
 
-        if (placeholders) {
-            setProductID(placeholders.product_id ?? "");
-            setProductCode(placeholders.product_code ?? "");
-            setProductName(placeholders.product_name ?? "");
-            setProductDesc(placeholders.product_desc ?? "");
-        }
     }, [placeholders, isOpen]);
+
+    const isValid = productCode.length > 0 && productName.length > 0;
 
     return(
         <Dialog.Root open={isOpen} onOpenChange={(details) => setIsOpen(details.open)}>
@@ -52,48 +58,35 @@ export default function ProductDialog({
 
                         <Dialog.Body>
                             <SimpleGrid columns={{ base: 1, md: 1, lg: 1 }} gap="20px">
-                                <Field.Root w={{base: "100%", md: "100%", lg: "100%"}}>
-                                    <Field.Label>Kode Produk</Field.Label>
-                                    <Input 
-                                        placeholder={placeholders?.product_code ?? "Masukkan kode produk"}
-                                        value={productCode} 
-                                        onChange={(e) => setProductCode(e.target.value)} 
-                                    />
+                                <Field.Root required>
+                                    <Field.Label>{t.products.product_code} <Field.RequiredIndicator /> </Field.Label>
+                                    <Input required placeholder={t.products.product_code_placeholder} value={productCode} onChange={(e) => setProductCode(e.target.value)} />
                                 </Field.Root>
 
-                                <Field.Root w={{base: "100%", md: "100%", lg: "100%"}}>
-                                    <Field.Label>Nama Produk</Field.Label>
-                                    <Input 
-                                        placeholder={placeholders?.product_name ?? "Masukkan nama produk"}
-                                        value={productName} 
-                                        onChange={(e) => setProductName(e.target.value)} 
-                                    />
+                                <Field.Root required>
+                                    <Field.Label>{t.products.product_name} <Field.RequiredIndicator /> </Field.Label>
+                                    <Input required placeholder={t.products.product_name_placeholder} value={productName} onChange={(e) => setProductName(e.target.value)} />
                                 </Field.Root>
 
-                                <Field.Root w={{base: "100%", md: "100%", lg: "100%"}}>
-                                    <Field.Label>Deskripsi Produk</Field.Label>
-                                    <Textarea
-                                        maxLines={5} 
-                                        placeholder={placeholders?.product_desc ?? "Masukkan deskripsi produk"}
-                                        value={productDesc} 
-                                        onChange={(e) => setProductDesc(e.target.value)} 
-                                    />
+                                <Field.Root>
+                                    <Field.Label>{t.products.product_description}</Field.Label>
+                                    <Textarea maxLines={5}  placeholder={t.products.product_description_placeholder} value={productDesc} onChange={(e) => setProductDesc(e.target.value)} />
                                 </Field.Root>                                
                             </SimpleGrid>
                         </Dialog.Body>
 
                         <Dialog.Footer>
                             <Dialog.ActionTrigger asChild>
-                                <Button variant="outline">Batal</Button>
+                                <Button variant="outline">{t.delete_popup.cancel}</Button>
                             </Dialog.ActionTrigger>
-                            <Button onClick={() =>
+                            <Button disabled={!isValid}  bg={"#E77A1F"} color={"white"} cursor={"pointer"} onClick={() =>
                                 onSubmit?.({
                                     product_id: productID,
                                     product_code: productCode,
                                     product_name: productName,
-                                    product_desc: productDesc
+                                    product_description: productDesc
                                 })
-                            }>Simpan</Button>
+                            }>{t.master.save}</Button>
                         </Dialog.Footer>
 
                         <Dialog.CloseTrigger asChild>

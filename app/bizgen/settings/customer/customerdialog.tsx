@@ -1,96 +1,68 @@
 "use client";
-// import Loading from "@/components/loading";
-// import { checkAuthOrRedirect, DecodedAuthToken, getAuthInfo } from "@/lib/auth/auth";
-// import { Customer, getDetailCustomer } from "@/lib/settings/customer";
-import { Dialog, Portal, Field, Input, Button, SimpleGrid, CloseButton, Textarea } from "@chakra-ui/react";
+
+import { getLang } from "@/lib/i18n";
+import { Dialog, Portal, Field, Input, Button, SimpleGrid, CloseButton, Textarea, Select, createListCollection } from "@chakra-ui/react";
 import { useEffect, useState } from "react";
 
 interface CustomerDialogProps {
     isOpen: boolean;
     setIsOpen: (open: boolean) => void;
     title: string;
-    customer_id: string;
-    placeholders?: { 
-        customerName?: string; 
-        phoneNumber?: string; 
-        address?: string; 
-        picName?: string; 
-        picContact?: string; 
-        customerTOP?: string; 
+    placeholders?: { customer_id?: string;
+        customer_name?: string; customer_phone?: string; 
+        customer_address?: string; customer_pic?: string; customer_contact_pic?: string; 
+        customer_top?: number; 
     };
-    onSubmit?: ( data: {
-        customer_id?: string;
-        company_id?: string;
-        customer_name: string;
-        customer_address: string;
-        customer_phone: string;
-        customer_pic: string;
-        customer_contact_pic: string;
-        top: string;
+    onSubmit?: ( data: {customer_id?: string;
+        customer_name: string; customer_phone: string;
+        customer_address: string; customer_pic: string; customer_contact_pic: string;
+        customer_top: number;
     }) => void;
 }
 
 export default function CustomerDialog({
     isOpen, setIsOpen,
     title,
-    customer_id,
+    placeholders,
     onSubmit,
 }: CustomerDialogProps) {
-
-    // const [auth, setAuth] = useState<DecodedAuthToken | null>(null);
-    // const [customerData, setCustomerData] = useState<Customer | null>(null);
-    const [loading, setLoading] = useState(false);
-
+    const [customerID, setCustomerID] = useState("");
     const [customerName, setCustomerName] = useState("");
     const [customerAddress, setCustomerAddress] = useState("");
     const [customerPhone, setCustomerPhone] = useState("");
     const [customerPIC, setCustomerPIC] = useState("");
     const [customerPICContact, setCustomerPICContact] = useState("");
-    const [customerTOP, setCustomerTOP] = useState("");
+    const [customerTOP, setCustomerTOP] = useState<number>(0);
+    const [isCOD, setIsCOD] = useState(false);
 
-    // useEffect(() => {
-    //     if (!isOpen) return;
+    const t = getLang("en"); 
 
-    //     const init = async () => {
-    //         setLoading(true);
+    const paymentTypes = createListCollection({
+        items: [
+            { label: "COD", value: "cod" },
+            { label: "TOP (Term of Payment)", value: "top" },
+        ],
+    });
 
-    //         const valid = await checkAuthOrRedirect();
-    //         if (!valid) return;
+    useEffect(() => {
+        if (!isOpen) return;
+        
+        // console.log(placeholders);
 
-    //         const info = getAuthInfo();
-    //         setAuth(info);
+        setCustomerID(placeholders?.customer_id ?? "");
+        setCustomerName(placeholders?.customer_name ?? "");
+        setCustomerAddress(placeholders?.customer_address ?? "");
+        setCustomerPhone(placeholders?.customer_phone ?? "");
+        setCustomerPIC(placeholders?.customer_pic ?? "");
+        setCustomerPICContact(placeholders?.customer_contact_pic ?? "");
+        setCustomerTOP(Number(placeholders?.customer_top ?? 0));
+        const topValue = Number(placeholders?.customer_top ?? 0);
+        setIsCOD(topValue === 0);
+        
+    }, [placeholders, isOpen]);
 
-    //         try {
-    //             if (customer_id) {
-    //                 const response = await getDetailCustomer(customer_id);
-    //                 const customer = response.data[0];
-    //                 if (customer) {
-    //                 setCustomerName(customer.customer_name || "");
-    //                 setCustomerPhone(customer.customer_phone || "");
-    //                 setCustomerAddress(customer.customer_address || "");
-    //                 setCustomerPIC(customer.customer_pic || "");
-    //                 setCustomerPICContact(customer.customer_contact_pic || "");
-    //                 setCustomerTOP(customer.customer_top || "");
-    //                 }
-    //             } else {
-    //                 setCustomerName("");
-    //                 setCustomerPhone("");
-    //                 setCustomerAddress("");
-    //                 setCustomerPIC("");
-    //                 setCustomerPICContact("");
-    //                 setCustomerTOP("");
-    //             }
-    //         } catch (err) {
-    //             setCustomerData(null);
-    //         } finally {
-    //             setLoading(false);
-    //         }
-    //     };
-
-    //     init();
-    // }, [isOpen]);    
-
-    // if(loading) return <Loading/>
+    const isPhoneValid = /^[0-9]{10,}$/.test(customerPhone);
+    const isValid = customerName.length > 0 && isPhoneValid && (isCOD || customerTOP > 0);
 
     return(
         <Dialog.Root open={isOpen} onOpenChange={(details) => setIsOpen(details.open)}>
@@ -104,69 +76,103 @@ export default function CustomerDialog({
 
                         <Dialog.Body>
                             <SimpleGrid columns={{ base: 1, md: 1, lg: 2 }} gap="20px">
-                                <Field.Root w={{base: "100%", md: "100%", lg: "100%"}}>
-                                    <Field.Label>Nama</Field.Label>
-                                    <Input 
-                                        value={customerName}
-                                        onChange={(e) => setCustomerName(e.target.value)}
-                                        placeholder="Masukkan nama konsumen"
+                                <Field.Root required>
+                                    <Field.Label>{t.customer.customer_name} <Field.RequiredIndicator /> </Field.Label>
+                                    <Input value={customerName} onChange={(e) => setCustomerName(e.target.value)} placeholder={t.customer.customer_name_placeholder}/>
+                                </Field.Root>
+
+                                <Field.Root required>
+                                    <Field.Label>{t.customer.customer_phone} <Field.RequiredIndicator /> </Field.Label>
+                                    <Input
+                                        value={customerPhone}
+                                        onChange={(e) => {
+                                            const numeric = e.target.value.replace(/[^0-9]/g, "");
+                                            setCustomerPhone(numeric);
+                                        }}
+                                        placeholder={t.customer.customer_phone_placeholder}
                                     />
                                 </Field.Root>
 
-                                <Field.Root w={{base: "100%", md: "100%", lg: "100%"}}>
-                                    <Field.Label>Nomor Telepon</Field.Label>
-                                    <Input 
-                                        value={'customerData?.customer_phone ?? customerPhone'}
-                                        onChange={(e) => setCustomerPhone(e.target.value)}
-                                        placeholder={"Masukkan nomor telepon"}
-                                    />
-                                </Field.Root>
-
-                                <Field.Root w={{base: "100%", md: "100%", lg: "100%"}}>
-                                    <Field.Label>Alamat</Field.Label>
-                                    <Textarea 
-                                        value={'customerData?.customer_address ?? customerAddress'}
-                                        onChange={(e) => setCustomerAddress(e.target.value)}
-                                        placeholder={"Masukkan alamat"}
-                                        maxLines={5}
-                                    />
+                                <Field.Root>
+                                    <Field.Label>{t.customer.customer_address}</Field.Label>
+                                    <Textarea value={customerAddress} onChange={(e) => setCustomerAddress(e.target.value)} placeholder={t.customer.customer_address_placeholder} maxLines={5}/>
                                 </Field.Root> 
 
-                                <Field.Root w={{base: "100%", md: "100%", lg: "100%"}}>
-                                    <Field.Label>Nama PIC</Field.Label>
-                                    <Input 
-                                        value={'customerData?.customer_pic ?? customerPIC'}
-                                        onChange={(e) => setCustomerPIC(e.target.value)}
-                                        placeholder={"Masukkan nama pic"}
-                                    />
+                                <Field.Root>
+                                    <Field.Label>{t.customer.customer_pic}</Field.Label>
+                                    <Input value={customerPIC} onChange={(e) => setCustomerPIC(e.target.value)} placeholder={t.customer.customer_pic_placeholder}/>
                                 </Field.Root>   
 
-                                <Field.Root w={{base: "100%", md: "100%", lg: "100%"}}>
-                                    <Field.Label>Kontak PIC</Field.Label>
-                                    <Input 
-                                        value={'customerData?.customer_contact_pic ?? customerPICContact'}
-                                        onChange={(e) => setCustomerPICContact(e.target.value)}
-                                        placeholder={"Masukkan nomor telepon PIC"}
-                                    />
+                                <Field.Root>
+                                    <Field.Label>{t.customer.customer_pic_contact}</Field.Label>
+                                    <Input value={customerPICContact} onChange={(e) => setCustomerPICContact(e.target.value)} placeholder={t.customer.customer_pic_contact_placeholder}/>
                                 </Field.Root> 
 
-                                <Field.Root w={{base: "100%", md: "100%", lg: "100%"}}>
-                                    <Field.Label>TOP</Field.Label>
-                                    <Input 
-                                        type="number"
-                                        value={'customerData?.customer_top ?? customerTOP'}
-                                        placeholder={"Masukkan jumlah TOP"}
-                                        onChange={(e) => setCustomerTOP(e.target.value)}
-                                    />
-                                </Field.Root>                              
+                                <Field.Root>
+                                    <Field.Label>{t.customer.customer_top}</Field.Label>
+                                    <Select.Root
+                                        collection={paymentTypes}
+                                        value={[isCOD ? "cod" : "top"]}
+                                        onValueChange={(details) => {
+                                            const cod = details.value[0] === "cod";
+                                            setIsCOD(cod);
+                                            if (cod) setCustomerTOP(0);
+                                        }}
+                                    >
+                                        <Select.HiddenSelect />
+                                        <Select.Control>
+                                            <Select.Trigger>
+                                                <Select.ValueText placeholder="Select payment type" />
+                                            </Select.Trigger>
+                                            <Select.IndicatorGroup>
+                                                <Select.Indicator />
+                                            </Select.IndicatorGroup>
+                                        </Select.Control>
+                                        <Portal>
+                                            <Select.Positioner>
+                                                <Select.Content>
+                                                    {paymentTypes.items.map((type) => (
+                                                        <Select.Item item={type} key={type.value}>
+                                                            {type.label}
+                                                            <Select.ItemIndicator />
+                                                        </Select.Item>
+                                                    ))}
+                                                </Select.Content>
+                                            </Select.Positioner>
+                                        </Portal>
+                                    </Select.Root>
+                                </Field.Root>
+
+                                {!isCOD && (
+                                    <Field.Root>
+                                        <Field.Label>{t.customer.customer_top}</Field.Label>
+                                        <Input
+                                            type="number"
+                                            value={customerTOP}
+                                            placeholder={t.customer.customer_top_placeholder}
+                                            onChange={(e) => setCustomerTOP(Number(e.target.value))}
+                                        />
+                                    </Field.Root>
+                                )}                             
                             </SimpleGrid>
                         </Dialog.Body>
 
                         <Dialog.Footer>
                             <Dialog.ActionTrigger asChild>
-                                <Button variant="outline">Batal</Button>
+                                <Button variant="outline">{t.delete_popup.cancel}</Button>
                             </Dialog.ActionTrigger>
-                            <Button>Simpan</Button>
+                            <Button disabled={!isValid} bg={"#E77A1F"} color={"white"} cursor={"pointer"} onClick={() =>
+                                onSubmit?.({
+                                    ...(customerID && { customer_id: customerID }),
+                                    customer_name: customerName,
+                                    customer_address: customerAddress,
+                                    customer_phone: customerPhone,
+                                    customer_pic: customerPIC,
+                                    customer_contact_pic: customerPICContact,
+                                    customer_top: customerTOP
+                                })
+                            }>{t.master.save}</Button>
+                            
                         </Dialog.Footer>
 
                         <Dialog.CloseTrigger asChild>

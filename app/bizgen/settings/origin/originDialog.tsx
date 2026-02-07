@@ -8,16 +8,17 @@ interface OriginDialogProps {
     isOpen: boolean;
     setIsOpen: (open: boolean) => void;
     title: string;
-    origin_id: string;
     placeholders?: {
-        namaNegara?: string;
-        freeTrade?: string;
+        origin_id?: string;
+        origin_name?: string;
+        is_free_trade?: number;
         region?: string;
     };
     onSubmit?: (data: {
+        origin_id?: string;
         origin_name: string;
-        origin_region: string;
-        origin_is_free_trade: string;
+        is_free_trade: number;
+        region: string;
     }) => void;
 }
 
@@ -28,10 +29,11 @@ export default function OriginDialog({
     placeholders,
     onSubmit}: 
 OriginDialogProps) {
-    const [namaNegara, setNamaNegara] = useState("");
+    const [originID, setOriginID] = useState("");
+    const [originName, setOriginName] = useState("");
     const [regionOption, setRegionOption] = useState<{ region_id: string; region_name: string }[]>([]);
     const [regionSelected, setRegionSelected] = useState<string>();
-    const [freeTradeSelected, setFreeTradeSelected] = useState<string>();
+    const [freeTradeSelected, setFreeTradeSelected] = useState(0);
 
     useEffect(() => {
         // const fetchRegion = async () => {
@@ -44,15 +46,19 @@ OriginDialogProps) {
         // };
     
         // fetchRegion();
-    }, []);
+        if (!isOpen) return;
+
+        setOriginID(placeholders?.origin_id ?? "");
+        setOriginName(placeholders?.origin_name ?? "");
+    }, [placeholders, isOpen]);
 
     const handleRegionChange = (value: string) => {
         setRegionSelected(value);
     };
 
-    const handleFreeTradeChange = (value: string) => {
-        setFreeTradeSelected(value);
-    };
+    // const handleFreeTradeChange = (value: string) => {
+    //     setFreeTradeSelected(value);
+    // };
 
     return(
         <Dialog.Root open={isOpen} onOpenChange={(details) => setIsOpen(details.open)}>
@@ -69,9 +75,9 @@ OriginDialogProps) {
                                 <Field.Root w={{base: "100%", md: "100%", lg: "100%"}}>
                                     <Field.Label>Nama Negara</Field.Label>
                                     <Input 
-                                        placeholder={placeholders?.namaNegara ?? "Masukkan nama negara"} 
-                                        value={namaNegara} 
-                                        onChange={(e) => setNamaNegara(e.target.value)}
+                                        placeholder={"Masukkan nama negara"} 
+                                        value={originName} 
+                                        onChange={(e) => setOriginName(e.target.value)}
                                     />
                                 </Field.Root>
 
@@ -86,7 +92,7 @@ OriginDialogProps) {
                                             },
                                         }}
                                     >
-                                        <Select
+                                        {/* <Select
                                             value={freeTradeSelected} 
                                             style={{ width: 200 }}
                                             onChange={handleFreeTradeChange}
@@ -96,7 +102,7 @@ OriginDialogProps) {
                                             ]}
                                             placeholder="Pilih Free Trade"
                                             getPopupContainer={(triggerNode) => triggerNode.parentNode as HTMLElement} 
-                                        />
+                                        /> */}
                                     </ConfigProvider>
                                 </Field.Root>
 
@@ -131,11 +137,12 @@ OriginDialogProps) {
                             <Dialog.ActionTrigger asChild>
                                 <Button variant="outline">Batal</Button>
                             </Dialog.ActionTrigger>
-                            <Button onClick={() =>
+                            <Button bg={"#E77A1F"} color={"white"} cursor={"pointer"} onClick={() =>
                                 onSubmit?.({
-                                    origin_name: namaNegara,
-                                    origin_region: regionSelected ?? "",
-                                    origin_is_free_trade: freeTradeSelected ?? ""
+                                    ...(originID && { origin_id: originID }),
+                                    origin_name: originName,
+                                    region: regionSelected ?? "",
+                                    is_free_trade: freeTradeSelected ?? ""
                                 })
                                 }>Simpan</Button>
                         </Dialog.Footer>

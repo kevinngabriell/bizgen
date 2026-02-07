@@ -1,12 +1,13 @@
 'use client'
 
-import { Box, BoxProps, Button, CloseButton, Drawer, Flex, FlexProps, HStack, Icon, IconButton, Image, Text, useDisclosure, VStack, MenuRoot, MenuTrigger, MenuContent, MenuItem, MenuSeparator } from "@chakra-ui/react"
+import { Box, BoxProps, CloseButton, Drawer, Flex, FlexProps, HStack, Icon, IconButton, Image, Text, useDisclosure, VStack, MenuRoot, MenuTrigger, MenuContent, MenuItem, MenuSeparator } from "@chakra-ui/react"
 import { ReactNode } from "react"
 import { FiSettings, FiGrid, FiMenu, FiBell, FiLogOut } from 'react-icons/fi'
 import { FaChartBar, FaCoins, FaDollarSign, FaFileAlt, FaShoppingBag, FaTruck, FaUserFriends } from 'react-icons/fa'
 import { IconType } from "react-icons/lib"
 import { useColorModeValue } from "./color-mode"
 import { useRouter } from "next/navigation";
+import { getLang } from "@/lib/i18n"
 
 interface LinkItemProps {
   name: string
@@ -38,16 +39,18 @@ interface SidebarWithHeaderProps {
   daysToExpire?: number
 }
 
+const t = getLang("en"); 
+
 const LinkItems: Array<LinkItemProps> = [
-  { name: 'Dashboard', icon: FiGrid, href: '/bizgen/dashboard' },
-  { name: 'Sales', icon: FaDollarSign, href: '/bizgen/sales' },
-  { name: 'Purchase', icon: FaShoppingBag, href: '/bizgen/purchase' },
-  { name: 'Finance', icon: FaCoins, href: '/bizgen/finance' },
-  { name: 'Warehouse', icon: FaTruck, href: '/bizgen/warehouse' },
-  { name: 'HR', icon: FaUserFriends, href: '/bizgen/hr' },
-  { name: 'Analytics', icon: FaChartBar, href: '/bizgen/analytics' },
-  { name: 'Document', icon: FaFileAlt, href: '/bizgen/document' },
-  { name: 'Settings', icon: FiSettings, href: '/bizgen/settings' },
+  { name: `${t.sidebar_menu.dashboard}`, icon: FiGrid, href: '/bizgen/dashboard' },
+  { name: `${t.sidebar_menu.sales}`, icon: FaDollarSign, href: '/bizgen/sales' },
+  { name: `${t.sidebar_menu.purchase}`, icon: FaShoppingBag, href: '/bizgen/purchase' },
+  { name: `${t.sidebar_menu.finance}`, icon: FaCoins, href: '/bizgen/finance' },
+  { name: `${t.sidebar_menu.warehouse}`, icon: FaTruck, href: '/bizgen/warehouse' },
+  { name: `${t.sidebar_menu.hr}`, icon: FaUserFriends, href: '/bizgen/hr' },
+  { name: `${t.sidebar_menu.analytics}`, icon: FaChartBar, href: '/bizgen/analytics' },
+  { name: `${t.sidebar_menu.document}`, icon: FaFileAlt, href: '/bizgen/document' },
+  { name: `${t.sidebar_menu.settings}`, icon: FiSettings, href: '/bizgen/settings' },
 ]
 
 const SidebarContent = ({ onClose, ...rest }: SidebarProps) => {
@@ -60,15 +63,10 @@ const SidebarContent = ({ onClose, ...rest }: SidebarProps) => {
     };
 
     return(
-        <Box
-            transition="3s ease"
-            bg={useColorModeValue('white','gray.900')} 
-            borderRight="1px"
-            borderRightColor={useColorModeValue('gray.200', 'gray.700')}
-            w={{ base: 'full', md: 60 }}
-            pos="fixed"
-            h="full"
-            {...rest}
+        <Box transition="3s ease"
+            bg={useColorModeValue('white','gray.900')}  borderRight="1px"
+            borderRightColor={useColorModeValue('gray.200', 'gray.700')} w={{ base: 'full', md: 60 }}
+            pos="fixed" h="full" {...rest}
         >
             <Flex h="20" alignItems="center" mx="8" justifyContent="space-between"> 
                 <Image src={"/assets/logo.png"} w={"30%"} />
@@ -82,7 +80,7 @@ const SidebarContent = ({ onClose, ...rest }: SidebarProps) => {
             ))}
 
             <Flex position="absolute" bottom="0" minW={"100%"}>
-              <NavItem icon={FiLogOut} onClick={handleLogout}>Logout</NavItem>
+              <NavItem icon={FiLogOut} onClick={handleLogout}>{t.sidebar_menu.logout}</NavItem>
             </Flex>
 
         </Box>
@@ -93,8 +91,7 @@ const NavItem = ({ icon, children, href, ...rest }: NavItemProps) => {
     const router = useRouter();
 
     return(
-        <Box 
-            as="a" 
+        <Box as="a" 
             // ref="#"
             onClick={() => {
                 if (href) router.push(href);
@@ -102,10 +99,9 @@ const NavItem = ({ icon, children, href, ...rest }: NavItemProps) => {
             _focus={{ boxShadow: 'none' }} 
             style={{ textDecoration: 'none' }}
         >
-            <Flex
-                align="center"
-                p="4"
-                mx="4"
+            <Flex align="center"
+                p={3.5}
+                mx={4}
                 borderRadius="lg"
                 role="group"
                 cursor="pointer"
@@ -137,6 +133,7 @@ const MobileNav = ({ onOpen, username, daysToExpire, ...rest }: MobileProps) => 
     const handleProfile = () => {
         router.push('/bizgen/profile');
     }
+
     return(
         <Flex
             ml={{ base: 0, md: 60 }}
@@ -161,8 +158,7 @@ const MobileNav = ({ onOpen, username, daysToExpire, ...rest }: MobileProps) => 
 
             <HStack textSpacingTrim={{ base: '0', md: '6' }}>
               {/* Notification menu — open on hover */}
-              <Box
-                position="relative"
+              <Box position="relative"
                 zIndex="dropdown"
                 onMouseEnter={onOpenNotif}
                 onMouseLeave={onCloseNotif}
@@ -179,21 +175,9 @@ const MobileNav = ({ onOpen, username, daysToExpire, ...rest }: MobileProps) => 
                   </MenuTrigger>
 
                   {/* Unread badge */}
-                  <Box
-                    position="absolute"
-                    top="0"
-                    right="0"
-                    bg="red.500"
-                    color="white"
-                    borderRadius="full"
-                    px="2"
-                    fontSize="xs"
-                    fontWeight="bold"
-                  >
-                    3
-                  </Box>
+                  <Box position="absolute" top={0} right={0} bg={"red.500"} color={"white"} borderRadius="full" px="2" fontSize="xs" fontWeight="bold">3</Box>
 
-                  <MenuContent minW="280px" zIndex="popover" boxShadow="lg">
+                  <MenuContent minW="280px" zIndex="popover" boxShadow="lg" mt={0} top={0}>
                     <MenuItem value="" fontWeight="semibold">Notifications</MenuItem>
                     <MenuSeparator />
                     <MenuItem value="">🔔 Unread notification 1</MenuItem>
@@ -214,19 +198,10 @@ const MobileNav = ({ onOpen, username, daysToExpire, ...rest }: MobileProps) => 
                       display={{ base: 'none', md: 'flex' }}
                       alignItems="flex-start"
                       ml="2"
-                      // spacing="1"
                     >
-                      <Text fontSize="sm" onClick={handleProfile}>{username}</Text>
+                      <Text fontSize="sm" onClick={handleProfile} mb={0}>{username}</Text>
                       {typeof daysToExpire === "number" && (
-                        <Box
-                          px="2"
-                          py="0.5"
-                          borderRadius="md"
-                          bg={daysToExpire <= 2 ? "red.500" : daysToExpire <= 7 ? "orange.400" : "gray.500"}
-                          color="white"
-                          fontSize="9px"
-                          fontWeight="semibold"
-                        >
+                        <Box p={2} borderRadius="md" bg={daysToExpire <= 2 ? "red.500" : daysToExpire <= 7 ? "orange.400" : "gray.500"} color="white" fontSize="9px" fontWeight="semibold">
                           {daysToExpire > 0
                             ? `Subscription expires in ${daysToExpire} day${daysToExpire === 1 ? "" : "s"}`
                             : "Subscription expired"}

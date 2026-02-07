@@ -1,18 +1,62 @@
 "use client";
 
 import SidebarWithHeader from "@/components/ui/SidebarWithHeader";
-import { Button, ButtonGroup, Flex, Heading, IconButton, Pagination, Table } from "@chakra-ui/react";
-import { useState } from "react";
+import { Button, ButtonGroup, CloseButton, Dialog, Flex, Heading, IconButton, Pagination, Portal, Table, Text } from "@chakra-ui/react";
+import { useEffect, useState } from "react";
 import PaymentMethodDialog from "./paymentDialog";
 import { LuChevronLeft, LuChevronRight } from "react-icons/lu";
+import Loading from "@/components/loading";
+import { getAllPaymentMethod, GetPaymentMethodData } from "@/lib/master/payment-method";
+import { checkAuthOrRedirect, DecodedAuthToken, getAuthInfo } from "@/lib/auth/auth";
+import { FiTrash } from "react-icons/fi";
 
 export default function SettingPayment(){
+    const [auth, setAuth] = useState<DecodedAuthToken | null>(null);
     const [loading, setLoading] = useState(false);
-    // const [auth, setAuth] = useState<DecodedAuthToken | null>(null);
+    const [isPaymentOpen, setIsPaymentOpen] = useState(false);
+    
     const [paymentPage, setPaymentPage] = useState(1);
     const [paymentPagination, setPaymentPagination] = useState({ total_pages: 1, page: 1 });
     const [findPayment, setFindPayment] = useState('');
-    // const [paymentData, setPaymentData] = useState<Payment[]>([]);
+    const [paymentData, setPaymentData] = useState<GetPaymentMethodData[]>([]);
+    const [editingPayment, setEditingPayment] = useState<GetPaymentMethodData | null>(null);
+    
+    const [showAlert, setShowAlert] = useState(false);
+    const [titlePopup, setTitlePopup] = useState('');
+    const [messagePopup, setMessagePopup] = useState('');
+    const [isSuccess, setIsSuccess] = useState(false);
+
+    useEffect(() => {
+        init();
+    }, [paymentPage]);
+
+    const init = async () => {
+        setLoading(true);
+
+        const valid = await checkAuthOrRedirect();
+        if(!valid) return;
+
+        const info = getAuthInfo();
+        setAuth(info);        
+
+        try {
+            const paymentMethodRes = await getAllPaymentMethod(paymentPage, 10, findPayment);
+            setPaymentData(paymentMethodRes.data);
+            setPaymentPagination((prev) => ({
+                ...prev,
+                total_pages: paymentMethodRes.pagination?.total_pages || 1,
+                page: paymentPage,
+            }));
+
+        } catch (error: any){
+            setPaymentData([]);
+
+        } finally {
+            setLoading(false);
+        }        
+    }
+
+    if (loading) return <Loading/>;
     
     return(
         <SidebarWithHeader username={"-"}>
@@ -28,7 +72,7 @@ export default function SettingPayment(){
                         <Table.ColumnHeader textAlign={"center"}>Action</Table.ColumnHeader>
                     </Table.Row>
                 </Table.Header>
-                {/* <Table.Body>
+                <Table.Body>
                     {paymentData?.map((payment) => (
                     <Table.Row key={payment.payment_id}>
                         <Table.Cell textAlign={"center"}>{payment.payment_name}</Table.Cell>
@@ -68,7 +112,7 @@ export default function SettingPayment(){
                         </Table.Cell>
                     </Table.Row>
                 ))}
-                </Table.Body> */}
+                </Table.Body>
             </Table.Root>
             
             <Flex display={"flex"} justify="flex-end" alignItems={"end"} width={"100%"} mt={"3"}>

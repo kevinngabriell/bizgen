@@ -1,23 +1,67 @@
 "use client";
 
+import Loading from "@/components/loading";
 import SidebarWithHeader from "@/components/ui/SidebarWithHeader";
-import { Button, ButtonGroup, Flex, Heading, IconButton, Pagination, Table } from "@chakra-ui/react";
-import { useState } from "react";
+import { checkAuthOrRedirect, DecodedAuthToken, getAuthInfo } from "@/lib/auth/auth";
+import { getAllTerm, GetTermData } from "@/lib/master/term";
+import { Button, ButtonGroup, CloseButton, Dialog, Flex, Heading, IconButton, Pagination, Portal, Table, Text } from "@chakra-ui/react";
+import { useEffect, useState } from "react";
+import { FiTrash } from "react-icons/fi";
 import { LuChevronLeft, LuChevronRight } from "react-icons/lu";
 
 export default function SettingTerm(){
+    const [auth, setAuth] = useState<DecodedAuthToken | null>(null);
     const [loading, setLoading] = useState(false);
-    // const [auth, setAuth] = useState<DecodedAuthToken | null>(null);
+    const [isTermOpen, setIsTermOpen] = useState(false);
+    
     const [termPage, setTermPage] = useState(1);
-    const [termPagination, setTermagination] = useState({ total_pages: 1, page: 1 });
+    const [termPagination, setTermPagination] = useState({ total_pages: 1, page: 1 });
     const [findTerm, setFindTerm] = useState('');
-    // const [termData, setTermData] = useState<Term[]>([]);
+    const [termData, setTermData] = useState<GetTermData[]>([]);
+
+    const [showAlert, setShowAlert] = useState(false);
+    const [titlePopup, setTitlePopup] = useState('');
+    const [messagePopup, setMessagePopup] = useState('');
+    const [isSuccess, setIsSuccess] = useState(false);
+
+    useEffect(() => {
+        init();
+    }, [termPage]);
+
+    const init = async () => {
+        setLoading(true);
+
+        const valid = await checkAuthOrRedirect();
+        if(!valid) return;
+
+        const info = getAuthInfo();
+        setAuth(info);
+
+        try {
+            const termRes = await getAllTerm(termPage, 10, findTerm);
+            setTermData(termRes.data);
+            setTermPagination((prev) => ({
+                ...prev,
+                total_pages: termRes.pagination?.total_pages || 1,
+                page: termPage,
+            }));
+
+        } catch (error: any){
+            setTermData([]);
+
+        } finally {
+            setLoading(false);
+        }
+    }
+    
+
+    if (loading) return <Loading/>;
     
     return(
         <SidebarWithHeader username={"-"}>
             <Flex gap={2} display={"flex"} mb={"2"} mt={"2"}>
                 <Heading mb={6} width={"100%"}>Term ERP Settings</Heading>
-                <Button>Create New Term</Button>
+                <Button bg={"#E77A1F"} color={"white"} cursor={"pointer"}>Create New Term</Button>
             </Flex>            
 
             <Table.Root showColumnBorder variant="outline" background={"white"} >
@@ -27,7 +71,7 @@ export default function SettingTerm(){
                         <Table.ColumnHeader textAlign={"center"}>Action</Table.ColumnHeader>
                     </Table.Row>
                 </Table.Header>        
-                {/* <Table.Body>
+                <Table.Body>
                     {termData?.map((term) => (
                     <Table.Row key={term.term_id}>
                         <Table.Cell textAlign={"center"}>{term.term_name}</Table.Cell>
@@ -35,7 +79,7 @@ export default function SettingTerm(){
                             <Flex justify="center" gap={4} fontSize={"2xl"}>
                                 <Dialog.Root>
                                     <Dialog.Trigger asChild>
-                                        <FiTrash />
+                                        <FiTrash color="red" />
                                     </Dialog.Trigger>
                                     <Portal>
                                         <Dialog.Backdrop/>
@@ -53,7 +97,7 @@ export default function SettingTerm(){
                                                     <Dialog.ActionTrigger asChild>
                                                         <Button variant="outline">Batal</Button>
                                                     </Dialog.ActionTrigger>
-                                                    <Button>Hapus</Button>
+                                                    <Button bg={"#E77A1F"} color={"white"} cursor={"pointer"}>Hapus</Button>
                                                 </Dialog.Footer>
                                                             
                                                 <Dialog.CloseTrigger asChild>
@@ -67,7 +111,7 @@ export default function SettingTerm(){
                         </Table.Cell>
                     </Table.Row>
                 ))}
-                </Table.Body>                         */}
+                </Table.Body>                        
             </Table.Root>
 
             <Flex display={"flex"} justify="flex-end" alignItems={"end"} width={"100%"} mt={"3"}>

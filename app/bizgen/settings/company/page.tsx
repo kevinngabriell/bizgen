@@ -6,6 +6,7 @@ import { useState } from "react";
 import CompanyTargetDialog from "./companytargetdialog";
 import { ChartConfig, ChartContainer } from "@/components/ui/chart";
 import { Label, PolarGrid, PolarRadiusAxis, RadialBar, RadialBarChart } from "recharts";
+import Loading from "@/components/loading";
 
 export default function SettingCompany(){
     const [loading, setLoading] = useState(false);
@@ -42,6 +43,8 @@ export default function SettingCompany(){
      const handleUpdateCompany = async () => {
         
      }
+
+     if (loading) return <Loading/>;
     
     return(
         <SidebarWithHeader username="kevin">

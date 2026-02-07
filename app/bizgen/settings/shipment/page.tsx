@@ -1,33 +1,72 @@
 "use client";
 
 import SidebarWithHeader from "@/components/ui/SidebarWithHeader";
-import { Button, ButtonGroup, Dialog, Flex, Heading, IconButton, Pagination, Table } from "@chakra-ui/react";
-import { useState } from "react";
+import { Button, ButtonGroup, CloseButton, Dialog, Flex, Heading, IconButton, Pagination, Portal, Table, Text } from "@chakra-ui/react";
+import { useEffect, useState } from "react";
 import ShipmentDialog from "./shipmentDialog";
 import { LuChevronLeft, LuChevronRight } from "react-icons/lu";
+import Loading from "@/components/loading";
+import { getAllShipmentPeriod, GetShipmentPeriodData } from "@/lib/master/shipment-period";
+import { checkAuthOrRedirect, DecodedAuthToken, getAuthInfo } from "@/lib/auth/auth";
+import { FiTrash } from "react-icons/fi";
+import { AlertMessage } from "@/components/ui/alert";
 
 export default function SettingShipment(){
+    const [auth, setAuth] = useState<DecodedAuthToken | null>(null);
     const [loading, setLoading] = useState(false);
-    // const [auth, setAuth] = useState<DecodedAuthToken | null>(null);
+    const [isShipmentOpen, setIsShipmentOpen] = useState(false);
+    
     const [shipmentPage, setShipmentPage] = useState(1);
     const [shipmentPagination, setShipmentPagination] = useState({ total_pages: 1, page: 1 });
     const [findShipment, setFindShipment] = useState('');
-    // const [shipmentData, setShipmentData] = useState<Shipment[]>([]);
-    const [isShipmentOpen, setIsShipmentOpen] = useState(false);
+    const [shipmentData, setShipmentData] = useState<GetShipmentPeriodData[]>([]);
+    const [editingShipment, setEditingShipment] = useState<GetShipmentPeriodData | null>(null);
+
     const [showAlert, setShowAlert] = useState(false);
+    const [titlePopup, setTitlePopup] = useState('');
+    const [messagePopup, setMessagePopup] = useState('');
     const [isSuccess, setIsSuccess] = useState(false);
-    const [errorTitle, setErrorTitle] = useState('');
-    const [errorMessage, setErrorMessage] = useState('');
-    const [editingShipment, setEditingShipment] = useState('');
+    
+    useEffect(() => {
+        init();
+    }, [shipmentPage]);
+
+    const init = async () => {
+        setLoading(true);
+
+        const valid = await checkAuthOrRedirect();
+        if(!valid) return;
+
+        const info = getAuthInfo();
+        setAuth(info);
+
+        try {
+            const shipmentRes = await getAllShipmentPeriod(shipmentPage, 10, findShipment);
+            setShipmentData(shipmentRes.data);
+            setShipmentPagination((prev) => ({
+                ...prev,
+                total_pages: shipmentRes.pagination?.total_pages || 1,
+                page: shipmentPage,
+            }));
+
+        } catch (error: any){
+            setShipmentData([]);
+
+        } finally {
+            setLoading(false);
+        }
+    }
+
+    if (loading) return <Loading/>;
     
     return(
-        <SidebarWithHeader username={"-"}>
+        <SidebarWithHeader username={auth?.username ?? "Unknown"}>
             <Flex gap={2} display={"flex"} mb={"2"} mt={"2"}>
                 <Heading mb={6} width={"100%"}>Shipment ERP Settings</Heading>
-                <Button>Create New Shipment</Button>
+                <Button bg={"#E77A1F"} color={"white"} cursor={"pointer"}>Create New Shipment</Button>
             </Flex>         
 
-            {/* {showAlert && <AlertMessage title={errorTitle} description={errorMessage} isSuccess={isSuccess} />} */}
+            {showAlert && <AlertMessage title={titlePopup} description={messagePopup} isSuccess={isSuccess} />}
 
             <ShipmentDialog 
                 isOpen={isShipmentOpen} 
@@ -39,7 +78,6 @@ export default function SettingShipment(){
                 onSubmit={(data) =>
                     editingShipment 
                 }
-                shipment_id={editingShipment}
             />            
 
             <Table.Root showColumnBorder variant="outline" background={"white"} >
@@ -49,10 +87,10 @@ export default function SettingShipment(){
                         <Table.ColumnHeader textAlign={"center"}>Action</Table.ColumnHeader>
                     </Table.Row>
                 </Table.Header>
-                {/* <Table.Body>
+                <Table.Body>
                     {shipmentData?.map((shipment) => (
-                    <Table.Row key={shipment.shipment_id}>
-                        <Table.Cell textAlign={"center"}>{shipment.shipment_name}</Table.Cell>
+                    <Table.Row key={shipment.shipment_period_id}>
+                        <Table.Cell textAlign={"center"}>{shipment.shipment_period_name}</Table.Cell>
                         <Table.Cell textAlign="center">
                             <Flex justify="center" gap={4} fontSize={"2xl"}>
                                 <Dialog.Root>
@@ -75,7 +113,7 @@ export default function SettingShipment(){
                                                     <Dialog.ActionTrigger asChild>
                                                         <Button variant="outline">Batal</Button>
                                                     </Dialog.ActionTrigger>
-                                                    <Button onClick={() => handleDeleteShipment({ shipment_id: shipment.shipment_id })}>Hapus</Button>
+                                                    {/* <Button onClick={() => handleDeleteShipment({ shipment_id: shipment.shipment_id })}>Hapus</Button> */}
                                                 </Dialog.Footer>
                                                             
                                                 <Dialog.CloseTrigger asChild>
@@ -89,7 +127,7 @@ export default function SettingShipment(){
                         </Table.Cell>
                     </Table.Row>
                 ))}
-                </Table.Body> */}
+                </Table.Body>
             </Table.Root>          
 
             <Flex display={"flex"} justify="flex-end" alignItems={"end"} width={"100%"} mt={"3"}>

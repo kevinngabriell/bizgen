@@ -4,16 +4,20 @@ import { useState } from "react";
 import { Box, Button, Flex, Heading, Input, InputGroup, SimpleGrid, Stack, Text, Field, Steps, ButtonGroup, Badge, Textarea } from "@chakra-ui/react";
 import { LuLock } from "react-icons/lu";
 import { PasswordInput } from "@/components/ui/password-input";
+import { getLang } from "@/lib/i18n";
 
 export default function Register() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [whatsappNumber, setWhatsappNumber] = useState('');
   const [activeStep, setActiveStep] = useState(0);
   const [isOwner, setIsOwner] = useState<boolean | null>(null);
   const [businessName, setBusinessName] = useState('');
   const [businessCategory, setBusinessCategory] = useState('');
   const [businessAddress, setBusinessAddress] = useState('');
   const [companyCode, setCompanyCode] = useState('');
+
+  const t = getLang("en"); 
 
   const [plan, setPlan] = useState<'Starter' | 'Growth' | 'Enterprise' | ''>('');
 
@@ -83,8 +87,8 @@ export default function Register() {
       <Box w="70%" maxW="100vw" bg="white" rounded="2xl" shadow="lg" p={{ base: 6, md: 10 }}>
         {/* Title */}
         <Flex flexDir={"column"} gap={2} mb={8} alignItems={"center"}>
-          <Heading size="lg" color={"gray.800"}>Register Bizgen</Heading>
-          <Text color="gray.600">Empowering Trading & Export-Import Business with Smart ERP</Text>
+          <Heading size="lg" color={"gray.800"}>{t.register.title}</Heading>
+          <Text color="gray.600">{t.register.description}</Text>
         </Flex>
 
         
@@ -101,44 +105,44 @@ export default function Register() {
           
           {/* Steps 1 -> Role  */}
           <Steps.Content index={0}>
-            <Text fontWeight="semibold" color={"black"} mb={6}>Kamu daftar sebagai apa?</Text>
+            <Text fontWeight="semibold" color={"black"} mb={6}>{t.register.step_one_title}</Text>
 
             <SimpleGrid columns={{ base: 1, md: 2 }} gap={4}>
               {/* Business Owner Box */}
               <Box p={5} borderWidth="1px" borderRadius="xl" cursor="pointer" bg={isOwner === true ? 'orange.40' : 'white'} borderColor={isOwner === true ? 'orange.400' : 'gray.200'} onClick={() => { setIsOwner(true); setActiveStep(1);}}>
                 <Flex justify="space-between" align="center" mb={2}>
-                  <Text fontWeight="bold" color={"black"}>Business Owner</Text>
-                  {isOwner === true && <Badge colorPalette="orange">Dipilih</Badge>}
+                  <Text fontWeight="bold" color={"black"}>{t.register.step_one_card_1}</Text>
+                  {isOwner === true && <Badge colorPalette="orange">{t.register.step_one_card_selected}</Badge>}
                 </Flex>
-                <Text fontSize="sm" color="gray.600">Buat company baru, lengkapi data bisnis, lalu pilih paket.</Text>
+                <Text fontSize="sm" color="gray.600">{t.register.step_one_card_2}</Text>
               </Box>
 
               {/* Employee Owner Box */}
               <Box p={5} borderWidth="1px" borderRadius="xl" cursor="pointer" bg={isOwner === false ? 'orange.40' : 'white'} borderColor={isOwner === false ? 'orange.400' : 'gray.200'} onClick={() => { setIsOwner(false); setActiveStep(1); }}>
                 <Flex justify="space-between" align="center" mb={2}>
-								  <Text fontWeight="bold" color={"black"}>Join Existing Company</Text>
-								  {isOwner === false && <Badge colorPalette="orange">Dipilih</Badge>}
+								  <Text fontWeight="bold" color={"black"}>{t.register.step_one_card_3}</Text>
+								  {isOwner === false && <Badge colorPalette="orange">{t.register.step_one_card_selected}</Badge>}
                 </Flex>
-                <Text fontSize="sm" color="gray.600">Masuk ke company yang sudah ada dengan kode company.</Text>
+                <Text fontSize="sm" color="gray.600">{t.register.step_one_card_4}</Text>
               </Box>
             </SimpleGrid>
           </Steps.Content>
           
           {/* Steps 2 -> Personal Information  */}
           <Steps.Content index={1}>
-            <Text mt={6} mb={4} fontWeight={"semibold"}>Lengkapi data</Text>
+            <Text mt={6} mb={4} fontWeight={"semibold"}>{t.register.step_two_title}</Text>
 
             {/* Username Field */}
             <Field.Root mb={7}>
-              <Field.Label>Username</Field.Label>
-              <Input placeholder="Masukkan username" value={username} onChange={(e) => setUsername(e.target.value)}/>
+              <Field.Label>{t.login.username}</Field.Label>
+              <Input placeholder={t.login.username_placeholder} value={username} onChange={(e) => setUsername(e.target.value)}/>
             </Field.Root>
 
             {/* Password Field */}
             <Field.Root mb={7} invalid={!!passwordHint()}>
-              <Field.Label>Password</Field.Label>
+              <Field.Label>{t.login.password}</Field.Label>
               <InputGroup startElement={<LuLock />}>
-                <PasswordInput placeholder="Masukkan password anda" value={password} onChange={(e) => setPassword(e.target.value)}/>
+                <PasswordInput placeholder={t.login.password_placeholder} value={password} onChange={(e) => setPassword(e.target.value)}/>
               </InputGroup>
 
               {/* Password Hint */}
@@ -149,8 +153,8 @@ export default function Register() {
             
             {/* Whatsapp number field */}
             <Field.Root mb={7}>
-              <Field.Label>Nomor Whatsapp</Field.Label>
-              <Input placeholder="Masukkan nomor whatsapp "/>
+              <Field.Label>{t.register.step_two_wa}</Field.Label>
+              <Input placeholder={t.register.step_two_wa_placeholder} value={whatsappNumber} onChange={(e) => setWhatsappNumber(e.target.value)}/>
             </Field.Root>
 
             {isOwner === true ? (
@@ -158,26 +162,26 @@ export default function Register() {
               <>
                 <SimpleGrid columns={{base: 1, md: 1, lg: 2}} gap={"20px"}>
                   <Field.Root mb={5}>
-                    <Field.Label mb={2}>Nama Bisnis</Field.Label>
-                    <Input placeholder="Contoh: Kopi Raki" value={businessName} onChange={(e) => setBusinessName(e.target.value)} />
+                    <Field.Label mb={2}>{t.register.step_two_card_1}</Field.Label>
+                    <Input placeholder={t.register.step_two_card_1_placeholder} value={businessName} onChange={(e) => setBusinessName(e.target.value)} />
                   </Field.Root>
                                         
                   <Field.Root mb={5}>
-                    <Field.Label mb={2}>Kategori Bisnis</Field.Label>
-                    <Input placeholder="Contoh: F&B / Retail / Jasa" value={businessCategory} onChange={(e) => setBusinessCategory(e.target.value)} />
+                    <Field.Label mb={2}>{t.register.step_two_card_2}</Field.Label>
+                    <Input placeholder={t.register.step_two_card_2_placeholder} value={businessCategory} onChange={(e) => setBusinessCategory(e.target.value)} />
                   </Field.Root>
                 </SimpleGrid>
 
                 <Field.Root mb={2}>
-                  <Field.Label mb={2}>Alamat Bisnis</Field.Label>
-                  <Textarea placeholder="Contoh: BSD, Tangerang" value={businessAddress} onChange={(e) => setBusinessAddress(e.target.value)} />
+                  <Field.Label mb={2}>{t.register.step_two_card_3}</Field.Label>
+                  <Textarea placeholder={t.register.step_two_card_3_placeholder} value={businessAddress} onChange={(e) => setBusinessAddress(e.target.value)} />
                 </Field.Root>
               </>
              ) : (
                // if role choosen was employee
                 <Field.Root mb={2}>
-                  <Field.Label mb={2}>Kode Company</Field.Label>
-                  <Input placeholder="Masukkan kode company" value={companyCode} onChange={(e) => setCompanyCode(e.target.value)} />
+                  <Field.Label mb={2}>{t.register.step_two_card_4}</Field.Label>
+                  <Input placeholder={t.register.step_two_card_4_placeholder} value={companyCode} onChange={(e) => setCompanyCode(e.target.value)} />
                 </Field.Root>
              )}
           </Steps.Content>
@@ -235,8 +239,8 @@ export default function Register() {
                 <Text fontSize="sm" color="gray.600">Akun kamu akan terhubung ke company menggunakan kode yang kamu input.</Text>
 
                 <Box mt={5} p={4} borderWidth="1px" borderRadius="xl">
-                  <Text fontSize="sm"><b>Username:</b> {username || '-'}</Text>
-                  <Text fontSize="sm"><b>Kode Company:</b> {companyCode || '-'}</Text>
+                  <Text fontSize="sm"><b>{t.login.username}</b> {username || '-'}</Text>
+                  <Text fontSize="sm"><b>{t.register.step_two_card_4}</b> {companyCode || '-'}</Text>
                 </Box>
 
                 <Button mt={8} w="100%" colorScheme="orange" onClick={onRegister}>

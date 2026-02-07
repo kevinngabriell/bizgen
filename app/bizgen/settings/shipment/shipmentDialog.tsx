@@ -7,7 +7,6 @@ interface ShipmentDialogProps {
     isOpen: boolean;
     setIsOpen: (open: boolean) => void;
     title: string;
-    shipment_id: string;
     placeholders?: {
         shipment_name?: string;
     };

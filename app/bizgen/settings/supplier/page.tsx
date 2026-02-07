@@ -1,33 +1,73 @@
 "use client";
 
 import SidebarWithHeader from "@/components/ui/SidebarWithHeader";
-import { Button, ButtonGroup, Flex, Heading, IconButton, Pagination, Table } from "@chakra-ui/react";
-import { useState } from "react";
+import { Button, ButtonGroup, CloseButton, Dialog, Flex, Heading, IconButton, Pagination, Portal, Table, Text } from "@chakra-ui/react";
+import { useEffect, useState } from "react";
 import SupplierDialog from "./supplierdialog";
 import { LuChevronLeft, LuChevronRight } from "react-icons/lu";
+import Loading from "@/components/loading";
+import { getAllSupplier, GetSupplierData } from "@/lib/master/supplier";
+import { checkAuthOrRedirect, DecodedAuthToken, getAuthInfo } from "@/lib/auth/auth";
+import { AlertMessage } from "@/components/ui/alert";
+import { FiTrash } from "react-icons/fi";
 
 export default function SettingSupplier(){
+    const [auth, setAuth] = useState<DecodedAuthToken | null>(null);
     const [loading, setLoading] = useState(false);
-    // const [auth, setAuth] = useState<DecodedAuthToken | null>(null);
+    const [isSupplierOpen, setIsSupplierOpen] = useState(false);
+
     const [supplierPage, setSupplierPage] = useState(1);
     const [supplierPagination, setSupplierPagination] = useState({ total_pages: 1, page: 1 });
     const [findSupplier, setFindSupplier] = useState('');
-    // const [supplierData, setSupplierData] = useState<Supplier[]>([]);
+    const [supplierData, setSupplierData] = useState<GetSupplierData[]>([]);
     const [isSupplierDialogOpen, setIsSupplierDialogOpen] = useState(false);
+    const [editingSupplier, setEditingSupplier] = useState<GetSupplierData | null>(null);
+
     const [showAlert, setShowAlert] = useState(false);
+    const [titlePopup, setTitlePopup] = useState('');
+    const [messagePopup, setMessagePopup] = useState('');
     const [isSuccess, setIsSuccess] = useState(false);
-    const [errorTitle, setErrorTitle] = useState('');
-    const [errorMessage, setErrorMessage] = useState('');
-    // const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null);
+
+    useEffect(() => {
+        init();
+    }, [supplierPage]);
+
+    const init = async () => {
+        setLoading(true);
+
+        const valid = await checkAuthOrRedirect();
+        if(!valid) return;
+
+        const info = getAuthInfo();
+        setAuth(info);
+
+        try {
+            const supplierRes = await getAllSupplier(supplierPage, 10, findSupplier);
+            setSupplierData(supplierRes.data);
+            setSupplierPagination((prev) => ({
+                ...prev,
+                total_pages: supplierRes.pagination?.total_pages || 1,
+                page: supplierPage,
+            }));
+
+        } catch (error: any){
+            setSupplierData([]);
+
+        } finally {
+            setLoading(false);
+        }
+    }    
+
+    if (loading) return <Loading/>;
     
     return(
         <SidebarWithHeader username={"-"}>
             <Flex gap={2} display={"flex"} mb={"2"} mt={"2"}>
                 <Heading mb={6} width={"100%"}>Supplier ERP Settings</Heading>
-                <Button>Create New Supplier</Button>
+                <Button bg={"#E77A1F"} color={"white"} cursor={"pointer"}>Create New Supplier</Button>
             </Flex>
 
-            {/* {showAlert && <AlertMessage title={errorTitle} description={errorMessage} isSuccess={isSuccess} />} */}
+            {showAlert && <AlertMessage title={titlePopup} description={messagePopup} isSuccess={isSuccess} />}
 
             {/* <SupplierDialog 
                 isOpen={isSupplierDialogOpen}
@@ -61,12 +101,12 @@ export default function SettingSupplier(){
                     </Table.Row>
                 </Table.Header>  
                 
-                {/* <Table.Body>
+                <Table.Body>
                     {supplierData?.map((supplier) => (
                     <Table.Row key={supplier.supplier_id}>
                         <Table.Cell textAlign={"center"}>{supplier.supplier_name}</Table.Cell>
-                        <Table.Cell textAlign={"center"}>{supplier.origin_name}</Table.Cell>
-                        <Table.Cell textAlign={"center"}>{supplier.currency_name}</Table.Cell>
+                        <Table.Cell textAlign={"center"}>{supplier.supplier_origin}</Table.Cell>
+                        <Table.Cell textAlign={"center"}>{supplier.supplier_currency}</Table.Cell>
                         <Table.Cell textAlign="center">
                             <Flex justify="center" gap={4} fontSize={"2xl"}>
                                 <Dialog.Root>
@@ -103,7 +143,7 @@ export default function SettingSupplier(){
                         </Table.Cell>
                     </Table.Row>
                 ))}
-                </Table.Body>                               */}
+                </Table.Body>                              
             </Table.Root>
 
             <Flex display={"flex"} justify="flex-end" alignItems={"end"} width={"100%"} mt={"3"}>

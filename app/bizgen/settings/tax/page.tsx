@@ -5,6 +5,7 @@ import { Button, ButtonGroup, Flex, Heading, IconButton, Pagination, Table } fro
 import { useState } from "react";
 import TaxDialog from "./taxdialog";
 import { LuChevronLeft, LuChevronRight } from "react-icons/lu";
+import Loading from "@/components/loading";
 
 export default function SettingTax(){
     const [loading, setLoading] = useState(false);
@@ -17,6 +18,8 @@ export default function SettingTax(){
     const [isSuccess, setIsSuccess] = useState(false);
     const [errorTitle, setErrorTitle] = useState('');
     const [errorMessage, setErrorMessage] = useState('');
+
+    if (loading) return <Loading/>;
     
     return(
         <SidebarWithHeader username={"-"}>

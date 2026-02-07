@@ -2,99 +2,273 @@
 
 import UpgradeRequiredDialog from "@/components/dialog/UpgradeRequiredDialog";
 import SidebarWithHeader from "@/components/ui/SidebarWithHeader";
-import { Button, ButtonGroup, CloseButton, Dialog, Flex, Heading, IconButton, Pagination, Portal, Table, Tabs } from "@chakra-ui/react";
-import { useState } from "react";
+import { Button, ButtonGroup, CloseButton, Dialog, Flex, Heading, IconButton, Pagination, Portal, Table, Tabs, Text } from "@chakra-ui/react";
+import { useDebugValue, useEffect, useState } from "react";
 import { FiTrash, FiEdit } from "react-icons/fi";
 import { LuChevronLeft, LuChevronRight } from "react-icons/lu";
 import AccountCodeDialog from "./accountcodedialog";
 import BankAccountDialog from "./bankaccountdialog";
+import Loading from "@/components/loading";
+import { GetAccountCodeData, getAllAccountCode } from "@/lib/master/account-code";
+import { createBankAccount, deleteBankAccount, getAllBankAccount, GetBankAccountData, updateBankAccount } from "@/lib/master/bank-account";
+import { checkAuthOrRedirect, DecodedAuthToken, getAuthInfo } from "@/lib/auth/auth";
+import { AlertMessage } from "@/components/ui/alert";
+import { getLang } from "@/lib/i18n";
 
 export default function SettingFinance(){
     const [loading, setLoading] = useState(false);
+    const [auth, setAuth] = useState<DecodedAuthToken | null>(null);
+
     const [isAccountDialogOpen, setIsAccountDialogOpen] = useState(false);
-    const [isBankDialogOpen, setIsBankDialogOpen] = useState(false);
-    const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
     const [accountCodePagination, setAccountCodePagination] = useState({ total_pages: 1, page: 1 });
     const [accountCodePage, setAccountCodePage] = useState(1);
+    const [findAccountCode, setFindAccountCode] = useState('');
+    const [accountCodeData, setAccountCodeData] = useState<GetAccountCodeData[]>([]);
+    const [editingAccountCode, setEditingAccountCode] = useState<GetAccountCodeData | null>(null);
+
+    const [isBankDialogOpen, setIsBankDialogOpen] = useState(false);
     const [bankAccountPage, setBankAccountPage] = useState(1);
     const [bankAccountPagination, setBankAccountPagination] = useState({ total_pages: 1, page: 1 });
-    const [findAccountCode, setFindAccountCode] = useState('');
     const [findBankAccount, setFindBankAccount] = useState('');
+    const [bankAccountData, setBankAccountData] = useState<GetBankAccountData[]>([]);
+    const [editingBankAccount, setEditingBankAccount] = useState<GetBankAccountData | null>(null);
+
+    const t = getLang("en"); 
+
+    const handleOpenBankAccountDialog = () => {
+        setIsBankDialogOpen(true);
+    };
+
+    const handleOpenAccountCodeDialog = () => {
+        setIsAccountDialogOpen(true);
+    }
+    
+    const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
+    
     const [showAlert, setShowAlert] = useState(false);
+    const [titlePopup, setTitlePopup] = useState('');
+    const [messagePopup, setMessagePopup] = useState('');
     const [isSuccess, setIsSuccess] = useState(false);
-    const [errorTitle, setErrorTitle] = useState('');
-    const [errorMessage, setErrorMessage] = useState('');
+
+    const [activeTab, setActiveTab] = useState<"bank-account" | "account-code">("bank-account");
+
+    useEffect(() => {
+        init();
+    }, [accountCodePage, bankAccountPage]);
+
+    const init = async () => {
+        setLoading(true);
+                
+        const valid = await checkAuthOrRedirect();
+        if(!valid) return;
+                
+        const info = getAuthInfo();
+        setAuth(info);
+
+        try {
+            const accountCodeRes = await getAllAccountCode(accountCodePage, 10, findAccountCode);
+            setAccountCodeData(accountCodeRes.data);
+            setAccountCodePagination((prev) => ({
+                ...prev,
+                total_pages: accountCodeRes.pagination?.total_pages || 1,
+                page: accountCodePage,
+            }));
+
+            const bankAccountRes = await getAllBankAccount(bankAccountPage, 10, findBankAccount);
+            setBankAccountData(bankAccountRes.data);
+            setBankAccountPagination((prev) => ({
+                ...prev,
+                total_pages: bankAccountRes.pagination?.total_pages || 1,
+                page: bankAccountPage,
+            }));
+        } catch (error: any){
+            setAccountCodeData([]);
+            setBankAccountData([]);
+        } finally {
+            setLoading(false);
+        }
+    }
+
+    if (loading) return <Loading/>;
+
+    const handleCreateBankAccount =async(data: {
+        bank_number: string;
+        bank_name: string;
+        currency_id: string;
+        bank_branch: string;
+        is_primary: boolean;
+    }) => {
+        try {
+            setLoading(true);
+            await createBankAccount(data);
+            setShowAlert(true);
+            setIsSuccess(true);
+            setTitlePopup(t.master.success);
+            setMessagePopup(t.bank_account.success_bank_create);
+            setTimeout(() => setShowAlert(false), 6000);
+            setIsBankDialogOpen(false);
+            init();
+        } catch (err: any) {
+            setShowAlert(true);
+            setIsSuccess(false);
+            setTitlePopup(t.master.error);
+            setMessagePopup(err.message || t.master.error_msg);
+            setTimeout(() => setShowAlert(false), 6000);
+        } finally {
+            setLoading(false);
+        }
+    }
+
+    const handleUpdateBankAccount = async (data: {
+        bank_account_id: string;
+        bank_name: string;
+        currency_id: string;
+        bank_branch: string;
+        is_primary: boolean;
+    }) => {
+        try {
+            setLoading(true);
+            await updateBankAccount(data);
+            setShowAlert(true);
+            setIsSuccess(true);
+            setTitlePopup(t.master.success);
+            setMessagePopup(t.bank_account.success_bank_update);
+            setTimeout(() => setShowAlert(false), 6000);
+            setIsBankDialogOpen(false);
+            init();
+        } catch (err: any) {
+            setShowAlert(true);
+            setIsSuccess(false);
+            setTitlePopup(t.master.error);
+            setMessagePopup(err.message || t.master.error_msg);
+            setTimeout(() => setShowAlert(false), 6000);
+        } finally {
+            setLoading(false);
+        }
+    }
+
+    const handleDeleteBankAccount = async({ bank_account_id }: { bank_account_id: string }) => {
+        try {
+            setLoading(true);
+            await deleteBankAccount(bank_account_id);
+            setShowAlert(true);
+            setIsSuccess(true);
+            setTitlePopup(t.master.success);
+            setMessagePopup(t.bank_account.success_bank_delete);
+            setTimeout(() => setShowAlert(false), 8000);
+            init();
+        } catch (error : any){
+            setShowAlert(true);
+            setIsSuccess(false);
+            setTitlePopup(t.master.error);
+            setMessagePopup(t.master.error_msg + error.message);
+            setTimeout(() => setShowAlert(false), 8000);
+            init();
+        } finally {
+            setLoading(false);
+        }
+    }
     
     return(
-        <SidebarWithHeader username={"-"}>
+        <SidebarWithHeader username={auth?.username ?? "Unknown"} daysToExpire={auth?.days_remaining ?? 0}>
             <Heading mb={6}>Finance ERP Settings</Heading>
 
-            {/* {showAlert && <AlertMessage title={errorTitle} description={errorMessage} isSuccess={isSuccess} />} */}
+            {showAlert && <AlertMessage title={titlePopup} description={messagePopup} isSuccess={isSuccess} />}
 
-            <Tabs.Root defaultValue="bank-account">
+            <Tabs.Root value={activeTab} onValueChange={(details) => setActiveTab(details.value as "bank-account" | "account-code")}>
                 <Tabs.List>
-                    <Tabs.Trigger value="bank-account">Bank Account</Tabs.Trigger>
-                    <Tabs.Trigger value="account-code">Account Code</Tabs.Trigger>
+                    <Tabs.Trigger value="bank-account">{t.bank_account.title}</Tabs.Trigger>
+                    <Tabs.Trigger value="account-code">{t.account_code.title}</Tabs.Trigger>
                 </Tabs.List>
 
                 <Tabs.Content value="bank-account">
 
                     <Flex gap={2} display={"flex"} mb={"2"} mt={"2"}>
-                        <Heading mb={6} width={"100%"}>Bank Account List</Heading>
-                        <Button>Create New Bank Account</Button>
+                        <Heading mb={6} width={"100%"}>{t.bank_account.title_2}</Heading>
+                        <Button bg={"#E77A1F"} color={"white"} cursor={"pointer"} onClick={handleOpenBankAccountDialog}>{t.bank_account.create_button}</Button>
                     </Flex>           
 
-                    {/* <BankAccountDialog 
-                        isOpen={isBankDialogOpen}
+                    <BankAccountDialog isOpen={isBankDialogOpen}
                         setIsOpen={(open) => {
                             setIsBankDialogOpen(open);
-                            if (!open) setEditingBank(null);
+                            if (!open) setEditingBankAccount(null);
                         }}
-                        title={editingBank ? "Update Bank Account" : "Create Bank Account"}
-                        placeholders={editingBank ? { nomorRekening: editingBank.bank_number, bank: editingBank.bank_name, cabang: editingBank.bank_branch } : undefined}
-                        onSubmit={(data) => editingBank ? handleSubmitNewBankAccount(data) : handleSubmitNewBankAccount(data)}
-                    /> */}
+                        title={editingBankAccount ? t.bank_account.update_button : t.bank_account.create_button}
+                        placeholders={editingBankAccount ? { 
+                            bank_account_id: editingBankAccount.bank_account_id, 
+                            bank_name: editingBankAccount.bank_name,
+                            bank_branch: editingBankAccount.bank_branch,
+                            bank_number: editingBankAccount.bank_number,
+                            is_primary: editingBankAccount.is_primary,
+                            currency_id: editingBankAccount.currency_id
+                         } : undefined}
+                        onSubmit={(data) => {
+                            if(editingBankAccount) {
+                                handleUpdateBankAccount({
+                                    bank_account_id: data.bank_account_id ?? editingBankAccount.bank_account_id,
+                                    bank_name: data.bank_name,
+                                    currency_id: data.currency_id,
+                                    bank_branch: data.bank_branch,
+                                    is_primary: data.is_primary
+                                })
+                            } else {
+                                handleCreateBankAccount({
+                                    bank_number: data.bank_number,
+                                    bank_name: data.bank_name,
+                                    currency_id: data.currency_id,
+                                    bank_branch: data.bank_branch,
+                                    is_primary: data.is_primary
+                                })
+                            }
+                        }}
+                    />
 
                     <Table.Root showColumnBorder variant="outline" background={"white"}>
                         <Table.Header>
                             <Table.Row bg="bg.subtle">
-                                <Table.ColumnHeader textAlign={"center"}>Bank Number</Table.ColumnHeader>
-                                <Table.ColumnHeader textAlign={"center"}>Bank Branch</Table.ColumnHeader>
-                                <Table.ColumnHeader textAlign={"center"}>Bank Name</Table.ColumnHeader>
-                                <Table.ColumnHeader textAlign={"center"}>Currency</Table.ColumnHeader>
-                                <Table.ColumnHeader textAlign={"center"}>Action</Table.ColumnHeader>
+                                <Table.ColumnHeader textAlign={"center"}>{t.bank_account.bank_number}</Table.ColumnHeader>
+                                <Table.ColumnHeader textAlign={"center"}>{t.bank_account.bank_branch}</Table.ColumnHeader>
+                                <Table.ColumnHeader textAlign={"center"}>{t.bank_account.bank_name}</Table.ColumnHeader>
+                                <Table.ColumnHeader textAlign={"center"}>{t.bank_account.currency}</Table.ColumnHeader>
+                                <Table.ColumnHeader textAlign={"center"}>{t.master.action}</Table.ColumnHeader>
                             </Table.Row>
                         </Table.Header>   
                         <Table.Body>
-                            {/* {bankAccountData?.map((bank) => (
+                            {bankAccountData?.map((bank) => (
                             <Table.Row key={bank.bank_number}>
                                 <Table.Cell textAlign={"center"}>{bank.bank_number}</Table.Cell>
                                 <Table.Cell textAlign={"center"}>{bank.bank_branch}</Table.Cell>
                                 <Table.Cell textAlign={"center"}>{bank.bank_name}</Table.Cell>
-                                <Table.Cell textAlign={"center"}>{bank.currency_name}</Table.Cell>
+                                <Table.Cell textAlign={"center"}>{bank.currency_name} ({bank.currency_symbol})</Table.Cell>
                                 <Table.Cell textAlign="center">
                                     <Flex justify="center" gap={4} fontSize={"2xl"}>
+                                        <FiEdit style={{ cursor: "pointer" }}
+                                            onClick={() => {
+                                                setEditingBankAccount(bank);
+                                                setIsBankDialogOpen(true);
+                                            }}
+                                        />
                                         <Dialog.Root>
                                             <Dialog.Trigger asChild>
-                                                <FiTrash />
+                                                <FiTrash color="red" />
                                             </Dialog.Trigger>
                                             <Portal>
                                                 <Dialog.Backdrop/>
                                                 <Dialog.Positioner>
                                                     <Dialog.Content>
                                                         <Dialog.Header>
-                                                            <Dialog.Title>Hapus Rekening Bank</Dialog.Title>
+                                                            <Dialog.Title>{t.delete_popup.title}</Dialog.Title>
                                                         </Dialog.Header>
 
                                                         <Dialog.Body>
-                                                            <Text>Apakah anda yakin ingin menghapus rekening bank ini ?</Text>
+                                                            <Text>{t.delete_popup.description}</Text>
                                                         </Dialog.Body>
 
                                                         <Dialog.Footer>
                                                             <Dialog.ActionTrigger asChild>
-                                                                <Button variant="outline">Batal</Button>
+                                                                <Button variant="outline">{t.delete_popup.cancel}</Button>
                                                             </Dialog.ActionTrigger>
-                                                            <Button onClick={() => handleDeleteBankAccount({ banknumber: bank.bank_number })}>Hapus</Button>
+                                                            <Button bg={"red"} color={"white"} cursor={"pointer"} onClick={() => handleDeleteBankAccount({ bank_account_id: bank.bank_account_id })}>Hapus</Button>
                                                         </Dialog.Footer>
                                                         
                                                         <Dialog.CloseTrigger asChild>
@@ -109,7 +283,7 @@ export default function SettingFinance(){
                                     </Flex>
                                 </Table.Cell>
                             </Table.Row>
-                            ))} */}
+                            ))}
                         </Table.Body>                                               
                     </Table.Root>
 
@@ -134,33 +308,37 @@ export default function SettingFinance(){
                     </Flex>
 
                 </Tabs.Content>
+
                 <Tabs.Content value="account-code">
-                    
                     <Flex gap={2} display={"flex"} mb={"2"} mt={"2"}>
-                        <Heading mb={6} width={"100%"}>Account Code List</Heading>
-                        <Button>Create New Account Code</Button>
+                        <Heading mb={6} width={"100%"}>{t.account_code.title_2}</Heading>
+                        <Button bg={"#E77A1F"} color={"white"} cursor={"pointer"} onClick={handleOpenAccountCodeDialog}>{t.account_code.create_button}</Button>
                     </Flex>
 
-                    {/* <AccountCodeDialog
+                    <AccountCodeDialog
                         isOpen={isAccountDialogOpen}
                         setIsOpen={(open) => {
                             setIsAccountDialogOpen(open);
-                            if (!open) setEditingAccount(null);
+                            if (!open) setEditingAccountCode(null);
                         }}
-                        title={editingAccount ? "Update Kode Akun" : "Create Kode Akun"}
+                        title={editingAccountCode ? t.account_code.update_button : t.account_code.create_button}
                         placeholders={
-                            editingAccount
+                            editingAccountCode
                             ? {
-                                kodeAkun: editingAccount.code,
-                                namaAkun: editingAccount.account_name,
-                                aliasAkun: editingAccount.account_name_alias,
+                                account_code_id: editingAccountCode.account_code_id,
+                                account_code: editingAccountCode.account_code,
+                                account_code_name: editingAccountCode.account_code_name,
+                                account_code_name_alias: editingAccountCode.account_code_name_alias,
+                                account_type: editingAccountCode.account_type,
+                                is_active: editingAccountCode.is_active,
+                                parent_account_code_id: editingAccountCode.parent_account_code_id
                                 }
                             : undefined
                         }
                         onSubmit={(data) =>
-                            editingAccount ? handleUpdateAccountCode(data) : handleSubmitNewAccountCode(data)
+                            editingAccountCode ? undefined : undefined
                         }
-                    /> */}
+                    />
 
                     <UpgradeRequiredDialog
                         isOpen={showUpgradeDialog}
@@ -172,48 +350,48 @@ export default function SettingFinance(){
                     <Table.Root showColumnBorder variant="outline" background={"white"}>
                         <Table.Header>
                             <Table.Row bg="bg.subtle">
-                                <Table.ColumnHeader textAlign={"center"}>Code</Table.ColumnHeader>
-                                <Table.ColumnHeader textAlign={"center"}>Account Name</Table.ColumnHeader>
-                                <Table.ColumnHeader textAlign={"center"}>Account Name Alias</Table.ColumnHeader>
-                                <Table.ColumnHeader textAlign={"center"}>Action</Table.ColumnHeader>
+                                <Table.ColumnHeader textAlign={"center"}>{t.account_code.account_code}</Table.ColumnHeader>
+                                <Table.ColumnHeader textAlign={"center"}>{t.account_code.account_code_name}</Table.ColumnHeader>
+                                <Table.ColumnHeader textAlign={"center"}>{t.account_code.account_code_name_alias}</Table.ColumnHeader>
+                                <Table.ColumnHeader textAlign={"center"}>{t.master.action}</Table.ColumnHeader>
                             </Table.Row>
                         </Table.Header>   
-                        {/* <Table.Body>
+                        <Table.Body>
                             {accountCodeData?.map((account) => (
-                            <Table.Row key={account.id}>
-                                <Table.Cell textAlign={"center"}>{account.code}</Table.Cell>
-                                <Table.Cell textAlign={"center"}>{account.account_name}</Table.Cell>
-                                <Table.Cell textAlign={"center"}>{account.account_name_alias}</Table.Cell>
+                            <Table.Row key={account.account_code_id}>
+                                <Table.Cell textAlign={"center"}>{account.account_code}</Table.Cell>
+                                <Table.Cell textAlign={"center"}>{account.account_code_name}</Table.Cell>
+                                <Table.Cell textAlign={"center"}>{account.account_code_name_alias}</Table.Cell>
                                 <Table.Cell textAlign="center">
                                     <Flex justify="center" gap={4} fontSize={"2xl"}>
                                         <FiEdit
                                             style={{ cursor: "pointer" }}
                                             onClick={() => {
-                                            setEditingAccount(account);
+                                            setEditingAccountCode(account);
                                             setIsAccountDialogOpen(true);
                                         }}
                                         />
                                         <Dialog.Root>
                                             <Dialog.Trigger asChild>
-                                                <FiTrash />
+                                                <FiTrash color="red" />
                                             </Dialog.Trigger>
                                             <Portal>
                                                 <Dialog.Backdrop/>
                                                 <Dialog.Positioner>
                                                     <Dialog.Content>
                                                         <Dialog.Header>
-                                                            <Dialog.Title>Hapus Kode Akun</Dialog.Title>
+                                                            <Dialog.Title>{t.delete_popup.title}</Dialog.Title>
                                                         </Dialog.Header>
 
                                                         <Dialog.Body>
-                                                            <Text>Apakah anda yakin ingin menghapus kode akun ini ?</Text>
+                                                            <Text>{t.delete_popup.description}</Text>
                                                         </Dialog.Body>
 
                                                         <Dialog.Footer>
                                                             <Dialog.ActionTrigger asChild>
-                                                                <Button variant="outline">Batal</Button>
+                                                                <Button variant="outline">{t.delete_popup.cancel}</Button>
                                                             </Dialog.ActionTrigger>
-                                                            <Button onClick={() => handleDeleteAccountCode({ accountcode: account.code })}>Hapus</Button>
+                                                            {/* <Button onClick={() => handleDeleteAccountCode({ accountcode: account.code })}>Hapus</Button> */}
                                                         </Dialog.Footer>
                                                         
                                                         <Dialog.CloseTrigger asChild>
@@ -229,7 +407,7 @@ export default function SettingFinance(){
                                 </Table.Cell>
                             </Table.Row>
                             ))}
-                        </Table.Body>                                                */}
+                        </Table.Body>                                               
                     </Table.Root>
 
                     <Flex display={"flex"} justify="flex-end" alignItems={"end"} width={"100%"} mt={"3"}>

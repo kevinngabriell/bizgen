@@ -1,11 +1,33 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useColorModeValue } from "@/components/ui/color-mode";
 import SidebarWithHeader from "@/components/ui/SidebarWithHeader";
+import { checkAuthOrRedirect, DecodedAuthToken, getAuthInfo } from "@/lib/auth/auth";
 import {Card, Heading, SimpleGrid, Stat, Table} from "@chakra-ui/react";
+import Loading from "@/components/loading";
 
 export default function Dashboard (){
-    const daysToExpire = 3; // TODO: replace with value from API
+    const [auth, setAuth] = useState<DecodedAuthToken | null>(null);
+    const [loading, setLoading] = useState(false);
+
+    const init = async () => {
+        setLoading(true);
+
+        const valid = await checkAuthOrRedirect();
+        if(!valid) return;
+        
+        const info = getAuthInfo();
+        setAuth(info);
+
+        setLoading(false);
+    }
+
+    useEffect(() => {
+        init();
+    }, []);
+
+    if(loading) return <Loading/>
 
     const dummyData = [
         { id: 1, name: "Produk A", price: 10000, stock: 20 },
@@ -14,7 +36,7 @@ export default function Dashboard (){
     ];
 
     return(
-        <SidebarWithHeader username="kevin" daysToExpire={daysToExpire}>
+        <SidebarWithHeader username={auth?.username ?? "Unknown"} daysToExpire={auth?.days_remaining ?? 0}>
             <Heading mb={4}>ERP Dashboard</Heading>
 
             <SimpleGrid columns={{ base: 1, md: 2, lg: 4 }} gap="20px">

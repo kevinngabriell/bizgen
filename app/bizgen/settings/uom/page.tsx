@@ -1,33 +1,72 @@
 "use client";
 
 import SidebarWithHeader from "@/components/ui/SidebarWithHeader";
-import { Button, ButtonGroup, Flex, Heading, IconButton, Pagination, Table } from "@chakra-ui/react";
-import { useState } from "react";
+import { Button, ButtonGroup, CloseButton, Dialog, Flex, Heading, IconButton, Pagination, Portal, Table, Text } from "@chakra-ui/react";
+import { useEffect, useState } from "react";
 import UOMDialog from "./uomDialog";
 import { LuChevronLeft, LuChevronRight } from "react-icons/lu";
+import Loading from "@/components/loading";
+import { getAllUOM, UOMData } from "@/lib/master/uom";
+import { checkAuthOrRedirect, DecodedAuthToken, getAuthInfo } from "@/lib/auth/auth";
+import { AlertMessage } from "@/components/ui/alert";
+import { FiTrash } from "react-icons/fi";
 
 export default function SettingUOM(){
+    const [auth, setAuth] = useState<DecodedAuthToken | null>(null);
     const [loading, setLoading] = useState(false);
-    // const [auth, setAuth] = useState<DecodedAuthToken | null>(null);
+    const [isUOMOpen, setIsUOMOpen] = useState(false);
+    
     const [uomPage, setUOMPage] = useState(1);
     const [uomPagination, setUOMPagination] = useState({ total_pages: 1, page: 1 });
     const [findUOM, setFindUOM] = useState('');
-    // const [uomData, setUOMData] = useState<UOM[]>([]);
-    const [isUOMOpen, setIsUOMOpen] = useState(false);
-    const [showAlert, setShowAlert] = useState(false);
-    const [isSuccess, setIsSuccess] = useState(false);
-    const [errorTitle, setErrorTitle] = useState('');
-    const [errorMessage, setErrorMessage] = useState('');
+    const [uomData, setUOMData] = useState<UOMData[]>([]);
     const [editingUOM, setEditingUOM] = useState('');   
+
+    const [showAlert, setShowAlert] = useState(false);
+    const [titlePopup, setTitlePopup] = useState('');
+    const [messagePopup, setMessagePopup] = useState('');
+    const [isSuccess, setIsSuccess] = useState(false);
+
+    useEffect(() => {
+        init();
+    }, [uomPage]);
+
+    const init = async () => {
+        setLoading(true);
+
+        const valid = await checkAuthOrRedirect();
+        if(!valid) return;
+
+        const info = getAuthInfo();
+        setAuth(info);
+
+        try {
+            const uomRes = await getAllUOM(uomPage, 10, findUOM);
+            setUOMData(uomRes.data);
+            setUOMPagination((prev) => ({
+                ...prev,
+                total_pages: uomRes.pagination?.total_pages || 1,
+                page: uomPage,
+            }));
+
+        } catch (error: any){
+            setUOMData([]);
+
+        } finally {
+            setLoading(false);
+        }
+    }
+    
+    if (loading) return <Loading/>;
     
     return(
         <SidebarWithHeader username={"-"}>
             <Flex gap={2} display={"flex"} mb={"2"} mt={"2"}>
                 <Heading mb={6} width={"100%"}>UOM ERP Settings</Heading>
-                <Button >Create New Shipment</Button>
+                <Button bg={"#E77A1F"} color={"white"} cursor={"pointer"}>Create New UOM</Button>
             </Flex>         
 
-            {/* {showAlert && <AlertMessage title={errorTitle} description={errorMessage} isSuccess={isSuccess} />} */}
+            {showAlert && <AlertMessage title={titlePopup} description={messagePopup} isSuccess={isSuccess} />}
 
             <UOMDialog 
                 isOpen={isUOMOpen} 
@@ -50,11 +89,11 @@ export default function SettingUOM(){
                         <Table.ColumnHeader textAlign={"center"}>Action</Table.ColumnHeader>
                     </Table.Row>
                 </Table.Header>
-                {/* <Table.Body>
+                <Table.Body>
                     {uomData?.map((uom) => (
-                    <Table.Row key={uom.uomID}>
-                        <Table.Cell textAlign={"center"}>{uom.uomName}</Table.Cell>
-                        <Table.Cell textAlign={"center"}>{uom.conversionFactor}</Table.Cell>
+                    <Table.Row key={uom.uom_id}>
+                        <Table.Cell textAlign={"center"}>{uom.uom_name}</Table.Cell>
+                        <Table.Cell textAlign={"center"}>{uom.conversion_factor}</Table.Cell>
                         <Table.Cell textAlign="center">
                             <Flex justify="center" gap={4} fontSize={"2xl"}>
                                 <Dialog.Root>
@@ -77,7 +116,7 @@ export default function SettingUOM(){
                                                     <Dialog.ActionTrigger asChild>
                                                         <Button variant="outline">Batal</Button>
                                                     </Dialog.ActionTrigger>
-                                                    <Button onClick={() => handleDeleteUOM({ uom_id: uom.uomID })}>Hapus</Button>
+                                                    {/* <Button onClick={() => handleDeleteUOM({ uom_id: uom.uomID })}>Hapus</Button> */}
                                                 </Dialog.Footer>
                                                             
                                                 <Dialog.CloseTrigger asChild>
@@ -91,7 +130,7 @@ export default function SettingUOM(){
                         </Table.Cell>
                     </Table.Row>
                 ))}
-                </Table.Body> */}
+                </Table.Body>
             </Table.Root>          
 
             <Flex display={"flex"} justify="flex-end" alignItems={"end"} width={"100%"} mt={"3"}>

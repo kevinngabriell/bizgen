@@ -1,33 +1,72 @@
 "use client";
 
 import SidebarWithHeader from "@/components/ui/SidebarWithHeader";
-import { Button, ButtonGroup, Flex, Heading, IconButton, Pagination, Table } from "@chakra-ui/react";
-import { useState } from "react";
+import { Button, ButtonGroup, CloseButton, Dialog, Flex, Heading, IconButton, Pagination, Portal, Table, Text } from "@chakra-ui/react";
+import { useEffect, useState } from "react";
 import ShipViaDialog from "./shipviaDialog";
 import { LuChevronLeft, LuChevronRight } from "react-icons/lu";
+import Loading from "@/components/loading";
+import { getAllShipVia, GetShipViaData } from "@/lib/master/ship-via";
+import { checkAuthOrRedirect, DecodedAuthToken, getAuthInfo } from "@/lib/auth/auth";
+import { AlertMessage } from "@/components/ui/alert";
+import { FiTrash } from "react-icons/fi";
 
 export default function SettingShipVia(){
+    const [auth, setAuth] = useState<DecodedAuthToken | null>(null);
     const [loading, setLoading] = useState(false);
-    // const [auth, setAuth] = useState<DecodedAuthToken | null>(null);
+    const [isShipViaOpen, setIsShipViaOpen] = useState(false);
+    
     const [shipViaPage, SetShipViaPage] = useState(1);
     const [shipViaPagination, setShipViaPagination] = useState({ total_pages: 1, page: 1 });
     const [findShipVia, setFindShipVia] = useState('');
-    // const [shipViaData, setShipViaData] = useState<ShipVia[]>([]);
-    const [isShipViaOpen, setIsShipViaOpen] = useState(false);
+    const [shipViaData, setShipViaData] = useState<GetShipViaData[]>([]);
+    const [editingShipVia, setEditingShipVia] = useState<GetShipViaData | null>(null);
+
     const [showAlert, setShowAlert] = useState(false);
+    const [titlePopup, setTitlePopup] = useState('');
+    const [messagePopup, setMessagePopup] = useState('');
     const [isSuccess, setIsSuccess] = useState(false);
-    const [errorTitle, setErrorTitle] = useState('');
-    const [errorMessage, setErrorMessage] = useState('');
-    const [editingShipVia, setEditingShipVia] = useState('');    
+     
+    useEffect(() => {
+        init();
+    }, [shipViaPage]);
+
+    const init = async () => {
+        setLoading(true);
+
+        const valid = await checkAuthOrRedirect();
+        if(!valid) return;
+
+        const info = getAuthInfo();
+        setAuth(info);
+
+        try {
+            const shipViaRes = await getAllShipVia(shipViaPage, 10, findShipVia);
+            setShipViaData(shipViaRes.data);
+            setShipViaPagination((prev) => ({
+                ...prev,
+                total_pages: shipViaRes.pagination?.total_pages || 1,
+                page: shipViaPage,
+            }));
+
+        } catch (error: any){
+            setShipViaData([]);
+
+        } finally {
+            setLoading(false);
+        }
+    }
+
+    if (loading) return <Loading/>;
     
     return(
-        <SidebarWithHeader username={"-"}>
+        <SidebarWithHeader username={auth?.username ?? "Unknown"}>
             <Flex gap={2} display={"flex"} mb={"2"} mt={"2"}>
                 <Heading mb={6} width={"100%"}>Ship Via ERP Settings</Heading>
-                <Button>Create New Ship Via</Button>
+                <Button bg={"#E77A1F"} color={"white"} cursor={"pointer"}>Create New Ship Via</Button>
             </Flex>         
 
-            {/* {showAlert && <AlertMessage title={errorTitle} description={errorMessage} isSuccess={isSuccess} />} */}
+            {showAlert && <AlertMessage title={titlePopup} description={messagePopup} isSuccess={isSuccess} />}
 
             <ShipViaDialog 
                 isOpen={isShipViaOpen} 
@@ -39,7 +78,6 @@ export default function SettingShipVia(){
                 onSubmit={(data) =>
                     editingShipVia
                 }
-                shipvia_id={editingShipVia}
             />            
 
             <Table.Root showColumnBorder variant="outline" background={"white"} >
@@ -49,10 +87,10 @@ export default function SettingShipVia(){
                         <Table.ColumnHeader textAlign={"center"}>Action</Table.ColumnHeader>
                     </Table.Row>
                 </Table.Header>
-                {/* <Table.Body>
+                <Table.Body>
                     {shipViaData?.map((shipvia) => (
-                    <Table.Row key={shipvia.shipID}>
-                        <Table.Cell textAlign={"center"}>{shipvia.shipName}</Table.Cell>
+                    <Table.Row key={shipvia.ship_via_id}>
+                        <Table.Cell textAlign={"center"}>{shipvia.ship_via_name}</Table.Cell>
                         <Table.Cell textAlign="center">
                             <Flex justify="center" gap={4} fontSize={"2xl"}>
                                 <Dialog.Root>
@@ -75,7 +113,7 @@ export default function SettingShipVia(){
                                                     <Dialog.ActionTrigger asChild>
                                                         <Button variant="outline">Batal</Button>
                                                     </Dialog.ActionTrigger>
-                                                    <Button onClick={() => handleDeleteShipVia({ shipID: shipvia.shipID })}>Hapus</Button>
+                                                    {/* <Button onClick={() => handleDeleteShipVia({ shipID: shipvia.shipID })}>Hapus</Button> */}
                                                 </Dialog.Footer>
                                                             
                                                 <Dialog.CloseTrigger asChild>
@@ -89,7 +127,7 @@ export default function SettingShipVia(){
                         </Table.Cell>
                     </Table.Row>
                 ))}
-                </Table.Body> */}
+                </Table.Body>
             </Table.Root>          
 
             <Flex display={"flex"} justify="flex-end" alignItems={"end"} width={"100%"} mt={"3"}>

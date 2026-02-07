@@ -7,7 +7,6 @@ interface ShipViaDialogProps {
     isOpen: boolean;
     setIsOpen: (open: boolean) => void;
     title: string;
-    shipvia_id: string;
     placeholders?: {
         shipName?: string;
     };
