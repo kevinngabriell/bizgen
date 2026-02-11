@@ -1,15 +1,16 @@
 "use client";
 
 import SidebarWithHeader from "@/components/ui/SidebarWithHeader";
-import { Button, ButtonGroup, CloseButton, Dialog, Flex, Heading, IconButton, Pagination, Portal, Table, Text } from "@chakra-ui/react";
+import { Button, ButtonGroup, CloseButton, Dialog, Flex, Heading, IconButton, Input, InputGroup, Pagination, Portal, Table, Text } from "@chakra-ui/react";
 import { useEffect, useState } from "react";
 import OriginDialog from "./originDialog";
-import { LuChevronLeft, LuChevronRight } from "react-icons/lu";
+import { LuChevronLeft, LuChevronRight, LuSearch } from "react-icons/lu";
 import Loading from "@/components/loading";
-import { createOrigin, deleteOrigin, getAllOrigin, GetOriginData } from "@/lib/master/origin";
+import { createOrigin, deleteOrigin, getAllOrigin, GetOriginData, updateOrigin } from "@/lib/master/origin";
 import { checkAuthOrRedirect, DecodedAuthToken, getAuthInfo } from "@/lib/auth/auth";
 import { AlertMessage } from "@/components/ui/alert";
-import { FiTrash } from "react-icons/fi";
+import { FiEdit, FiTrash } from "react-icons/fi";
+import { getLang } from "@/lib/i18n";
 
 export default function SettingOrigin(){
     const [auth, setAuth] = useState<DecodedAuthToken | null>(null);
@@ -26,6 +27,8 @@ export default function SettingOrigin(){
     const [titlePopup, setTitlePopup] = useState('');
     const [messagePopup, setMessagePopup] = useState('');
     const [isSuccess, setIsSuccess] = useState(false);
+
+    const t = getLang("en"); 
     
     useEffect(() => {
         init();
@@ -70,15 +73,15 @@ export default function SettingOrigin(){
             await createOrigin(data);
             setShowAlert(true);
             setIsSuccess(true);
-            setTitlePopup("Success");
-            setMessagePopup("Data origin berhasil ditambahkan");
+            setTitlePopup(t.master.success);
+            setMessagePopup(t.origin.success_origin_create);
             setIsOriginOpen(false);
             init();
         } catch (err: any) {
             setShowAlert(true);
             setIsSuccess(false);
-            setTitlePopup("Gagal");
-            setMessagePopup(err.message || "Terjadi kesalahan");
+            setTitlePopup(t.master.error);
+            setMessagePopup(err.message || t.master.error_msg);
         } finally {
             setLoading(false);
         }
@@ -89,8 +92,31 @@ export default function SettingOrigin(){
         setIsOriginOpen(true);
     };
 
-    const handleUpdateOrigin = async() => {
-
+    const handleUpdateOrigin = async(data: {
+        origin_id: string;
+        origin_name: string;
+        region: string;
+        is_free_trade: number;
+    }) => {
+        try {
+            setLoading(true);
+            await updateOrigin(data);
+            setShowAlert(true);
+            setIsSuccess(true);
+            setTitlePopup(t.master.success);
+            setMessagePopup(t.origin.success_origin_update);
+            setTimeout(() => setShowAlert(false), 6000);
+            setIsOriginOpen(false);
+            init();
+        } catch (err: any) {
+            setShowAlert(true);
+            setIsSuccess(false);
+            setTitlePopup(t.master.error);
+            setMessagePopup(err.message || t.master.error_msg);
+            setTimeout(() => setShowAlert(false), 6000);
+        } finally {
+            setLoading(false);
+        }
     }
 
     const handleDeleteOrigin = async({ origin_id }: { origin_id: string }) => {
@@ -99,15 +125,15 @@ export default function SettingOrigin(){
             await deleteOrigin(origin_id);
             setShowAlert(true);
             setIsSuccess(true);
-            setTitlePopup('Success');
-            setMessagePopup('Data origin telah berhasil di hapus');
+            setTitlePopup(t.master.success);
+            setMessagePopup(t.origin.success_origin_delete);
             setTimeout(() => setShowAlert(false), 8000);
             init();
         } catch (error : any){
             setShowAlert(true);
             setIsSuccess(false);
-            setTitlePopup('Gagal');
-            setMessagePopup('Terdapat error dengan detail error : ' + error.message);
+            setTitlePopup(t.master.error);
+            setMessagePopup(t.master.error_msg + error.message);
             setTimeout(() => setShowAlert(false), 8000);
             init();
         } finally {
@@ -122,8 +148,22 @@ export default function SettingOrigin(){
     return(
         <SidebarWithHeader username={auth?.username ?? "Unknown"}>
             <Flex gap={2} display={"flex"} mb={"2"} mt={"2"}>
-                <Heading mb={6} width={"100%"}>Origin ERP Settings</Heading>
-                <Button bg={"#E77A1F"} color={"white"} cursor={"pointer"} onClick={handleOpenOriginDialog}>Create New Origin</Button>
+                <Heading mb={6} width={"100%"}>{t.origin.title}</Heading>
+                <Flex gap={2} alignItems={"center"}>
+                    <InputGroup startElement={<LuSearch />}>
+                        <Input placeholder={t.origin.search} bg={"white"} value={findOrigin}
+                            onChange={(e) => setFindOrigin(e.target.value)}
+                            onKeyDown={(e) => {
+                                if (e.key === "Enter") {
+                                    setOriginPage(1);
+                                    init();
+                                }
+                            }}
+                            width="250px"
+                        />
+                    </InputGroup>
+                    <Button bg={"#E77A1F"} color={"white"} cursor={"pointer"} onClick={handleOpenOriginDialog}>{t.origin.create_button}</Button>
+                </Flex>
             </Flex>      
 
             {showAlert && <AlertMessage title={titlePopup} description={messagePopup} isSuccess={isSuccess} />}
@@ -133,20 +173,33 @@ export default function SettingOrigin(){
                 setIsOpen={(open) => {
                     setIsOriginOpen(open);
                 }}
-                title={editingOrigin ? "Update Origin" : "Create Origin"}
+                title={editingOrigin ? t.origin.update_button : t.origin.create_button}
                 placeholders={{origin_id: editingOrigin?.origin_id, origin_name: editingOrigin?.origin_name, region: editingOrigin?.region, is_free_trade: editingOrigin?.is_free_trade}}
-                onSubmit={(data) =>
-                    editingOrigin ? handleUpdateOrigin() : handleCreateOrigin(data)
-                }
+                onSubmit={(data) => {
+                    if(editingOrigin){
+                        handleUpdateOrigin({
+                            origin_id: data.origin_id ?? editingOrigin.origin_id,
+                            origin_name : data.origin_name,
+                            region: data.region,
+                            is_free_trade: data.is_free_trade
+                        });
+                    } else {
+                        handleCreateOrigin({
+                            origin_name : data.origin_name,
+                            region: data.region,
+                            is_free_trade: data.is_free_trade
+                        });
+                    }
+                }}
             />
 
             <Table.Root showColumnBorder variant="outline" background={"white"} >
                 <Table.Header>
                     <Table.Row bg="bg.panel">
-                        <Table.ColumnHeader textAlign={"center"}>Country</Table.ColumnHeader>
-                        <Table.ColumnHeader textAlign={"center"}>Free Trade Area</Table.ColumnHeader>
-                        <Table.ColumnHeader textAlign={"center"}>Region</Table.ColumnHeader>
-                        <Table.ColumnHeader textAlign={"center"}>Action</Table.ColumnHeader>
+                        <Table.ColumnHeader textAlign={"center"}>{t.origin.origin_name}</Table.ColumnHeader>
+                        <Table.ColumnHeader textAlign={"center"}>{t.origin.free_trade}</Table.ColumnHeader>
+                        <Table.ColumnHeader textAlign={"center"}>{t.origin.region}</Table.ColumnHeader>
+                        <Table.ColumnHeader textAlign={"center"}>{t.master.action}</Table.ColumnHeader>
                     </Table.Row>
                 </Table.Header>
                 <Table.Body>
@@ -157,6 +210,13 @@ export default function SettingOrigin(){
                         <Table.Cell textAlign={"center"}>{origin.region}</Table.Cell>
                         <Table.Cell textAlign="center">
                             <Flex justify="center" gap={4} fontSize={"2xl"}>
+                                <FiEdit
+                                    style={{ cursor: "pointer" }}
+                                    onClick={() => {
+                                        setEditingOrigin(origin);
+                                        setIsOriginOpen(true);
+                                    }}
+                                />
                                 <Dialog.Root>
                                     <Dialog.Trigger asChild>
                                         <FiTrash color="red"/>
@@ -166,18 +226,18 @@ export default function SettingOrigin(){
                                         <Dialog.Positioner>
                                             <Dialog.Content>
                                                 <Dialog.Header>
-                                                    <Dialog.Title>Hapus Kode Akun</Dialog.Title>
+                                                    <Dialog.Title>{t.delete_popup.title}</Dialog.Title>
                                                 </Dialog.Header>
 
                                                 <Dialog.Body>
-                                                    <Text>Apakah anda yakin ingin menghapus term ini ?</Text>
+                                                    <Text>{t.delete_popup.description}</Text>
                                                 </Dialog.Body>
 
                                                 <Dialog.Footer>
                                                     <Dialog.ActionTrigger asChild>
-                                                        <Button variant="outline">Batal</Button>
+                                                        <Button variant="outline">{t.delete_popup.cancel}</Button>
                                                     </Dialog.ActionTrigger>
-                                                    {/* <Button onClick={() => handleDeleteOrigin({ originID: origin.origin_id })}>Hapus</Button> */}
+                                                    <Button bg={"red"} color={"white"} cursor={"pointer"} onClick={() => handleDeleteOrigin({ origin_id: origin.origin_id })}>{t.delete_popup.delete}</Button>
                                                 </Dialog.Footer>
                                                             
                                                 <Dialog.CloseTrigger asChild>

@@ -1,8 +1,11 @@
 "use client";
 
+import Loading from "@/components/loading";
 import SidebarWithHeader from "@/components/ui/SidebarWithHeader";
+import { DecodedAuthToken, checkAuthOrRedirect, getAuthInfo } from "@/lib/auth/auth";
 import { Box, Button, Card, Separator, Flex, Field, Heading, IconButton, Input, NumberInput, SimpleGrid, Table, Text, Textarea } from "@chakra-ui/react";
-import { useState } from "react";
+import { useRouter } from "next/router";
+import { useEffect, useState } from "react";
 import { FaPlus, FaTrash } from "react-icons/fa";
 
 type InvoiceItem = {
@@ -23,6 +26,34 @@ export default function CreatePurchaseInvoicePage() {
   const [exchangeRate, setExchangeRate] = useState(1);
   const [poRef, setPoRef] = useState("");
   const [notes, setNotes] = useState("");
+
+  const [auth, setAuth] = useState<DecodedAuthToken | null>(null);
+  const [loading, setLoading] = useState(false);
+  const router = useRouter();
+
+  useEffect(() => {
+    init();
+  }, []);
+
+  const init = async () => {
+    setLoading(true);
+
+    const valid = await checkAuthOrRedirect();
+    if(!valid) return;
+
+    const info = getAuthInfo();
+    setAuth(info);
+
+    try {
+
+    } catch (error: any){
+
+    } finally {
+      setLoading(false);
+    }
+  }
+    
+  if (loading) return <Loading/>;
 
   const [items, setItems] = useState<InvoiceItem[]>([
     {
@@ -80,7 +111,7 @@ export default function CreatePurchaseInvoicePage() {
   };
 
   return (
-    <SidebarWithHeader username="---">
+    <SidebarWithHeader username={auth?.username ?? "Unknown"} daysToExpire={auth?.days_remaining ?? 0}>
       <Heading size="lg">Create Purchase Invoice</Heading>
       
       {/* Invoice Details Card */}

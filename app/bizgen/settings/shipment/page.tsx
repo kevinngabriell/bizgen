@@ -1,15 +1,16 @@
 "use client";
 
 import SidebarWithHeader from "@/components/ui/SidebarWithHeader";
-import { Button, ButtonGroup, CloseButton, Dialog, Flex, Heading, IconButton, Pagination, Portal, Table, Text } from "@chakra-ui/react";
+import { Button, ButtonGroup, CloseButton, Dialog, Flex, Heading, IconButton, Input, InputGroup, Pagination, Portal, Table, Text } from "@chakra-ui/react";
 import { useEffect, useState } from "react";
 import ShipmentDialog from "./shipmentDialog";
-import { LuChevronLeft, LuChevronRight } from "react-icons/lu";
+import { LuChevronLeft, LuChevronRight, LuSearch } from "react-icons/lu";
 import Loading from "@/components/loading";
-import { getAllShipmentPeriod, GetShipmentPeriodData } from "@/lib/master/shipment-period";
+import { createShipmentPeriod, deleteShipmentPeriod, getAllShipmentPeriod, GetShipmentPeriodData, updateShipmentPeriod } from "@/lib/master/shipment-period";
 import { checkAuthOrRedirect, DecodedAuthToken, getAuthInfo } from "@/lib/auth/auth";
-import { FiTrash } from "react-icons/fi";
+import { FiEdit, FiTrash } from "react-icons/fi";
 import { AlertMessage } from "@/components/ui/alert";
+import { getLang } from "@/lib/i18n";
 
 export default function SettingShipment(){
     const [auth, setAuth] = useState<DecodedAuthToken | null>(null);
@@ -26,6 +27,8 @@ export default function SettingShipment(){
     const [titlePopup, setTitlePopup] = useState('');
     const [messagePopup, setMessagePopup] = useState('');
     const [isSuccess, setIsSuccess] = useState(false);
+
+    const t = getLang("en"); 
     
     useEffect(() => {
         init();
@@ -58,12 +61,105 @@ export default function SettingShipment(){
     }
 
     if (loading) return <Loading/>;
-    
+
+    const handleCreateShipmentPeriod = async (data: {
+        shipment_period_name: string;
+        shipment_date_range_start: string;
+        shipment_date_range_end: string;
+    }) => {
+        try {
+            setLoading(true);
+            await createShipmentPeriod(data);
+            setShowAlert(true);
+            setIsSuccess(true);
+            setTitlePopup(t.master.success);
+            setMessagePopup(t.shipment_period.success_shipment_create);
+            setTimeout(() => setShowAlert(false), 6000);
+            setIsShipmentOpen(false);
+            init();
+        } catch (err: any) {
+            setShowAlert(true);
+            setIsSuccess(false);
+            setTitlePopup(t.master.error);
+            setMessagePopup(err.message || t.master.error_msg);
+            setTimeout(() => setShowAlert(false), 6000);
+        } finally {
+            setLoading(false);
+        }
+    }
+
+    const handleUpdateShipmentPeriod  = async(data: {
+        shipment_period_id: string;
+        shipment_period_name: string;
+        shipment_date_range_start: string;
+        shipment_date_range_end: string;
+    }) => {
+        try {
+            setLoading(true);
+            await updateShipmentPeriod(data);
+            setShowAlert(true);
+            setIsSuccess(true);
+            setTitlePopup(t.master.success);
+            setMessagePopup(t.shipment_period.success_shipment_update);
+            setTimeout(() => setShowAlert(false), 6000);
+            setIsShipmentOpen(false);
+            init();
+        } catch (err: any) {
+            setShowAlert(true);
+            setIsSuccess(false);
+            setTitlePopup(t.master.error);
+            setMessagePopup(err.message || t.master.error_msg);
+            setTimeout(() => setShowAlert(false), 6000);
+        } finally {
+            setLoading(false);
+        }
+    }
+
+    const handleOpenShipmentPeriodDialog = () => {
+        setIsShipmentOpen(true);
+    };
+
+    const handleDeleteShipmentPeriod = async({ shipment_period_id }: { shipment_period_id: string }) => {
+        try {
+            setLoading(true);
+            await deleteShipmentPeriod(shipment_period_id);
+            setShowAlert(true);
+            setIsSuccess(true);
+            setTitlePopup(t.master.success);
+            setMessagePopup(t.shipment_period.success_shipment_delete);
+            setTimeout(() => setShowAlert(false), 8000);
+            init();
+        } catch (error : any){
+            setShowAlert(true);
+            setIsSuccess(false);
+            setTitlePopup(t.master.error);
+            setMessagePopup(t.master.error_msg + error.message);
+            setTimeout(() => setShowAlert(false), 8000);
+            init();
+        } finally {
+            setLoading(false);
+        }
+    }
+
     return(
-        <SidebarWithHeader username={auth?.username ?? "Unknown"}>
+        <SidebarWithHeader username={auth?.username ?? "Unknown"} daysToExpire={auth?.days_remaining ?? 0}>
             <Flex gap={2} display={"flex"} mb={"2"} mt={"2"}>
-                <Heading mb={6} width={"100%"}>Shipment ERP Settings</Heading>
-                <Button bg={"#E77A1F"} color={"white"} cursor={"pointer"}>Create New Shipment</Button>
+                <Heading mb={6} width={"100%"}>{t.shipment_period.title}</Heading>
+                <Flex gap={2} alignItems={"center"}>
+                    <InputGroup startElement={<LuSearch />}>
+                        <Input placeholder={t.shipment_period.search} bg={"white"} value={findShipment}
+                            onChange={(e) => setFindShipment(e.target.value)}
+                            onKeyDown={(e) => {
+                                if (e.key === "Enter") {
+                                    setShipmentPage(1);
+                                    init();
+                                }
+                            }}
+                            width="250px"
+                        />
+                    </InputGroup>
+                    <Button bg={"#E77A1F"} color={"white"} cursor={"pointer"} onClick={handleOpenShipmentPeriodDialog}>{t.shipment_period.create_button}</Button>
+                </Flex>
             </Flex>         
 
             {showAlert && <AlertMessage title={titlePopup} description={messagePopup} isSuccess={isSuccess} />}
@@ -72,19 +168,34 @@ export default function SettingShipment(){
                 isOpen={isShipmentOpen} 
                 setIsOpen={(open) => {
                     setIsShipmentOpen(open);
+                    if (!open) setEditingShipment(null);
                 }}
-                title={editingShipment ? "Update Shipment" : "Create Shipment"}
-                placeholders={editingShipment ? undefined : undefined}
-                onSubmit={(data) =>
-                    editingShipment 
-                }
+                title={editingShipment ? t.shipment_period.update_button : t.shipment_period.create_button}
+                placeholders={editingShipment ? {shipment_period_id: editingShipment.shipment_period_id, shipment_period_name: editingShipment.shipment_period_name, shipment_date_range_start: editingShipment.shipment_date_range_start,
+                            shipment_date_range_end: editingShipment.shipment_date_range_end} : undefined}
+                onSubmit={(data) =>{
+                    if (editingShipment) {
+                        handleUpdateShipmentPeriod({
+                            shipment_period_id: data.shipment_period_id ?? editingShipment.shipment_period_id,
+                            shipment_period_name: data.shipment_period_name,
+                            shipment_date_range_start: data.shipment_date_range_start,
+                            shipment_date_range_end: data.shipment_date_range_end
+                        });
+                    } else {
+                        handleCreateShipmentPeriod({
+                            shipment_period_name: data.shipment_period_name,
+                            shipment_date_range_start: data.shipment_date_range_start,
+                            shipment_date_range_end: data.shipment_date_range_end
+                        });
+                    }
+                }}
             />            
 
             <Table.Root showColumnBorder variant="outline" background={"white"} >
                 <Table.Header>
                     <Table.Row bg="bg.panel">
-                        <Table.ColumnHeader textAlign={"center"}>Shipment Period</Table.ColumnHeader>
-                        <Table.ColumnHeader textAlign={"center"}>Action</Table.ColumnHeader>
+                        <Table.ColumnHeader textAlign={"center"}>{t.shipment_period.shipment_name}</Table.ColumnHeader>
+                        <Table.ColumnHeader textAlign={"center"}>{t.master.action}</Table.ColumnHeader>
                     </Table.Row>
                 </Table.Header>
                 <Table.Body>
@@ -93,27 +204,33 @@ export default function SettingShipment(){
                         <Table.Cell textAlign={"center"}>{shipment.shipment_period_name}</Table.Cell>
                         <Table.Cell textAlign="center">
                             <Flex justify="center" gap={4} fontSize={"2xl"}>
+                                <FiEdit style={{ cursor: "pointer" }}
+                                    onClick={() => {
+                                        setEditingShipment(shipment);
+                                        setIsShipmentOpen(true);
+                                    }}
+                                />
                                 <Dialog.Root>
                                     <Dialog.Trigger asChild>
-                                        <FiTrash />
+                                        <FiTrash color="red"/>
                                     </Dialog.Trigger>
                                     <Portal>
                                         <Dialog.Backdrop/>
                                         <Dialog.Positioner>
                                             <Dialog.Content>
                                                 <Dialog.Header>
-                                                    <Dialog.Title>Hapus Data Shipment</Dialog.Title>
+                                                    <Dialog.Title>{t.delete_popup.title}</Dialog.Title>
                                                 </Dialog.Header>
 
                                                 <Dialog.Body>
-                                                    <Text>Apakah anda yakin ingin menghapus shipment ini ?</Text>
+                                                    <Text>{t.delete_popup.description}</Text>
                                                 </Dialog.Body>
 
                                                 <Dialog.Footer>
                                                     <Dialog.ActionTrigger asChild>
-                                                        <Button variant="outline">Batal</Button>
+                                                        <Button variant="outline">{t.delete_popup.cancel}</Button>
                                                     </Dialog.ActionTrigger>
-                                                    {/* <Button onClick={() => handleDeleteShipment({ shipment_id: shipment.shipment_id })}>Hapus</Button> */}
+                                                    <Button onClick={() => handleDeleteShipmentPeriod({ shipment_period_id: shipment.shipment_period_id })}>Hapus</Button>
                                                 </Dialog.Footer>
                                                             
                                                 <Dialog.CloseTrigger asChild>

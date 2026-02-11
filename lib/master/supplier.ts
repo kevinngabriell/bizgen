@@ -22,6 +22,19 @@ export interface createSupplierData{
     supplier_bank_information?: string;
 }
 
+export interface updateSupplierData{
+    supplier_id: string;
+    supplier_name?:string;
+    supplier_origin? : string;
+    supplier_address? : string;
+    supplier_phone? : string;
+    supplier_pic_name? : string;
+    supplier_pic_contact? : string;
+    supplier_currency? : string;
+    supplier_term? : string;
+    supplier_bank_information? : string;
+};
+
 export async function getAllSupplier(page: number = 1, limit = 10, search: string = '') : Promise<{data: GetSupplierData[]; pagination: any}>{
     const baseUrl = process.env.NEXT_PUBLIC_API_URL;
     const token = localStorage.getItem("token");
@@ -74,39 +87,23 @@ export async function createSupplier(input: createSupplierData): Promise<any>{
     const baseUrl = process.env.NEXT_PUBLIC_API_URL;
     const token = localStorage.getItem("token");
 
-    const formData = new FormData();
-
-    formData.append('supplier_name', String(input.supplier_name));
-    formData.append('supplier_origin', String(input.supplier_origin));
-
-    if (input.supplier_address) {
-        formData.append('supplier_address', input.supplier_address);
-    }
-    if (input.supplier_phone) {
-        formData.append('supplier_phone', input.supplier_phone);
-    }
-    if (input.supplier_pic_name) {
-        formData.append('supplier_pic_name', input.supplier_pic_name);
-    }
-    if (input.supplier_pic_contact) {
-        formData.append('supplier_pic_contact', input.supplier_pic_contact);
-    }
-    if (input.supplier_currency) {
-        formData.append('supplier_currency', input.supplier_currency);
-    }
-    if (input.supplier_term) {
-        formData.append('supplier_term', input.supplier_term);
-    }
-    if (input.supplier_bank_information) {
-        formData.append('supplier_bank_information', input.supplier_bank_information);
-    }
-
     const res = await fetch(`${baseUrl}master/supplier.php`, {
         method: 'POST',
-       headers: {
+        headers: {
             Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
         },
-        body: formData,
+        body: JSON.stringify({
+            supplier_name: input.supplier_name,
+            supplier_origin: input.supplier_origin,
+            supplier_address: input.supplier_address,
+            supplier_phone: input.supplier_phone,
+            supplier_pic_name: input.supplier_pic_name,
+            supplier_pic_contact: input.supplier_pic_contact,
+            supplier_currency: input.supplier_currency,
+            supplier_term: input.supplier_term,
+            suppplier_bank_information: input.supplier_bank_information
+        }),
     });
 
     const json = await res.json();
@@ -119,8 +116,38 @@ export async function createSupplier(input: createSupplierData): Promise<any>{
     return json;
 }
 
-export async function updateSupplier(){
+export async function updateSupplier(input: updateSupplierData): Promise<any>{
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL;
+    const token = localStorage.getItem("token");
 
+    const res = await fetch(`${baseUrl}master/supplier.php`, {
+        method: 'PUT',
+       headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            supplier_id: input.supplier_id,
+            supplier_name: input.supplier_name,
+            supplier_origin: input.supplier_origin,
+            supplier_address: input.supplier_address,
+            supplier_phone: input.supplier_phone,
+            supplier_pic_name : input.supplier_pic_name,
+            supplier_pic_contact : input.supplier_pic_contact,
+            supplier_currency: input.supplier_currency,
+            supplier_term: input.supplier_term,
+            supplier_bank_information: input.supplier_bank_information
+        })
+    });
+
+    const json = await res.json();
+
+    //Jika statusnya bukan 201 atau 200 maka error 
+    if (json.status_code !== 201 && json.status_code !== 200) {
+        throw new Error(json.status_message || 'Failed to update supplier');
+    }
+
+    return json;
 }
 
 export async function deleteSupplier(supplier_id: string) : Promise<any>{

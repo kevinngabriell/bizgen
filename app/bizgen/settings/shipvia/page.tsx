@@ -1,15 +1,16 @@
 "use client";
 
 import SidebarWithHeader from "@/components/ui/SidebarWithHeader";
-import { Button, ButtonGroup, CloseButton, Dialog, Flex, Heading, IconButton, Pagination, Portal, Table, Text } from "@chakra-ui/react";
+import { Button, ButtonGroup, CloseButton, Dialog, Flex, Heading, IconButton, Input, InputGroup, Pagination, Portal, Table, Text } from "@chakra-ui/react";
 import { useEffect, useState } from "react";
 import ShipViaDialog from "./shipviaDialog";
-import { LuChevronLeft, LuChevronRight } from "react-icons/lu";
+import { LuChevronLeft, LuChevronRight, LuSearch } from "react-icons/lu";
 import Loading from "@/components/loading";
-import { getAllShipVia, GetShipViaData } from "@/lib/master/ship-via";
+import { createShipVia, deleteShipVia, getAllShipVia, GetShipViaData, updateShipVia } from "@/lib/master/ship-via";
 import { checkAuthOrRedirect, DecodedAuthToken, getAuthInfo } from "@/lib/auth/auth";
 import { AlertMessage } from "@/components/ui/alert";
-import { FiTrash } from "react-icons/fi";
+import { FiEdit, FiTrash } from "react-icons/fi";
+import { getLang } from "@/lib/i18n";
 
 export default function SettingShipVia(){
     const [auth, setAuth] = useState<DecodedAuthToken | null>(null);
@@ -26,6 +27,8 @@ export default function SettingShipVia(){
     const [titlePopup, setTitlePopup] = useState('');
     const [messagePopup, setMessagePopup] = useState('');
     const [isSuccess, setIsSuccess] = useState(false);
+
+    const t = getLang("en"); 
      
     useEffect(() => {
         init();
@@ -58,12 +61,101 @@ export default function SettingShipVia(){
     }
 
     if (loading) return <Loading/>;
+
+    const handleCreateShipVia = async (data: {
+        ship_via_name: string;
+    }) => {
+        try {
+            setLoading(true);
+            await createShipVia(data);
+            setShowAlert(true);
+            setIsSuccess(true);
+            setTitlePopup(t.master.success);
+            setMessagePopup(t.ship_via.success_ship_via_create);
+            setTimeout(() => setShowAlert(false), 6000);
+            setIsShipViaOpen(false);
+            init();
+        } catch (err: any) {
+            setShowAlert(true);
+            setIsSuccess(false);
+            setTitlePopup(t.master.error);
+            setMessagePopup(err.message || t.master.error_msg);
+            setTimeout(() => setShowAlert(false), 6000);
+        } finally {
+            setLoading(false);
+        }
+    }
+
+    const handleUpdateShipVia  = async(data: {
+        ship_via_id: string;
+        ship_via_name: string;
+    }) => {
+        try {
+            setLoading(true);
+            await updateShipVia(data);
+            setShowAlert(true);
+            setIsSuccess(true);
+            setTitlePopup(t.master.success);
+            setMessagePopup(t.ship_via.success_ship_via_update);
+            setTimeout(() => setShowAlert(false), 6000);
+            setIsShipViaOpen(false);
+            init();
+        } catch (err: any) {
+            setShowAlert(true);
+            setIsSuccess(false);
+            setTitlePopup(t.master.error);
+            setMessagePopup(err.message || t.master.error_msg);
+            setTimeout(() => setShowAlert(false), 6000);
+        } finally {
+            setLoading(false);
+        }
+    }
+
+    const handleOpenShipViaDialog = () => {
+        setIsShipViaOpen(true);
+    };
+
+    const handleDeleteShipVia= async({ ship_via_id }: { ship_via_id: string }) => {
+        try {
+            setLoading(true);
+            await deleteShipVia(ship_via_id);
+            setShowAlert(true);
+            setIsSuccess(true);
+            setTitlePopup(t.master.success);
+            setMessagePopup(t.ship_via.success_ship_via_delete);
+            setTimeout(() => setShowAlert(false), 8000);
+            init();
+        } catch (error : any){
+            setShowAlert(true);
+            setIsSuccess(false);
+            setTitlePopup(t.master.error);
+            setMessagePopup(t.master.error_msg + error.message);
+            setTimeout(() => setShowAlert(false), 8000);
+            init();
+        } finally {
+            setLoading(false);
+        }
+    }
     
     return(
-        <SidebarWithHeader username={auth?.username ?? "Unknown"}>
+        <SidebarWithHeader username={auth?.username ?? "Unknown"} daysToExpire={auth?.days_remaining ?? 0}>
             <Flex gap={2} display={"flex"} mb={"2"} mt={"2"}>
-                <Heading mb={6} width={"100%"}>Ship Via ERP Settings</Heading>
-                <Button bg={"#E77A1F"} color={"white"} cursor={"pointer"}>Create New Ship Via</Button>
+                <Heading mb={6} width={"100%"}>{t.ship_via.title}</Heading>
+                <Flex gap={2} alignItems={"center"}>
+                    <InputGroup startElement={<LuSearch />}>
+                        <Input placeholder={t.ship_via.search} bg={"white"} value={findShipVia}
+                            onChange={(e) => setFindShipVia(e.target.value)}
+                            onKeyDown={(e) => {
+                                if (e.key === "Enter") {
+                                    SetShipViaPage(1);
+                                    init();
+                                }
+                            }}
+                            width="250px"
+                        />
+                    </InputGroup>
+                    <Button bg={"#E77A1F"} color={"white"} cursor={"pointer"} onClick={handleOpenShipViaDialog}>{t.ship_via.create_button}</Button>
+                </Flex>
             </Flex>         
 
             {showAlert && <AlertMessage title={titlePopup} description={messagePopup} isSuccess={isSuccess} />}
@@ -72,19 +164,29 @@ export default function SettingShipVia(){
                 isOpen={isShipViaOpen} 
                 setIsOpen={(open) => {
                     setIsShipViaOpen(open);
+                    if (!open) setEditingShipVia(null);
                 }}
-                title={editingShipVia ? "Update Ship Via" : "Create Ship Via"}
-                placeholders={editingShipVia ? undefined : undefined}
-                onSubmit={(data) =>
-                    editingShipVia
-                }
+                title={editingShipVia ? t.ship_via.update_button : t.ship_via.create_button}
+                placeholders={editingShipVia ? {ship_via_id: editingShipVia.ship_via_id, ship_via_name: editingShipVia.ship_via_name} : undefined}
+                onSubmit={(data) => {
+                    if(editingShipVia) {
+                        handleUpdateShipVia({
+                            ship_via_id: data.ship_via_id ?? editingShipVia.ship_via_id,
+                            ship_via_name: data.ship_via_name
+                        })
+                    } else {
+                        handleCreateShipVia({
+                            ship_via_name: data.ship_via_name
+                        })
+                    }
+                }}
             />            
 
             <Table.Root showColumnBorder variant="outline" background={"white"} >
                 <Table.Header>
                     <Table.Row bg="bg.panel">
-                        <Table.ColumnHeader textAlign={"center"}>Ship Via</Table.ColumnHeader>
-                        <Table.ColumnHeader textAlign={"center"}>Action</Table.ColumnHeader>
+                        <Table.ColumnHeader textAlign={"center"}>{t.ship_via.ship_via_name}</Table.ColumnHeader>
+                        <Table.ColumnHeader textAlign={"center"}>{t.master.action}</Table.ColumnHeader>
                     </Table.Row>
                 </Table.Header>
                 <Table.Body>
@@ -93,27 +195,33 @@ export default function SettingShipVia(){
                         <Table.Cell textAlign={"center"}>{shipvia.ship_via_name}</Table.Cell>
                         <Table.Cell textAlign="center">
                             <Flex justify="center" gap={4} fontSize={"2xl"}>
+                                <FiEdit style={{ cursor: "pointer" }}
+                                    onClick={() => {
+                                        setEditingShipVia(shipvia);
+                                        setIsShipViaOpen(true);
+                                    }}
+                                />
                                 <Dialog.Root>
                                     <Dialog.Trigger asChild>
-                                        <FiTrash />
+                                        <FiTrash color="red"/>
                                     </Dialog.Trigger>
                                     <Portal>
                                         <Dialog.Backdrop/>
                                         <Dialog.Positioner>
                                             <Dialog.Content>
                                                 <Dialog.Header>
-                                                    <Dialog.Title>Hapus Ship Via</Dialog.Title>
+                                                    <Dialog.Title>{t.delete_popup.title}</Dialog.Title>
                                                 </Dialog.Header>
 
                                                 <Dialog.Body>
-                                                    <Text>Apakah anda yakin ingin menghapus ship via ini ?</Text>
+                                                    <Text>{t.delete_popup.description}</Text>
                                                 </Dialog.Body>
 
                                                 <Dialog.Footer>
                                                     <Dialog.ActionTrigger asChild>
-                                                        <Button variant="outline">Batal</Button>
+                                                        <Button variant="outline">{t.delete_popup.cancel}</Button>
                                                     </Dialog.ActionTrigger>
-                                                    {/* <Button onClick={() => handleDeleteShipVia({ shipID: shipvia.shipID })}>Hapus</Button> */}
+                                                    <Button bg={"red"} color={"white"} cursor={"pointer"}  onClick={() => handleDeleteShipVia({ ship_via_id: shipvia.ship_via_id })}>{t.delete_popup.delete}</Button>
                                                 </Dialog.Footer>
                                                             
                                                 <Dialog.CloseTrigger asChild>

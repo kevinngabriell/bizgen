@@ -15,6 +15,13 @@ export interface CreateCurrencyData{
     currency_name: string;
 }
 
+export interface UpdateCurrencyData{
+    currency_id?: string;
+    currency_code?: string;
+    currency_symbol?: string;
+    currency_name?: string;
+}
+
 export async function getAllCurrency(page: number = 1, limit = 10, search: string = '') : Promise<{data: GetCurrencyData[]; pagination: any}>{
     const baseUrl = process.env.NEXT_PUBLIC_API_URL;
     const token = localStorage.getItem("token");
@@ -90,8 +97,32 @@ export async function createCurrency(input: CreateCurrencyData): Promise<any>{
     return json;
 }
 
-export async function updateCurrency(){
+export async function updateCurrency(input: UpdateCurrencyData): Promise<any>{
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL;
+    const token = localStorage.getItem("token");
 
+    const res = await fetch(`${baseUrl}master/currency.php`, {
+        method: 'PUT',
+       headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            currency_id: input.currency_id,
+            currency_code: input.currency_code,
+            currency_name: input.currency_name,
+            currency_symbol: input.currency_symbol
+        })
+    });
+
+    const json = await res.json();
+
+    //Jika statusnya bukan 201 atau 200 maka error 
+    if (json.status_code !== 201 && json.status_code !== 200) {
+        throw new Error(json.status_message || 'Failed to update currency');
+    }
+
+    return json;
 }
 
 export async function deleteCurrency(currency_id: string) : Promise<any>{

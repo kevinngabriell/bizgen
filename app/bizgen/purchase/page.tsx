@@ -1,11 +1,43 @@
 "use client";
 
+import Loading from "@/components/loading";
 import SidebarWithHeader from "@/components/ui/SidebarWithHeader";
-import { Button, Card, Flex, Heading, Text, Grid, Box, Stack, Badge, SimpleGrid, Dialog, Portal, CloseButton } from "@chakra-ui/react";
+import { checkAuthOrRedirect, DecodedAuthToken, getAuthInfo } from "@/lib/auth/auth";
+import { getLang } from "@/lib/i18n";
+import { Button, Card, Flex, Heading, Text, SimpleGrid, Dialog, Portal, CloseButton } from "@chakra-ui/react";
 import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
 export default function Purchase (){
+  const [auth, setAuth] = useState<DecodedAuthToken | null>(null);
+  const [loading, setLoading] = useState(false);
   const router = useRouter();
+
+  const t = getLang("en"); 
+
+  useEffect(() => {
+    init();
+  }, []);
+
+  const init = async () => {
+    setLoading(true);
+
+    const valid = await checkAuthOrRedirect();
+    if(!valid) return;
+
+    const info = getAuthInfo();
+    setAuth(info);
+
+    try {
+
+    } catch (error: any){
+
+    } finally {
+      setLoading(false);
+    }
+  }
+    
+  if (loading) return <Loading/>;
 
   const navigateToPurchaseImport = () => {
     router.push('/bizgen/purchase/purchase-import')
@@ -32,10 +64,10 @@ export default function Purchase (){
   }
 
   return (
-    <SidebarWithHeader username="kevin">
+    <SidebarWithHeader username={auth?.username ?? "Unknown"} daysToExpire={auth?.days_remaining ?? 0}>
       {/* Heading and Create Button */}
       <Flex gap={2} display={"flex"} mb={"6"} mt={"2"} alignItems={"center"}>
-        <Heading flex="1">Purchase Module</Heading>
+        <Heading flex="1">{t.purchaseModule.title}</Heading>
         
         {/* Create New — Quick Action Dialog */}
         <Dialog.Root>
@@ -59,48 +91,48 @@ export default function Purchase (){
                     {/* Request Quotation Card */}
                     <Card.Root _hover={{ bg: "gray.50" }} cursor="pointer" onClick={navigateToRequestQuotation}>
                       <Card.Body>
-                        <Heading size="sm" mb={1}>Request for Quotation</Heading>
-                        <Text fontSize="sm" color="gray.600" onClick={() => {}}>Create a new supplier quotation request</Text>
+                        <Heading size="sm" mb={1}>{t.purchaseModule.request_quotation.title}</Heading>
+                        <Text fontSize="sm" color="gray.600" onClick={() => {}}>{t.purchaseModule.request_quotation.description}</Text>
                       </Card.Body>
                     </Card.Root>
 
                     {/* Purchase Requisition Card */}
                     <Card.Root _hover={{ bg: "gray.50" }} cursor="pointer" onClick={navigateToPurchaseRequisition}>
                       <Card.Body>
-                        <Heading size="sm" mb={1}>Purchase Requisition</Heading>
-                        <Text fontSize="sm" color="gray.600">Internal request before issuing PO</Text>
+                        <Heading size="sm" mb={1}>{t.purchaseModule.purchase_requisition.title}</Heading>
+                        <Text fontSize="sm" color="gray.600">{t.purchaseModule.purchase_requisition.description}</Text>
                       </Card.Body>
                     </Card.Root>
 
                     {/* Purchase Local Card */}
                     <Card.Root _hover={{ bg: "gray.50" }} cursor="pointer" onClick={navigateToPurchaseLocal}>
                       <Card.Body>
-                        <Heading size="sm" mb={1}>Purchase Order — Local</Heading>
-                        <Text fontSize="sm" color="gray.600">Create PO for domestic suppliers</Text>
+                        <Heading size="sm" mb={1}>{t.purchaseModule.purchase_local.title}</Heading>
+                        <Text fontSize="sm" color="gray.600">{t.purchaseModule.purchase_local.description}</Text>
                       </Card.Body>
                     </Card.Root>
 
                     {/* Purchase Import Card */}
                     <Card.Root _hover={{ bg: "gray.50" }} cursor="pointer" onClick={navigateToPurchaseImport}>
                       <Card.Body>
-                        <Heading size="sm" mb={1}>Purchase Order — Import</Heading>
-                        <Text fontSize="sm" color="gray.600">Create PO with shipment & currency details</Text>
+                        <Heading size="sm" mb={1}>{t.purchaseModule.purchase_import.title}</Heading>
+                        <Text fontSize="sm" color="gray.600">{t.purchaseModule.purchase_import.description}</Text>
                       </Card.Body>
                     </Card.Root>
 
                     {/* Receiving Items Card */}
                     <Card.Root _hover={{ bg: "gray.50" }} cursor="pointer" onClick={navigateToReceivingItems}>
                       <Card.Body>
-                        <Heading size="sm" mb={1}>Receiving Items / GR</Heading>
-                        <Text fontSize="sm" color="gray.600">Record item receipt to warehouse</Text>
+                        <Heading size="sm" mb={1}>{t.purchaseModule.receiving_items.title}</Heading>
+                        <Text fontSize="sm" color="gray.600">{t.purchaseModule.receiving_items.description}</Text>
                       </Card.Body>
                     </Card.Root>
 
                     {/* Receiving Items Card */}
                     <Card.Root _hover={{ bg: "gray.50" }} cursor="pointer" onClick={navigateToPurchaseInvoice}>
                       <Card.Body>
-                        <Heading size="sm" mb={1}>Purchase Invoice</Heading>
-                        <Text fontSize="sm" color="gray.600">Register supplier billing document</Text>
+                        <Heading size="sm" mb={1}>{t.purchaseModule.purchase_invoice.title}</Heading>
+                        <Text fontSize="sm" color="gray.600">{t.purchaseModule.purchase_invoice.description}</Text>
                       </Card.Body>
                     </Card.Root>
                   </SimpleGrid>
@@ -122,7 +154,7 @@ export default function Purchase (){
         <Card.Root>
           <Card.Body>
               <Flex>
-                <Heading size="md" flex="1">Request for Quotation</Heading>
+                <Heading size="md" flex="1">{t.purchaseModule.request_quotation.title}</Heading>
                 <Text fontSize="sm" cursor="pointer">See All</Text>
               </Flex>
           </Card.Body>
@@ -132,7 +164,7 @@ export default function Purchase (){
         <Card.Root>
           <Card.Body>
               <Flex>
-                <Heading size="md" flex="1">Purchase Requisition</Heading>
+                <Heading size="md" flex="1">{t.purchaseModule.purchase_requisition.title}</Heading>
                 <Text fontSize="sm" cursor="pointer">See All</Text>
               </Flex>
           </Card.Body>
@@ -142,7 +174,7 @@ export default function Purchase (){
         <Card.Root>
           <Card.Body>
               <Flex>
-                <Heading size="md" flex="1">Purchase Order Local</Heading>
+                <Heading size="md" flex="1">{t.purchaseModule.purchase_local.title}</Heading>
                 <Text fontSize="sm" cursor="pointer">See All</Text>
               </Flex>
           </Card.Body>
@@ -152,7 +184,7 @@ export default function Purchase (){
         <Card.Root>
           <Card.Body>
               <Flex>
-                <Heading size="md" flex="1">Purchase Order Import</Heading>
+                <Heading size="md" flex="1">{t.purchaseModule.purchase_import.title}</Heading>
                 <Text fontSize="sm" cursor="pointer">See All</Text>
               </Flex>
           </Card.Body>
@@ -162,7 +194,7 @@ export default function Purchase (){
         <Card.Root>
           <Card.Body>
               <Flex>
-                <Heading size="md" flex="1">Receiving Items</Heading>
+                <Heading size="md" flex="1">{t.purchaseModule.receiving_items.title}</Heading>
                 <Text fontSize="sm" cursor="pointer">See All</Text>
               </Flex>
           </Card.Body>
@@ -172,266 +204,13 @@ export default function Purchase (){
         <Card.Root>
           <Card.Body>
               <Flex>
-                <Heading size="md" flex="1">Purchase Invoice</Heading>
+                <Heading size="md" flex="1">{t.purchaseModule.purchase_invoice.title}</Heading>
                 <Text fontSize="sm" cursor="pointer">See All</Text>
               </Flex>
           </Card.Body>
         </Card.Root>
 
       </SimpleGrid>
-
-          {/* <Grid
-            gap={6}
-            gridTemplateColumns={{ base: "1fr", lg: "1fr 1fr" }}
-          >
-
-            
-            <Card.Root>
-              <Card.Body>
-                <Flex mb="4" alignItems="center">
-                  <Heading size="md" flex="1">Request for Quotation</Heading>
-                  <Text fontSize="sm" cursor="pointer">See All</Text>
-                </Flex>
-                <Stack gap="3">
-                  <Box borderWidth="1px" borderRadius="md" px="3" py="2">
-                    <Flex justify="space-between" align="center">
-                      <Box>
-                        <Text fontWeight="medium">RFQ — PT Sumber Asia</Text>
-                        <Text fontSize="sm" color="gray.500">Last updated • 12 Jan 2026</Text>
-                      </Box>
-                      <Badge colorPalette="blue" variant="subtle">Draft</Badge>
-                    </Flex>
-                  </Box>
-
-                  <Box borderWidth="1px" borderRadius="md" px="3" py="2">
-                    <Flex justify="space-between" align="center">
-                      <Box>
-                        <Text fontWeight="medium">RFQ — Indo Marine</Text>
-                        <Text fontSize="sm" color="gray.500">Last updated • 11 Jan 2026</Text>
-                      </Box>
-                      <Badge colorPalette="green" variant="subtle">Sent</Badge>
-                    </Flex>
-                  </Box>
-
-                  <Box borderWidth="1px" borderRadius="md" px="3" py="2">
-                    <Flex justify="space-between" align="center">
-                      <Box>
-                        <Text fontWeight="medium">RFQ — Global Trading</Text>
-                        <Text fontSize="sm" color="gray.500">Last updated • 09 Jan 2026</Text>
-                      </Box>
-                      <Badge colorPalette="orange" variant="subtle">Waiting</Badge>
-                    </Flex>
-                  </Box>
-                </Stack>
-              </Card.Body>
-            </Card.Root>
-
-            <Card.Root>
-              <Card.Body>
-                <Flex mb="4" alignItems="center">
-                  <Heading size="md" flex="1">Purchase Requisition</Heading>
-                  <Text fontSize="sm" cursor="pointer">See All</Text>
-                </Flex>
-
-                <Stack gap="3">
-                  <Box borderWidth="1px" borderRadius="md" px="3" py="2">
-                    <Flex justify="space-between" align="center">
-                      <Box>
-                        <Text fontWeight="medium">PR-001245 — Packaging</Text>
-                        <Text fontSize="sm" color="gray.500">Requested • 10 Jan 2026</Text>
-                      </Box>
-                      <Badge colorPalette="purple" variant="subtle">Pending</Badge>
-                    </Flex>
-                  </Box>
-
-                  <Box borderWidth="1px" borderRadius="md" px="3" py="2">
-                    <Flex justify="space-between" align="center">
-                      <Box>
-                        <Text fontWeight="medium">PR-001231 — Spare Parts</Text>
-                        <Text fontSize="sm" color="gray.500">Approved • 08 Jan 2026</Text>
-                      </Box>
-                      <Badge colorPalette="green" variant="subtle">Approved</Badge>
-                    </Flex>
-                  </Box>
-
-                  <Box borderWidth="1px" borderRadius="md" px="3" py="2">
-                    <Flex justify="space-between" align="center">
-                      <Box>
-                        <Text fontWeight="medium">PR-001220 — Import Docs</Text>
-                        <Text fontSize="sm" color="gray.500">Rejected • 06 Jan 2026</Text>
-                      </Box>
-                      <Badge colorPalette="red" variant="subtle">Rejected</Badge>
-                    </Flex>
-                  </Box>
-                </Stack>
-              </Card.Body>
-            </Card.Root>
-
-            <Card.Root>
-              <Card.Body>
-                <Flex mb="4" alignItems="center">
-                  <Heading size="md" flex="1">Purchase Order Local</Heading>
-                  <Text fontSize="sm" cursor="pointer">See All</Text>
-                </Flex>
-
-                <Stack gap="3">
-                  <Box borderWidth="1px" borderRadius="md" px="3" py="2">
-                    <Flex justify="space-between" align="center">
-                      <Box>
-                        <Text fontWeight="medium">PO-LCL-1023 — PT Mekar Jaya</Text>
-                        <Text fontSize="sm" color="gray.500">Issued • 09 Jan 2026</Text>
-                      </Box>
-                      <Badge colorPalette="green" variant="subtle">Open</Badge>
-                    </Flex>
-                  </Box>
-
-                  <Box borderWidth="1px" borderRadius="md" px="3" py="2">
-                    <Flex justify="space-between" align="center">
-                      <Box>
-                        <Text fontWeight="medium">PO-LCL-1019 — Logistic Tape</Text>
-                        <Text fontSize="sm" color="gray.500">Closed • 07 Jan 2026</Text>
-                      </Box>
-                      <Badge colorPalette="gray" variant="subtle">Closed</Badge>
-                    </Flex>
-                  </Box>
-
-                  <Box borderWidth="1px" borderRadius="md" px="3" py="2">
-                    <Flex justify="space-between" align="center">
-                      <Box>
-                        <Text fontWeight="medium">PO-LCL-1018 — Pallet Wood</Text>
-                        <Text fontSize="sm" color="gray.500">Open • 05 Jan 2026</Text>
-                      </Box>
-                      <Badge colorPalette="green" variant="subtle">Open</Badge>
-                    </Flex>
-                  </Box>
-                </Stack>
-              </Card.Body>
-            </Card.Root>
-
-            <Card.Root>
-              <Card.Body>
-                <Flex mb="4" alignItems="center">
-                  <Heading size="md" flex="1">Purchase Order Import</Heading>
-                  <Text fontSize="sm" cursor="pointer">See All</Text>
-                </Flex>
-
-                <Stack gap="3">
-                  <Box borderWidth="1px" borderRadius="md" px="3" py="2">
-                    <Flex justify="space-between" align="center">
-                      <Box>
-                        <Text fontWeight="medium">PO-IMP-3007 — Shanghai Supplier</Text>
-                        <Text fontSize="sm" color="gray.500">ETD • 18 Jan 2026</Text>
-                      </Box>
-                      <Badge colorPalette="orange" variant="subtle">In Transit</Badge>
-                    </Flex>
-                  </Box>
-
-                  <Box borderWidth="1px" borderRadius="md" px="3" py="2">
-                    <Flex justify="space-between" align="center">
-                      <Box>
-                        <Text fontWeight="medium">PO-IMP-3004 — Guangzhou Parts</Text>
-                        <Text fontSize="sm" color="gray.500">Arrived • 12 Jan 2026</Text>
-                      </Box>
-                      <Badge colorPalette="green" variant="subtle">Arrived</Badge>
-                    </Flex>
-                  </Box>
-
-                  <Box borderWidth="1px" borderRadius="md" px="3" py="2">
-                    <Flex justify="space-between" align="center">
-                      <Box>
-                        <Text fontWeight="medium">PO-IMP-2999 — Korea Steel</Text>
-                        <Text fontSize="sm" color="gray.500">Waiting Doc • 09 Jan 2026</Text>
-                      </Box>
-                      <Badge colorPalette="purple" variant="subtle">Pending Doc</Badge>
-                    </Flex>
-                  </Box>
-                </Stack>
-              </Card.Body>
-            </Card.Root>
-
-            <Card.Root>
-              <Card.Body>
-                <Flex mb="4" alignItems="center">
-                  <Heading size="md" flex="1">Receiving Items</Heading>
-                  <Text fontSize="sm" cursor="pointer">See All</Text>
-                </Flex>
-
-                <Stack gap="3">
-                  <Box borderWidth="1px" borderRadius="md" px="3" py="2">
-                    <Flex justify="space-between" align="center">
-                      <Box>
-                        <Text fontWeight="medium">GR-2201 — Warehouse A</Text>
-                        <Text fontSize="sm" color="gray.500">Received • 10 Jan 2026</Text>
-                      </Box>
-                      <Badge colorPalette="green" variant="subtle">Completed</Badge>
-                    </Flex>
-                  </Box>
-
-                  <Box borderWidth="1px" borderRadius="md" px="3" py="2">
-                    <Flex justify="space-between" align="center">
-                      <Box>
-                        <Text fontWeight="medium">GR-2198 — Warehouse B</Text>
-                        <Text fontSize="sm" color="gray.500">Pending • 08 Jan 2026</Text>
-                      </Box>
-                      <Badge colorPalette="orange" variant="subtle">Pending</Badge>
-                    </Flex>
-                  </Box>
-
-                  <Box borderWidth="1px" borderRadius="md" px="3" py="2">
-                    <Flex justify="space-between" align="center">
-                      <Box>
-                        <Text fontWeight="medium">GR-2197 — Cross Dock</Text>
-                        <Text fontSize="sm" color="gray.500">Scheduled • 07 Jan 2026</Text>
-                      </Box>
-                      <Badge colorPalette="blue" variant="subtle">Scheduled</Badge>
-                    </Flex>
-                  </Box>
-                </Stack>
-              </Card.Body>
-            </Card.Root>
-
-            <Card.Root>
-              <Card.Body>
-                <Flex mb="4" alignItems="center">
-                  <Heading size="md" flex="1">Purchase Invoice</Heading>
-                  <Text fontSize="sm" cursor="pointer">See All</Text>
-                </Flex>
-
-                <Stack gap="3">
-                  <Box borderWidth="1px" borderRadius="md" px="3" py="2">
-                    <Flex justify="space-between" align="center">
-                      <Box>
-                        <Text fontWeight="medium">INV-98021 — PT Sumber Asia</Text>
-                        <Text fontSize="sm" color="gray.500">Due • 15 Jan 2026</Text>
-                      </Box>
-                      <Badge colorPalette="red" variant="subtle">Unpaid</Badge>
-                    </Flex>
-                  </Box>
-
-                  <Box borderWidth="1px" borderRadius="md" px="3" py="2">
-                    <Flex justify="space-between" align="center">
-                      <Box>
-                        <Text fontWeight="medium">INV-97988 — Indo Marine</Text>
-                        <Text fontSize="sm" color="gray.500">Paid • 09 Jan 2026</Text>
-                      </Box>
-                      <Badge colorPalette="green" variant="subtle">Paid</Badge>
-                    </Flex>
-                  </Box>
-
-                  <Box borderWidth="1px" borderRadius="md" px="3" py="2">
-                    <Flex justify="space-between" align="center">
-                      <Box>
-                        <Text fontWeight="medium">INV-97970 — Global Trading</Text>
-                        <Text fontSize="sm" color="gray.500">Pending • 07 Jan 2026</Text>
-                      </Box>
-                      <Badge colorPalette="orange" variant="subtle">Pending</Badge>
-                    </Flex>
-                  </Box>
-                </Stack>
-              </Card.Body>
-            </Card.Root>
-
-          </Grid> */}
         </SidebarWithHeader>
     );
 }

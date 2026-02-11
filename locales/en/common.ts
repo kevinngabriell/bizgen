@@ -26,27 +26,21 @@ export const en = {
   register: {
     title: "Register BizGen",
     description: "Empowering Trading & Export-Import Businesses with a Smart ERP",
-
     step_one_title: "How would you like to register?",
     step_one_card_1: "Business Owner",
     step_one_card_selected: "Selected",
     step_one_card_2: "Create a new company, complete business details, and choose a plan.",
     step_one_card_3: "Join Existing Company",
     step_one_card_4: "Join an existing company using a company code.",
-
     step_two_title: "Complete Your Details",
     step_two_wa: "WhatsApp Number",
     step_two_wa_placeholder: "Enter WhatsApp number",
-
     step_two_card_1: "Business Name",
     step_two_card_1_placeholder: "Enter business name",
-
     step_two_card_2: "Business Category",
     step_two_card_2_placeholder: "Enter business category",
-
     step_two_card_3: "Business Address",
     step_two_card_3_placeholder: "Enter business address",
-
     step_two_card_4: "Company Code",
     step_two_card_4_placeholder: "Enter company code"
   },
@@ -150,24 +144,24 @@ export const en = {
     search: "Search customer ..."
   },
   bank_account: {
-      title: "Bank Account",
-      title_2: "Bank Account List",
-      bank_name: "Bank Name",
-      bank_name_placeholder: "Enter bank name",
-      bank_number: "Account Number", // lebih proper di finance
-      bank_number_placeholder: "Enter account number",
-      bank_branch: "Bank Branch",
-      bank_branch_placeholder: "Enter bank branch",
-      select_currency: "Select Currency",
-      select_currency_placeholder: "Please select a currency",
-      primary: "Primary Account", // lebih clean
-      create_button: "Create Bank Account",
-      update_button: "Update Bank Account",
-      currency: "Currency",
-      search: "Search bank accounts...",
-      success_bank_create: "Bank account has been successfully created.",
-      success_bank_update: "Bank account has been successfully updated.",
-      success_bank_delete: "Bank account has been successfully deleted.",
+    title: "Bank Account",
+    title_2: "Bank Account List",
+    bank_name: "Bank Name",
+    bank_name_placeholder: "Enter bank name",
+    bank_number: "Account Number", // lebih proper di finance
+    bank_number_placeholder: "Enter account number",
+    bank_branch: "Bank Branch",
+    bank_branch_placeholder: "Enter bank branch",
+    select_currency: "Select Currency",
+    select_currency_placeholder: "Please select a currency",
+    primary: "Primary Account", // lebih clean
+    create_button: "Create Bank Account",
+    update_button: "Update Bank Account",
+    currency: "Currency",
+    search: "Search bank accounts...",
+    success_bank_create: "Bank account has been successfully created.",
+    success_bank_update: "Bank account has been successfully updated.",
+    success_bank_delete: "Bank account has been successfully deleted.",
   },
   account_code: {
     title: "Chart of Accounts",
@@ -187,14 +181,149 @@ export const en = {
     success_account_update: "Account has been successfully updated.",
     success_account_delete: "Account has been successfully deleted."
   },
+  supplier: {
+    title: "Supplier",
+    create_button: "Create Supplier",
+    update_button: "Update Supplier",
+    search: "Search supplier...",
+    supplier_name: "Supplier Name",
+    supplier_name_placeholder: "Enter supplier name",
+    supplier_phone: "Phone Number",
+    supplier_phone_placeholder: "Enter phone number",
+    supplier_address: "Address",
+    supplier_address_placeholder: "Enter address",
+    supplier_origin: "Country / Region",
+    supplier_origin_placeholder: "Select a country or region",
+    supplier_pic_name: "Contact Person",
+    supplier_pic_name_placeholder: "Enter contact person name",
+    supplier_pic_contact: "Contact Number",
+    supplier_pic_contact_placeholder: "Enter contact number",
+    supplier_currency: "Default Currency",
+    supplier_currency_placeholder: "Select a currency",
+    supplier_term: "Payment Terms",
+    supplier_term_placeholder: "Select payment terms",
+    supplier_bank_info: "Bank Information",
+    supplier_bank_info_placeholder: "Enter bank information",
+    success_supplier_create: "Supplier has been successfully created.",
+    success_supplier_update: "Supplier has been successfully updated.",
+    success_supplier_delete: "Supplier has been successfully deleted."
+  },
+  term: {
+    title: "Payment Terms",
+    create_button: "Create Payment Term",
+    update_button: "Update Payment Term",
+    term_name: "Payment Term Name",
+    term_name_placeholder: "Enter payment term name",
+    search: "Search payment terms...",
+    success_term_create: "Payment term has been successfully created.",
+    success_term_update: "Payment term has been successfully updated.",
+    success_term_delete: "Payment term has been successfully deleted."
+  },
+  uom: {
+    title: "Unit of Measurement",
+    create_button: "Create Unit",
+    update_button: "Update Unit",
+    uom_name: "Unit Name",
+    uom_name_placeholder: "Enter unit name",
+    conversion_factor: "Conversion Factor",
+    conversion_factor_placeholder: "Enter conversion factor",
+    search: "Search unit...",
+    success_uom_create: "Unit has been successfully created",
+    success_uom_update: "Unit has been successfully updated",
+    success_uom_delete: "Unit has been successfully deleted"
+  },
+
+  ship_via: {
+      title: "Shipping Method",
+      create_button: "Create Shipping Method",
+      update_button: "Update Shipping Method",
+      ship_via_name: "Shipping Method",
+      ship_via_name_placeholder: "Enter shipping method",
+      search: "Search shipping method...",
+      success_ship_via_create: "Shipping method has been successfully created",
+      success_ship_via_update: "Shipping method has been successfully updated",
+      success_ship_via_delete: "Shipping method has been successfully deleted"
+  },
+
+  shipment_period: {
+      title: "Shipment Period",
+      create_button: "Create Shipment Period",
+      update_button: "Update Shipment Period",
+      shipment_name: "Shipment Period Name",
+      shipment_placeholder: "Enter shipment period name",
+      start_date: "Start Date",
+      end_date: "End Date",
+      search: "Search shipment period...",
+      success_shipment_create: "Shipment period has been successfully created",
+      success_shipment_update: "Shipment period has been successfully updated",
+      success_shipment_delete: "Shipment period has been successfully deleted"
+  },
+
   currency: {
-    title: "Pengaturan Mata Uang",
-    create: "Tambah Mata Uang",
-    update: "Ubah Mata Uang",
-    deleteTitle: "Hapus Mata Uang",
-    deleteConfirm: "Apakah Anda yakin ingin menghapus mata uang ini?",
-    successCreate: "Mata uang berhasil ditambahkan",
-    successDelete: "Mata uang berhasil dihapus",
-    errorIncomplete: "Data tidak lengkap",
+      title: "Currency",
+      create_button: "Create Currency",
+      update_button: "Update Currency",
+      currency_code: "Currency Code",
+      currency_code_placeholder: "Enter currency code",
+      currency_name: "Currency Name",
+      currency_name_placeholder: "Enter currency name",
+      currency_symbol: "Currency Symbol",
+      currency_symbol_placeholder: "Enter currency symbol",
+      search: "Search currency...",
+      success_currency_create: "Currency has been successfully created",
+      success_currency_update: "Currency has been successfully updated",
+      success_currency_delete: "Currency has been successfully deleted"
+  },
+  payment_method: {
+      title: "Payment Method",
+      create_button: "Create Payment Method",
+      update_button: "Update Payment Method",
+      payment_name: "Payment Method",
+      payment_name_placeholder: "Enter payment method",
+      search: "Search payment method...",
+      success_payment_method_create: "Payment method has been successfully created",
+      success_payment_method_update: "Payment method has been successfully updated",
+      success_payment_method_delete: "Payment method has been successfully deleted"
+  },
+  origin: {
+      title: "Origin",
+      create_button: "Create Origin",
+      update_button: "Update Origin",
+      origin_name: "Country Name",
+      origin_name_placeholder: "Enter country name",
+      free_trade: "Free Trade Area",
+      region: "Region",
+      region_placeholder: "Select region",
+      search: "Search origin...",
+      success_origin_create: "Origin has been successfully created",
+      success_origin_update: "Origin has been successfully updated",
+      success_origin_delete: "Origin has been successfully deleted"
+  },
+  purchaseModule: {
+    title: "Purchase Module",
+    request_quotation: {
+      title: "Request for Quotation",
+      description: "Create a new supplier quotation request",
+    },
+    purchase_requisition: {
+      title: "Purchase Requisition",
+      description: "Internal request before issuing a purchase order",
+    },
+    purchase_local: {
+      title: "Purchase Order — Local",
+      description: "Create a purchase order for domestic suppliers",
+    },
+    purchase_import: {
+      title: "Purchase Order — Import",
+      description: "Create a purchase order with shipment and currency details",
+    },
+    receiving_items: {
+      title: "Receiving Items / GR",
+      description: "Record item receipt into the warehouse",
+    },
+    purchase_invoice: {
+      title: "Purchase Invoice",
+      description: "Register supplier billing document",
+    },
   }
 };

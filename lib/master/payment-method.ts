@@ -11,6 +11,11 @@ export interface CreatePaymentMethodData{
     payment_name: string;
 }
 
+export interface UpdatePaymentMethodData{
+    payment_id?: string;
+    payment_name: string;
+}
+
 export async function getAllPaymentMethod(page: number = 1, limit = 10, search: string = '') : Promise<{data: GetPaymentMethodData[]; pagination: any}>{
     const baseUrl = process.env.NEXT_PUBLIC_API_URL;
     const token = localStorage.getItem("token");
@@ -64,16 +69,15 @@ export async function createPaymentMethod(input: CreatePaymentMethodData) : Prom
     const baseUrl = process.env.NEXT_PUBLIC_API_URL;
     const token = localStorage.getItem("token");
 
-    const formData = new FormData();
-
-    formData.append('payment_name', String(input.payment_name));
-
     const res = await fetch(`${baseUrl}master/payment-method.php`, {
         method: 'POST',
         headers: {
-                Authorization: `Bearer ${token}`,
-            },
-        body: formData,
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            payment_name: input.payment_name
+        }),
     });
 
     const json = await res.json();
@@ -86,8 +90,30 @@ export async function createPaymentMethod(input: CreatePaymentMethodData) : Prom
     return json;
 }
 
-export async function updatePaymentMethod(){
+export async function updatePaymentMethod(input: UpdatePaymentMethodData): Promise<any>{
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL;
+    const token = localStorage.getItem("token");
 
+    const res = await fetch(`${baseUrl}master/payment-method.php`, {
+        method: 'PUT',
+       headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            payment_id: input.payment_id,
+            payment_name: input.payment_name
+        })
+    });
+
+    const json = await res.json();
+
+    //Jika statusnya bukan 201 atau 200 maka error 
+    if (json.status_code !== 201 && json.status_code !== 200) {
+        throw new Error(json.status_message || 'Failed to update product');
+    }
+
+    return json;
 }
 
 export async function deletePaymentMethod(payment_id: string){

@@ -2,10 +2,13 @@
 
 import { Button, Card, Separator, Flex, Field, IconButton, Input, NumberInput, Text, Textarea, Heading, SimpleGrid } from '@chakra-ui/react';
 // import { AddIcon, DeleteIcon } from '@chakra-ui/icons';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import dayjs from 'dayjs';
 import SidebarWithHeader from '@/components/ui/SidebarWithHeader';
 import { FaTrash } from 'react-icons/fa';
+import { useRouter } from 'next/router';
+import Loading from '@/components/loading';
+import { DecodedAuthToken, checkAuthOrRedirect, getAuthInfo } from '@/lib/auth/auth';
 
 interface ReceivingItemRow {
   id: string;
@@ -18,6 +21,34 @@ interface ReceivingItemRow {
 }
 
 export default function CreateReceivingItemsPage() {
+  const [auth, setAuth] = useState<DecodedAuthToken | null>(null);
+  const [loading, setLoading] = useState(false);
+  const router = useRouter();
+
+  useEffect(() => {
+    init();
+  }, []);
+
+  const init = async () => {
+    setLoading(true);
+
+    const valid = await checkAuthOrRedirect();
+    if(!valid) return;
+
+    const info = getAuthInfo();
+    setAuth(info);
+
+    try {
+
+    } catch (error: any){
+
+    } finally {
+      setLoading(false);
+    }
+  }
+    
+  if (loading) return <Loading/>;
+
   const [form, setForm] = useState({
     poNumber: '',
     supplier: '',
@@ -79,7 +110,7 @@ export default function CreateReceivingItemsPage() {
   };
 
   return (
-    <SidebarWithHeader username='--'>
+    <SidebarWithHeader username={auth?.username ?? "Unknown"} daysToExpire={auth?.days_remaining ?? 0}>
       <Heading fontSize="xl" fontWeight="bold" mb={4}> Create Receiving Items / Goods Receipt</Heading>
       
       <Card.Root>

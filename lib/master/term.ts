@@ -12,6 +12,11 @@ export interface CreateTermData{
     term_name: string;
 }
 
+export interface UpdateTermData {
+    term_id: string;
+    term_name: string;
+}
+
 export async function getAllTerm(page: number = 1, limit = 10, search: string = '') : Promise<{data: GetTermData[]; pagination: any}>{
     const baseUrl = process.env.NEXT_PUBLIC_API_URL;
     const token = localStorage.getItem("token");
@@ -64,16 +69,15 @@ export async function createTerm(input: CreateTermData) : Promise<any> {
     const baseUrl = process.env.NEXT_PUBLIC_API_URL;
     const token = localStorage.getItem("token");
 
-    const formData = new FormData();
-
-    formData.append('term_name', String(input.term_name));
-
     const res = await fetch(`${baseUrl}master/term.php`, {
         method: 'POST',
        headers: {
             Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
         },
-        body: formData,
+        body: JSON.stringify({
+            term_name: input.term_name
+        }),
     });
 
     const json = await res.json();
@@ -86,8 +90,30 @@ export async function createTerm(input: CreateTermData) : Promise<any> {
     return json;
 }
 
-export async function updateTerm(){
+export async function updateTerm(input: UpdateTermData) : Promise<any> {
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL;
+    const token = localStorage.getItem("token");
 
+    const res = await fetch(`${baseUrl}master/term.php`, {
+        method: 'PUT',
+       headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            term_id: input.term_id,
+            term_name: input.term_name
+        }),
+    });
+
+    const json = await res.json();
+
+    //Jika statusnya bukan 201 atau 200 maka error 
+    if (json.status_code !== 201 && json.status_code !== 200) {
+        throw new Error(json.status_message || 'Failed to update term');
+    }
+
+    return json;
 }
 
 export async function deleteTerm(term_id: string) : Promise<any> {

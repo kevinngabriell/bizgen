@@ -1,28 +1,49 @@
 "use client";
 
+import { getLang } from "@/lib/i18n";
 import { Button, CloseButton, Dialog, Field, Input, Portal, SimpleGrid } from "@chakra-ui/react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 interface ShipmentDialogProps {
     isOpen: boolean;
     setIsOpen: (open: boolean) => void;
     title: string;
     placeholders?: {
-        shipment_name?: string;
+        shipment_period_id?: string;
+        shipment_period_name?: string;
+        shipment_date_range_start?: string;
+        shipment_date_range_end?: string;
     };
     onSubmit?: (data: {
-        shipment_name: string;
+        shipment_period_id?: string;
+        shipment_period_name: string;
+        shipment_date_range_start: string;
+        shipment_date_range_end: string;
     }) => void;
 }
 
 export default function ShipmentDialog({
-    isOpen, 
-    setIsOpen,
+    isOpen, setIsOpen,
     title,
     placeholders,
     onSubmit
 }: ShipmentDialogProps) {
-    const [shipmentName, setShipmentName] = useState("");
+    const [shipmentPeriodID, setShipmentPeriodID] = useState("");
+    const [shipmentPeriodName, setShipmentPeriodName] = useState("");
+    const [shipmentDateStart, setShipmentDateStart] = useState("");
+    const [shipmentDateEnd, setShipmentDateEnd] = useState("");
+
+    const t = getLang("en"); 
+        
+    useEffect(() => {
+        if (!isOpen) return;
+            
+        setShipmentPeriodID(placeholders?.shipment_period_id ?? "");
+        setShipmentPeriodName(placeholders?.shipment_period_name ?? "");
+        setShipmentDateStart(placeholders?.shipment_date_range_start ?? "");
+        setShipmentDateEnd(placeholders?.shipment_date_range_end ?? "");
+    
+    }, [placeholders, isOpen]);
 
     return(
         <Dialog.Root open={isOpen} onOpenChange={(details) => setIsOpen(details.open)}>
@@ -36,26 +57,34 @@ export default function ShipmentDialog({
 
                         <Dialog.Body>
                             <SimpleGrid columns={{ base: 1, md: 1, lg: 1 }} gap="20px">
-                                <Field.Root w={{base: "100%", md: "100%", lg: "100%"}}>
-                                    <Field.Label>Nama Shipment</Field.Label>
-                                    <Input 
-                                        placeholder={placeholders?.shipment_name ?? "Masukkan periode pengiriman"} 
-                                        value={shipmentName} 
-                                        onChange={(e) => setShipmentName(e.target.value)}
-                                    />
+                                <Field.Root>
+                                    <Field.Label>{t.shipment_period.shipment_name}</Field.Label>
+                                    <Input placeholder={t.shipment_period.shipment_placeholder} value={shipmentPeriodName} onChange={(e) => setShipmentPeriodName(e.target.value)}/>
                                 </Field.Root>                               
+                                <Field.Root>
+                                    <Field.Label>{t.shipment_period.start_date}</Field.Label>
+                                    <Input type="date" value={shipmentDateStart} onChange={(e) => setShipmentDateStart(e.target.value)}/>
+                                </Field.Root>
+
+                                <Field.Root>
+                                    <Field.Label>{t.shipment_period.end_date}</Field.Label>
+                                    <Input type="date" value={shipmentDateEnd} onChange={(e) => setShipmentDateEnd(e.target.value)}/>
+                                </Field.Root>
                             </SimpleGrid>
                         </Dialog.Body>
 
                         <Dialog.Footer>
                             <Dialog.ActionTrigger asChild>
-                                <Button variant="outline">Batal</Button>
+                                <Button variant="outline">{t.delete_popup.cancel}</Button>
                             </Dialog.ActionTrigger>
-                            <Button onClick={() =>
+                            <Button bg={"#E77A1F"} color={"white"} cursor={"pointer"} onClick={() =>
                                 onSubmit?.({
-                                    shipment_name: shipmentName
+                                    shipment_period_id: shipmentPeriodID,
+                                    shipment_period_name: shipmentPeriodName,
+                                    shipment_date_range_start: shipmentDateStart.toString(),
+                                    shipment_date_range_end: shipmentDateEnd.toString()
                                 })
-                                }>Simpan</Button>
+                                }>{t.master.save}</Button>
                         </Dialog.Footer>
 
                         <Dialog.CloseTrigger asChild>

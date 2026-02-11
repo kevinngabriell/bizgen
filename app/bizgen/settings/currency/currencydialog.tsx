@@ -1,4 +1,5 @@
 "use client";
+import { getLang } from "@/lib/i18n";
 import { Dialog, Portal, Field, Input, Button, SimpleGrid, CloseButton } from "@chakra-ui/react";
 import { useEffect, useState } from "react";
 
@@ -15,6 +16,8 @@ export default function CurrencyDialog({isOpen, setIsOpen, title, placeholders, 
     const [currencyName, setCurrencyName] = useState("");
     const [currencyID, setCurrencyID] = useState("");
     const [currencySymbol, setCurrencySymbol] = useState("");
+
+    const t = getLang("en"); 
     
     useEffect(() => {
         if (!isOpen) return;
@@ -23,10 +26,10 @@ export default function CurrencyDialog({isOpen, setIsOpen, title, placeholders, 
         setCurrencyName(placeholders?.currency_name ?? "");
         setCurrencyCode(placeholders?.currency_code ?? "");
         setCurrencySymbol(placeholders?.currency_symbol ?? "");
+        
     }, [placeholders, isOpen]);
 
-    const isValid = currencyCode.length === 3 && currencyName.trim().length > 0 && 
-                    currencySymbol.trim().length > 0 && currencySymbol.trim().length <= 5;
+    const isValid = currencyCode.length === 3 && currencyName.trim().length > 0 && currencySymbol.trim().length > 0 && currencySymbol.trim().length <= 5;
 
     return(
         <Dialog.Root open={isOpen} onOpenChange={(details) => setIsOpen(details.open)}>
@@ -41,29 +44,29 @@ export default function CurrencyDialog({isOpen, setIsOpen, title, placeholders, 
                         <Dialog.Body>
                             <SimpleGrid columns={{ base: 1, md: 1, lg: 1 }} gap="20px">
                                 <Field.Root>
-                                    <Field.Label>Kode Mata Uang</Field.Label>
-                                    <Input required placeholder={"Masukkan kode ISO mata uang"} value={currencyCode} maxLength={3}
-                                    onChange={(e) => {
-                                        const value = e.target.value.toUpperCase().replace(/[^A-Z]/g, "");
-                                        setCurrencyCode(value);
-                                    }}/>
+                                    <Field.Label>{t.currency.currency_code}</Field.Label>
+                                    <Input required placeholder={t.currency.currency_code_placeholder} value={currencyCode} maxLength={3}
+                                        onChange={(e) => {
+                                            const value = e.target.value.toUpperCase().replace(/[^A-Z]/g, "");
+                                            setCurrencyCode(value);
+                                        }}/>
                                 </Field.Root>
 
                                 <Field.Root>
-                                    <Field.Label>Nama Mata Uang</Field.Label>
-                                    <Input required placeholder={"Masukkan mata uang"} value={currencyName} onChange={(e) => setCurrencyName(e.target.value)}/>
+                                    <Field.Label>{t.currency.currency_name}</Field.Label>
+                                    <Input required placeholder={t.currency.currency_name_placeholder} value={currencyName} onChange={(e) => setCurrencyName(e.target.value)}/>
                                 </Field.Root>
 
                                 <Field.Root>
-                                    <Field.Label>Simbol Mata Uang</Field.Label>
-                                    <Input required placeholder={"Masukkan simbol uang"} value={currencySymbol} onChange={(e) => setCurrencySymbol(e.target.value)}/>
+                                    <Field.Label>{t.currency.currency_symbol}</Field.Label>
+                                    <Input required placeholder={t.currency.currency_symbol_placeholder} value={currencySymbol} onChange={(e) => setCurrencySymbol(e.target.value)}/>
                                 </Field.Root>
                             </SimpleGrid>
                         </Dialog.Body>
 
                         <Dialog.Footer>
                             <Dialog.ActionTrigger asChild>
-                                <Button variant="outline">Batal</Button>
+                                <Button variant="outline">{t.delete_popup.cancel}</Button>
                             </Dialog.ActionTrigger>
                             <Button disabled={!isValid} bg={"#E77A1F"} color={"white"} cursor={"pointer"} onClick={() =>
                                 onSubmit?.({
@@ -72,7 +75,7 @@ export default function CurrencyDialog({isOpen, setIsOpen, title, placeholders, 
                                     currency_name: currencyName,
                                     currency_symbol: currencySymbol
                                 })
-                            }>Simpan</Button>
+                            }>{t.master.save}</Button>
                         </Dialog.Footer>
 
                         <Dialog.CloseTrigger asChild>

@@ -1,14 +1,16 @@
 "use client";
 
 import SidebarWithHeader from "@/components/ui/SidebarWithHeader";
-import { Button, ButtonGroup, CloseButton, Dialog, Flex, Heading, IconButton, Pagination, Portal, Table, Text } from "@chakra-ui/react";
+import { Button, ButtonGroup, CloseButton, Dialog, Flex, Heading, IconButton, Input, InputGroup, Pagination, Portal, Table, Text } from "@chakra-ui/react";
 import { useEffect, useState } from "react";
 import PaymentMethodDialog from "./paymentDialog";
-import { LuChevronLeft, LuChevronRight } from "react-icons/lu";
+import { LuChevronLeft, LuChevronRight, LuSearch } from "react-icons/lu";
 import Loading from "@/components/loading";
-import { getAllPaymentMethod, GetPaymentMethodData } from "@/lib/master/payment-method";
+import { createPaymentMethod, deletePaymentMethod, getAllPaymentMethod, GetPaymentMethodData, updatePaymentMethod } from "@/lib/master/payment-method";
 import { checkAuthOrRedirect, DecodedAuthToken, getAuthInfo } from "@/lib/auth/auth";
-import { FiTrash } from "react-icons/fi";
+import { FiEdit, FiTrash } from "react-icons/fi";
+import { getLang } from "@/lib/i18n";
+import { AlertMessage } from "@/components/ui/alert";
 
 export default function SettingPayment(){
     const [auth, setAuth] = useState<DecodedAuthToken | null>(null);
@@ -25,6 +27,8 @@ export default function SettingPayment(){
     const [titlePopup, setTitlePopup] = useState('');
     const [messagePopup, setMessagePopup] = useState('');
     const [isSuccess, setIsSuccess] = useState(false);
+
+    const t = getLang("en"); 
 
     useEffect(() => {
         init();
@@ -57,19 +61,131 @@ export default function SettingPayment(){
     }
 
     if (loading) return <Loading/>;
+
+    const handleCreatePaymentMethod = async (data: {
+        payment_name: string;
+    }) => {
+        try {
+            setLoading(true);
+            await createPaymentMethod(data);
+            setShowAlert(true);
+            setIsSuccess(true);
+            setTitlePopup(t.master.success);
+            setMessagePopup(t.payment_method.success_payment_method_create);
+            setTimeout(() => setShowAlert(false), 6000);
+            setIsPaymentOpen(false);
+            init();
+        } catch (err: any) {
+            setShowAlert(true);
+            setIsSuccess(false);
+            setTitlePopup(t.master.error);
+            setMessagePopup(err.message || t.master.error_msg);
+            setTimeout(() => setShowAlert(false), 6000);
+        } finally {
+            setLoading(false);
+        }
+    }
+
+    const handleUpdatePaymentMethod  = async(data: {
+        payment_id: string;
+        payment_name: string;
+    }) => {
+        try {
+            setLoading(true);
+            await updatePaymentMethod(data);
+            setShowAlert(true);
+            setIsSuccess(true);
+            setTitlePopup(t.master.success);
+            setMessagePopup(t.payment_method.success_payment_method_update);
+            setTimeout(() => setShowAlert(false), 6000);
+            setIsPaymentOpen(false);
+            init();
+        } catch (err: any) {
+            setShowAlert(true);
+            setIsSuccess(false);
+            setTitlePopup(t.master.error);
+            setMessagePopup(err.message || t.master.error_msg);
+            setTimeout(() => setShowAlert(false), 6000);
+        } finally {
+            setLoading(false);
+        }
+    }
+
+    const handleOpenPaymentMethodDialog = () => {
+        setIsPaymentOpen(true);
+    };
+
+    const handleDeletePaymentMethod = async({ payment_id }: { payment_id: string }) => {
+        try {
+            setLoading(true);
+            await deletePaymentMethod(payment_id);
+            setShowAlert(true);
+            setIsSuccess(true);
+            setTitlePopup(t.master.success);
+            setMessagePopup(t.payment_method.success_payment_method_delete);
+            setTimeout(() => setShowAlert(false), 8000);
+            init();
+        } catch (error : any){
+            setShowAlert(true);
+            setIsSuccess(false);
+            setTitlePopup(t.master.error);
+            setMessagePopup(t.master.error_msg + error.message);
+            setTimeout(() => setShowAlert(false), 8000);
+            init();
+        } finally {
+            setLoading(false);
+        }
+    }
     
     return(
-        <SidebarWithHeader username={"-"}>
+        <SidebarWithHeader username={auth?.username ?? ""} daysToExpire={auth?.days_remaining ?? 0}>
             <Flex gap={2} display={"flex"} mb={"2"} mt={"2"}>
-                <Heading mb={6} width={"100%"}>Payment ERP Settings</Heading>
-                <PaymentMethodDialog triggerIcon={<Button>Create New Payment</Button>} title="Penambahan Metode Pembayaran"/>
+                <Heading mb={6} width={"100%"}>{t.payment_method.title}</Heading>
+                <Flex gap={2} alignItems={"center"}>
+                    <InputGroup startElement={<LuSearch />}>
+                    <Input placeholder={t.payment_method.search} bg={"white"} value={findPayment}
+                        onChange={(e) => setFindPayment(e.target.value)}
+                        onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                                setPaymentPage(1);
+                                init();
+                            }
+                        }}
+                        width="250px"
+                    />
+                    </InputGroup>
+                <Button bg={"#E77A1F"} color={"white"} cursor={"pointer"} onClick={handleOpenPaymentMethodDialog}>{t.payment_method.create_button}</Button>
+            </Flex>
             </Flex>            
+
+            {showAlert && <AlertMessage title={titlePopup} description={messagePopup} isSuccess={isSuccess} />}
+
+            <PaymentMethodDialog isOpen={isPaymentOpen} 
+                setIsOpen={(open) => {
+                    setIsPaymentOpen(open);
+                    if (!open) setEditingPayment(null);
+                }}
+                title={editingPayment ? t.products.update_button : t.products.create_button}
+                placeholders={editingPayment ? { payment_id: editingPayment.payment_id, payment_name: editingPayment.payment_name } : undefined}
+                onSubmit={(data) => {
+                    if (editingPayment) {
+                        handleUpdatePaymentMethod({
+                            payment_id: data.payment_id ?? editingPayment.payment_id,
+                            payment_name: data.payment_name
+                        });
+                    } else {
+                        handleCreatePaymentMethod({
+                            payment_name: data.payment_name
+                        });
+                    }
+                }}
+            />
 
             <Table.Root showColumnBorder variant="outline" background={"white"} >
                 <Table.Header>
                     <Table.Row bg="bg.panel">
-                        <Table.ColumnHeader textAlign={"center"}>Payment</Table.ColumnHeader>
-                        <Table.ColumnHeader textAlign={"center"}>Action</Table.ColumnHeader>
+                        <Table.ColumnHeader textAlign={"center"}>{t.payment_method.payment_name}</Table.ColumnHeader>
+                        <Table.ColumnHeader textAlign={"center"}>{t.master.action}</Table.ColumnHeader>
                     </Table.Row>
                 </Table.Header>
                 <Table.Body>
@@ -78,27 +194,33 @@ export default function SettingPayment(){
                         <Table.Cell textAlign={"center"}>{payment.payment_name}</Table.Cell>
                         <Table.Cell textAlign="center">
                             <Flex justify="center" gap={4} fontSize={"2xl"}>
+                                <FiEdit style={{ cursor: "pointer" }}
+                                    onClick={() => {
+                                        setEditingPayment(payment);
+                                        setIsPaymentOpen(true);
+                                    }}
+                                />
                                 <Dialog.Root>
                                     <Dialog.Trigger asChild>
-                                        <FiTrash />
+                                        <FiTrash color="red" />
                                     </Dialog.Trigger>
                                     <Portal>
                                         <Dialog.Backdrop/>
                                         <Dialog.Positioner>
                                             <Dialog.Content>
                                                 <Dialog.Header>
-                                                    <Dialog.Title>Hapus Kode Akun</Dialog.Title>
+                                                    <Dialog.Title>{t.delete_popup.title}</Dialog.Title>
                                                 </Dialog.Header>
 
                                                 <Dialog.Body>
-                                                    <Text>Apakah anda yakin ingin menghapus term ini ?</Text>
+                                                    <Text>{t.delete_popup.description}</Text>
                                                 </Dialog.Body>
 
                                                 <Dialog.Footer>
                                                     <Dialog.ActionTrigger asChild>
-                                                        <Button variant="outline">Batal</Button>
+                                                        <Button variant="outline">{t.delete_popup.cancel}</Button>
                                                     </Dialog.ActionTrigger>
-                                                    <Button>Hapus</Button>
+                                                    <Button bg={"red"} color={"white"} cursor={"pointer"} onClick={() => handleDeletePaymentMethod({ payment_id: payment.payment_id })}>{t.delete_popup.delete}</Button>
                                                 </Dialog.Footer>
                                                             
                                                 <Dialog.CloseTrigger asChild>
@@ -146,4 +268,8 @@ export default function SettingPayment(){
         // settings
 
     );
+}
+
+function async(DataTransfer: { new(): DataTransfer; prototype: DataTransfer; }) {
+    throw new Error("Function not implemented.");
 }

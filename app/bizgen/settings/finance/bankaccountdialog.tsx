@@ -106,9 +106,7 @@ export default function BankAccountDialog({title, isOpen, setIsOpen,
 
                                 <Field.Root required>
                                     <Field.Label>{t.bank_account.select_currency}  <Field.RequiredIndicator/> </Field.Label>
-                                    <Select.Root collection={currencyCollection} value={selected ? [selected] : []}
-                                        onValueChange={(details) => setSelected(details.value[0])}
-                                        size="sm" width="100%">
+                                    <Select.Root collection={currencyCollection} value={selected ? [selected] : []} onValueChange={(details) => setSelected(details.value[0])} size="sm" width="100%">
                                         <Select.HiddenSelect />
                                         <Select.Control>
                                             <Select.Trigger>

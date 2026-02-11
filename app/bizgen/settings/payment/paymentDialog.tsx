@@ -1,33 +1,45 @@
 "use client";
-import {
-  Dialog,
-  Portal,
-  Field,
-  Input,
-  Button,
-  SimpleGrid,
-  CloseButton,
-} from "@chakra-ui/react";
-import { ReactNode } from "react";
+
+import { getLang } from "@/lib/i18n";
+import { Dialog, Portal, Field, Input, Button, SimpleGrid, CloseButton} from "@chakra-ui/react";
+import { useEffect, useState } from "react";
 
 interface PaymentDialogProps {
-  triggerIcon: ReactNode;
+  isOpen: boolean;
+  setIsOpen: (open: boolean) => void;
   title: string;
   placeholders?: {
-    paymentMethod?: string;
+    payment_id?: string;
+    payment_name?: string;
   };
-  onSubmit?: () => void;
+  onSubmit?: (data: {
+    payment_id?: string;
+    payment_name: string;
+  }) => void;
 }
 
 export default function PaymentMethodDialog({
-    triggerIcon,
+    isOpen, setIsOpen, 
     title,
     placeholders,
     onSubmit,
 }: PaymentDialogProps) {
+    const [paymentID, setPaymentID] = useState('');
+    const [paymentName, setPaymentName] = useState('');
+
+    const t = getLang("en"); 
+    
+    useEffect(() => {
+        if (!isOpen) return;
+        
+        setPaymentID(placeholders?.payment_id ?? "");
+        setPaymentName(placeholders?.payment_name ?? "");
+
+    }, [placeholders, isOpen]);
+
+
     return(
-        <Dialog.Root>
-            <Dialog.Trigger asChild>{triggerIcon}</Dialog.Trigger>
+        <Dialog.Root open={isOpen} onOpenChange={(details) => setIsOpen(details.open)}>
             <Portal>
                 <Dialog.Backdrop />
                 <Dialog.Positioner>
@@ -38,9 +50,9 @@ export default function PaymentMethodDialog({
 
                         <Dialog.Body>
                             <SimpleGrid columns={{ base: 1, md: 1, lg: 1 }} gap="20px">
-                                <Field.Root w={{base: "100%", md: "100%", lg: "100%"}}>
-                                    <Field.Label>Metode Pembayaran</Field.Label>
-                                    <Input placeholder={placeholders?.paymentMethod ?? "Masukkan metode pembayaran"} />
+                                <Field.Root>
+                                    <Field.Label>{t.payment_method.payment_name}</Field.Label>
+                                    <Input placeholder={t.payment_method.payment_name_placeholder} value={paymentName} onChange={(e) => setPaymentName(e.target.value)}/>
                                 </Field.Root>
                            
                             </SimpleGrid>
@@ -48,9 +60,14 @@ export default function PaymentMethodDialog({
 
                         <Dialog.Footer>
                             <Dialog.ActionTrigger asChild>
-                                <Button variant="outline">Batal</Button>
+                                <Button variant="outline">{t.delete_popup.cancel}</Button>
                             </Dialog.ActionTrigger>
-                            <Button onClick={onSubmit}>Simpan</Button>
+                            <Button bg={"#E77A1F"} color={"white"} cursor={"pointer"} onClick={() =>
+                                onSubmit?.({
+                                    payment_id: paymentID,
+                                    payment_name: paymentName
+                                })
+                            }>{t.master.save}</Button>
                         </Dialog.Footer>
 
                         <Dialog.CloseTrigger asChild>

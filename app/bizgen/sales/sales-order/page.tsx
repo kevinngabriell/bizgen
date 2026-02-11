@@ -1,11 +1,14 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Box, Button, Card, Field, Flex, Grid, GridItem, HStack, Heading, Input, Select, Separator, SimpleGrid, Stack, Textarea } from '@chakra-ui/react';
 import { useRouter } from 'next/navigation';
 import SidebarWithHeader from '@/components/ui/SidebarWithHeader';
+import { checkAuthOrRedirect, DecodedAuthToken, getAuthInfo } from '@/lib/auth/auth';
+import Loading from '@/components/loading';
 
 export default function CreateSalesOrderPage() {
+  const [auth, setAuth] = useState<DecodedAuthToken | null>(null);
   const router = useRouter();
 
   const [loading, setLoading] = useState(false);
@@ -26,8 +29,32 @@ export default function CreateSalesOrderPage() {
     }
   };
 
+  useEffect(() => {
+    init();
+  }, []);
+
+  const init = async () => {
+    setLoading(true);
+
+    const valid = await checkAuthOrRedirect();
+    if(!valid) return;
+
+    const info = getAuthInfo();
+    setAuth(info);
+
+    try {
+
+    } catch (error: any){
+
+    } finally {
+      setLoading(false);
+    }
+  }
+    
+  if (loading) return <Loading/>;
+
   return (
-    <SidebarWithHeader username='--'>
+    <SidebarWithHeader username={auth?.username ?? "Unknown"} daysToExpire={auth?.days_remaining ?? 0}>
       <Heading size="lg">Create Sales Order</Heading>
 
       <Card.Root>

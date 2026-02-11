@@ -1,10 +1,40 @@
 "use client";
 
+import Loading from "@/components/loading";
 import SidebarWithHeader from "@/components/ui/SidebarWithHeader";
+import { DecodedAuthToken, checkAuthOrRedirect, getAuthInfo } from "@/lib/auth/auth";
 import {Button, Card, Flex, Field, Heading, Input, NumberInput, Textarea, SimpleGrid} from "@chakra-ui/react";
-import { useState } from "react";
+import { useRouter } from "next/router";
+import { useEffect, useState } from "react";
 
 export default function CreateSampleStockOutPage() {
+  const [auth, setAuth] = useState<DecodedAuthToken | null>(null);
+  const [loading, setLoading] = useState(false);
+  const router = useRouter();
+
+  useEffect(() => {
+    init();
+  }, []);
+
+  const init = async () => {
+    setLoading(true);
+
+    const valid = await checkAuthOrRedirect();
+    if(!valid) return;
+
+    const info = getAuthInfo();
+    setAuth(info);
+
+    try {
+
+    } catch (error: any){
+
+    } finally {
+      setLoading(false);
+    }
+  }
+    
+  if (loading) return <Loading/>;
   const [form, setForm] = useState({
     referenceNo: "",
     lotNo: "",
@@ -25,7 +55,7 @@ export default function CreateSampleStockOutPage() {
   };
 
   return (
-    <SidebarWithHeader username="---">
+    <SidebarWithHeader username={auth?.username ?? "Unknown"} daysToExpire={auth?.days_remaining ?? 0}>
       <Card.Root>
         <Card.Header>
           <Heading size="md">Create Stock Out — Sample</Heading>

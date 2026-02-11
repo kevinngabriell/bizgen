@@ -77,7 +77,7 @@ export async function createProduct(input: CreateProductData): Promise<any>{
 
     const res = await fetch(`${baseUrl}master/product.php`, {
         method: 'POST',
-       headers: {
+        headers: {
             Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json',
         },

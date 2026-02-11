@@ -26,27 +26,21 @@ export const id = {
     register: {
         title: "Daftar BizGen",
         description: "Memberdayakan Bisnis Perdagangan & Ekspor-Impor dengan ERP Pintar",
-
         step_one_title: "Anda mendaftar sebagai apa?",
         step_one_card_1: "Pemilik Bisnis",
         step_one_card_selected: "Dipilih",
         step_one_card_2: "Buat perusahaan baru, lengkapi data bisnis, lalu pilih paket.",
         step_one_card_3: "Gabung ke Perusahaan",
         step_one_card_4: "Masuk ke perusahaan yang sudah ada menggunakan kode perusahaan.",
-
         step_two_title: "Lengkapi Data Anda",
         step_two_wa: "Nomor WhatsApp",
         step_two_wa_placeholder: "Masukkan nomor WhatsApp",
-
         step_two_card_1: "Nama Bisnis",
         step_two_card_1_placeholder: "Masukkan nama bisnis",
-
         step_two_card_2: "Kategori Bisnis",
         step_two_card_2_placeholder: "Masukkan kategori bisnis",
-
         step_two_card_3: "Alamat Bisnis",
         step_two_card_3_placeholder: "Masukkan alamat bisnis",
-
         step_two_card_4: "Kode Perusahaan",
         step_two_card_4_placeholder: "Masukkan kode perusahaan"
     },
@@ -187,14 +181,146 @@ export const id = {
         success_account_update: "Akun berhasil diperbarui.",
         success_account_delete: "Akun berhasil dihapus."
     },
+    supplier: {
+        title: "Supplier",
+        create_button: "Tambah Supplier",
+        update_button: "Perbarui Supplier",
+        supplier_name: "Nama Supplier",
+        supplier_name_placeholder: "Masukkan nama supplier",
+        supplier_phone: "Nomor Telepon",
+        supplier_phone_placeholder: "Masukkan nomor telepon",
+        supplier_address: "Alamat",
+        supplier_address_placeholder: "Masukkan alamat",
+        supplier_origin: "Negara / Wilayah",
+        supplier_origin_placeholder: "Pilih negara atau wilayah",
+        supplier_pic_name: "Narahubung",
+        supplier_pic_name_placeholder: "Masukkan nama narahubung",
+        supplier_pic_contact: "Kontak Narahubung",
+        supplier_pic_contact_placeholder: "Masukkan kontak narahubung",
+        supplier_currency: "Mata Uang Default",
+        supplier_currency_placeholder: "Pilih mata uang",
+        supplier_term: "Termin Pembayaran",
+        supplier_term_placeholder: "Pilih termin pembayaran",
+        supplier_bank_info: "Informasi Bank",
+        supplier_bank_info_placeholder: "Masukkan informasi bank",
+        search: "Cari supplier...",
+        success_supplier_create: "Supplier berhasil dibuat.",
+        success_supplier_update: "Supplier berhasil diperbarui.",
+        success_supplier_delete: "Supplier berhasil dihapus."
+    },
+    term: {
+        title: "Termin Pembayaran",
+        create_button: "Tambah Termin",
+        update_button: "Perbarui Termin",
+        term_name: "Nama Termin",
+        term_name_placeholder: "Masukkan nama termin",
+        search: "Cari termin...",
+        success_term_create: "Termin berhasil dibuat.",
+        success_term_update: "Termin berhasil diperbarui.",
+        success_term_delete: "Termin berhasil dihapus."
+    },
+    uom: {
+        title: "Satuan",
+        create_button: "Tambah Satuan",
+        update_button: "Ubah Satuan",
+        uom_name: "Nama Satuan",
+        uom_name_placeholder: "Masukkan nama satuan",
+        conversion_factor: "Faktor Konversi",
+        conversion_factor_placeholder: "Masukkan faktor konversi",
+        search: "Cari satuan...",
+        success_uom_create: "Satuan berhasil dibuat",
+        success_uom_update: "Satuan berhasil diperbarui",
+        success_uom_delete: "Satuan berhasil dihapus"
+    },
+    ship_via: {
+        title: "Metode Pengiriman",
+        create_button: "Tambah Metode Pengiriman",
+        update_button: "Ubah Metode Pengiriman",
+        ship_via_name: "Metode Pengiriman",
+        ship_via_name_placeholder: "Masukkan metode pengiriman",
+        search: "Cari metode pengiriman...",
+        success_ship_via_create: "Metode pengiriman berhasil dibuat",
+        success_ship_via_update: "Metode pengiriman berhasil diperbarui",
+        success_ship_via_delete: "Metode pengiriman berhasil dihapus"
+    },
+    shipment_period: {
+        title: "Periode Pengiriman",
+        create_button: "Tambah Periode Pengiriman",
+        update_button: "Ubah Periode Pengiriman",
+        shipment_name: "Nama Periode",
+        shipment_placeholder: "Masukkan nama periode",
+        start_date: "Tanggal Mulai",
+        end_date: "Tanggal Selesai",
+        search: "Cari periode pengiriman...",
+        success_shipment_create: "Periode pengiriman berhasil dibuat",
+        success_shipment_update: "Periode pengiriman berhasil diperbarui",
+        success_shipment_delete: "Periode pengiriman berhasil dihapus"
+    },
     currency: {
-        title: "Pengaturan Mata Uang",
-        create: "Tambah Mata Uang",
-        update: "Ubah Mata Uang",
-        deleteTitle: "Hapus Mata Uang",
-        deleteConfirm: "Apakah Anda yakin ingin menghapus mata uang ini?",
-        successCreate: "Mata uang berhasil ditambahkan",
-        successDelete: "Mata uang berhasil dihapus",
-        errorIncomplete: "Data tidak lengkap",
+        title: "Mata Uang",
+        create_button: "Tambah Mata Uang",
+        update_button: "Ubah Mata Uang",
+        currency_code: "Kode Mata Uang",
+        currency_code_placeholder: "Masukkan kode mata uang",
+        currency_name: "Nama Mata Uang",
+        currency_name_placeholder: "Masukkan nama mata uang",
+        currency_symbol: "Simbol Mata Uang",
+        currency_symbol_placeholder: "Masukkan simbol mata uang",
+        search: "Cari mata uang...",
+        success_currency_create: "Mata uang berhasil dibuat",
+        success_currency_update: "Mata uang berhasil diperbarui",
+        success_currency_delete: "Mata uang berhasil dihapus"
+    },
+    payment_method: {
+        title: "Metode Pembayaran",
+        create_button: "Tambah Metode Pembayaran",
+        update_button: "Ubah Metode Pembayaran",
+        payment_name: "Metode Pembayaran",
+        payment_name_placeholder: "Masukkan metode pembayaran",
+        search: "Cari metode pembayaran...",
+        success_payment_method_create: "Metode pembayaran berhasil dibuat",
+        success_payment_method_update: "Metode pembayaran berhasil diperbarui",
+        success_payment_method_delete: "Metode pembayaran berhasil dihapus"
+    },
+    origin: {
+        title: "Negara Asal",
+        create_button: "Tambah Negara Asal",
+        update_button: "Ubah Negara Asal",
+        origin_name: "Nama Negara",
+        origin_name_placeholder: "Masukkan nama negara",
+        free_trade: "Area Perdagangan Bebas",
+        region: "Wilayah",
+        region_placeholder: "Pilih wilayah",
+        search: "Cari negara asal...",
+        success_origin_create: "Negara asal berhasil dibuat",
+        success_origin_update: "Negara asal berhasil diperbarui",
+        success_origin_delete: "Negara asal berhasil dihapus"
+    },
+    purchaseModule: {
+        title: "Modul Pembelian",
+        request_quotation: {
+            title: "Permintaan Penawaran",
+            description: "Buat permintaan penawaran baru ke supplier",
+        },
+        purchase_requisition: {
+            title: "Permintaan Pembelian",
+            description: "Permintaan internal sebelum membuat purchase order",
+        },
+        purchase_local: {
+            title: "Purchase Order — Lokal",
+            description: "Buat purchase order untuk supplier dalam negeri",
+        },
+        purchase_import: {
+            title: "Purchase Order — Impor",
+            description: "Buat purchase order dengan detail pengiriman dan mata uang",
+        },
+        receiving_items: {
+            title: "Penerimaan Barang / GR",
+            description: "Catat penerimaan barang ke gudang",
+        },
+        purchase_invoice: {
+            title: "Faktur Pembelian",
+            description: "Daftarkan dokumen tagihan dari supplier",
+        },
     }
 };

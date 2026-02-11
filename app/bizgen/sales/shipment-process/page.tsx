@@ -2,14 +2,45 @@
 
 import { Box, Button, Card, Field, Flex, Grid, GridItem, Heading, HStack, Icon, Input, Separator, SimpleGrid, Stack, Tag, Text, Textarea,} from "@chakra-ui/react";
 import { FiFileText, FiPackage, FiTruck } from "react-icons/fi";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import SidebarWithHeader from "@/components/ui/SidebarWithHeader";
+import { useRouter } from "next/navigation";
+import Loading from "@/components/loading";
+import { DecodedAuthToken, checkAuthOrRedirect, getAuthInfo } from "@/lib/auth/auth";
 
 export default function ShipmentProcessPage() {
   const [mode, setMode] = useState<"create" | "view" | "edit">("create");
 
+  const [auth, setAuth] = useState<DecodedAuthToken | null>(null);
+  const [loading, setLoading] = useState(false);
+  const router = useRouter();
+
+  useEffect(() => {
+    init();
+  }, []);
+
+  const init = async () => {
+    setLoading(true);
+
+    const valid = await checkAuthOrRedirect();
+    if(!valid) return;
+
+    const info = getAuthInfo();
+    setAuth(info);
+
+    try {
+
+    } catch (error: any){
+
+    } finally {
+      setLoading(false);
+    }
+  }
+    
+  if (loading) return <Loading/>;
+
   return (
-    <SidebarWithHeader username="---">
+    <SidebarWithHeader username={auth?.username ?? "Unknown"} daysToExpire={auth?.days_remaining ?? 0}>
       <Flex justify={"space-between"}>
         <Flex flexDir={"column"}>
           <Heading size="lg">Shipment Processing &amp; Documents</Heading>

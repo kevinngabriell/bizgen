@@ -1,15 +1,16 @@
 "use client";
 
 import SidebarWithHeader from "@/components/ui/SidebarWithHeader";
-import { Button, ButtonGroup, CloseButton, Dialog, Flex, Heading, IconButton, Pagination, Portal, Table, Text } from "@chakra-ui/react";
+import { Button, ButtonGroup, CloseButton, Dialog, Flex, Heading, IconButton, Input, InputGroup, Pagination, Portal, Table, Text } from "@chakra-ui/react";
 import { useEffect, useState } from "react";
 import SupplierDialog from "./supplierdialog";
-import { LuChevronLeft, LuChevronRight } from "react-icons/lu";
+import { LuChevronLeft, LuChevronRight, LuSearch } from "react-icons/lu";
 import Loading from "@/components/loading";
-import { getAllSupplier, GetSupplierData } from "@/lib/master/supplier";
+import { createSupplier, deleteSupplier, getAllSupplier, GetSupplierData, updateSupplier, updateSupplierData } from "@/lib/master/supplier";
 import { checkAuthOrRedirect, DecodedAuthToken, getAuthInfo } from "@/lib/auth/auth";
 import { AlertMessage } from "@/components/ui/alert";
-import { FiTrash } from "react-icons/fi";
+import { FiEdit, FiTrash } from "react-icons/fi";
+import { getLang } from "@/lib/i18n";
 
 export default function SettingSupplier(){
     const [auth, setAuth] = useState<DecodedAuthToken | null>(null);
@@ -20,13 +21,14 @@ export default function SettingSupplier(){
     const [supplierPagination, setSupplierPagination] = useState({ total_pages: 1, page: 1 });
     const [findSupplier, setFindSupplier] = useState('');
     const [supplierData, setSupplierData] = useState<GetSupplierData[]>([]);
-    const [isSupplierDialogOpen, setIsSupplierDialogOpen] = useState(false);
     const [editingSupplier, setEditingSupplier] = useState<GetSupplierData | null>(null);
 
     const [showAlert, setShowAlert] = useState(false);
     const [titlePopup, setTitlePopup] = useState('');
     const [messagePopup, setMessagePopup] = useState('');
     const [isSuccess, setIsSuccess] = useState(false);
+
+    const t = getLang("en"); 
 
     useEffect(() => {
         init();
@@ -59,45 +61,167 @@ export default function SettingSupplier(){
     }    
 
     if (loading) return <Loading/>;
+
+    const handleCreateSupplier  = async(data: {
+        supplier_name: string;
+        supplier_origin: string;
+        supplier_address: string;
+        supplier_phone: string;
+        supplier_pic_name: string;
+        supplier_pic_contact: string;
+        supplier_currency: string;
+        supplier_term: string;
+        supplier_bank_information: string;
+    }) => {
+        try {
+            setLoading(true);
+            await createSupplier(data);
+            setShowAlert(true);
+            setIsSuccess(true);
+            setTitlePopup(t.master.success);
+            setMessagePopup(t.supplier.success_supplier_create);
+            setTimeout(() => setShowAlert(false), 6000);
+            setIsSupplierOpen(false);
+            init();
+        } catch (err: any) {
+            setShowAlert(true);
+            setIsSuccess(false);
+            setTitlePopup(t.master.error);
+            setMessagePopup(err.message || t.master.error_msg);
+            setTimeout(() => setShowAlert(false), 6000);
+        } finally {
+            setLoading(false);
+        }
+    }
+
+    const handleUpdateSupplier = async (data: updateSupplierData) =>  {
+        try {
+            setLoading(true);
+            await updateSupplier(data);
+            setShowAlert(true);
+            setIsSuccess(true);
+            setTitlePopup(t.master.success);
+            setMessagePopup(t.supplier.success_supplier_update);
+            setTimeout(() => setShowAlert(false), 6000);
+            setIsSupplierOpen(false);
+            init();
+        } catch (err: any) {
+            setShowAlert(true);
+            setIsSuccess(false);
+            setTitlePopup(t.master.error);
+            setMessagePopup(err.message || t.master.error_msg);
+            setTimeout(() => setShowAlert(false), 6000);
+        } finally {
+            setLoading(false);
+        }
+    }
     
+    const handleOpenSupplierDialog = () => {
+        setIsSupplierOpen(true);
+    };
+
+    const handleDeleteSupplier = async({ supplier_id }: { supplier_id: string }) => {
+        try {
+            setLoading(true);
+            await deleteSupplier(supplier_id);
+            setShowAlert(true);
+            setIsSuccess(true);
+            setTitlePopup(t.master.success);
+            setMessagePopup(t.supplier.success_supplier_delete);
+            setTimeout(() => setShowAlert(false), 8000);
+            init();
+        } catch (error : any){
+            setShowAlert(true);
+            setIsSuccess(false);
+            setTitlePopup(t.master.error);
+            setMessagePopup(t.master.error_msg + error.message);
+            setTimeout(() => setShowAlert(false), 8000);
+            init();
+        } finally {
+            setLoading(false);
+        }
+    }
+
     return(
-        <SidebarWithHeader username={"-"}>
+        <SidebarWithHeader username={auth?.username ?? "Unknown"} daysToExpire={auth?.days_remaining ?? 0}>
             <Flex gap={2} display={"flex"} mb={"2"} mt={"2"}>
-                <Heading mb={6} width={"100%"}>Supplier ERP Settings</Heading>
-                <Button bg={"#E77A1F"} color={"white"} cursor={"pointer"}>Create New Supplier</Button>
+                <Heading mb={6} width={"100%"}>{t.supplier.title}</Heading>
+                <Flex gap={2} alignItems={"center"}>
+                    <InputGroup startElement={<LuSearch />}>
+                        <Input placeholder={t.supplier.search} bg={"white"} value={findSupplier}
+                            onChange={(e) => setFindSupplier(e.target.value)}
+                            onKeyDown={(e) => {
+                                if (e.key === "Enter") {
+                                    setSupplierPage(1);
+                                    init();
+                                }
+                            }}
+                            width="250px"
+                        />
+                    </InputGroup>
+                    <Button bg={"#E77A1F"} color={"white"} cursor={"pointer"} onClick={handleOpenSupplierDialog}>{t.supplier.create_button}</Button>
+                </Flex>
             </Flex>
 
             {showAlert && <AlertMessage title={titlePopup} description={messagePopup} isSuccess={isSuccess} />}
 
-            {/* <SupplierDialog 
-                isOpen={isSupplierDialogOpen}
+            <SupplierDialog 
+                isOpen={isSupplierOpen}
                 setIsOpen={(open) => {
-                    setIsSupplierDialogOpen(open);
+                    setIsSupplierOpen(open);
                     if (!open) setEditingSupplier(null);
                 }}
-                title={editingSupplier ? "Update Supplier" : "Create Supplier"}
+                title={editingSupplier ? t.supplier.update_button : t.supplier.create_button}
                 placeholders={editingSupplier ? { 
-                    namaSupplier: editingSupplier.supplier_name, 
-                    nomorSupplier: editingSupplier.phone, 
-                    alamatSupplier: editingSupplier.address,
-                    asalSupplier: editingSupplier.origin_id,
-                    picSupplier: editingSupplier.pic_name,
-                    nomorpicSupplier: editingSupplier.pic_contact,
-                    matauangSupplier: editingSupplier.currency_id,
-                    termSupplier: editingSupplier.supplier_id,
-                    informasibanSupplier: editingSupplier.bank_information
+                    supplier_id: editingSupplier.supplier_id,
+                    supplier_name: editingSupplier.supplier_name, 
+                    supplier_phone: '', 
+                    supplier_address: '',
+                    supplier_origin: editingSupplier.supplier_origin,
+                    supplier_pic_name: '',
+                    supplier_pic_contact: '',
+                    supplier_currency: '',
+                    supplier_term: '',
+                    supplier_bank_information: ''
                 } 
                 : undefined}
-                onSubmit={(data) => editingSupplier ? handleCreateSupplier(data) : handleCreateSupplier(data)}
-            /> */}
+                onSubmit={(data) => {
+                    if(editingSupplier){
+                        handleUpdateSupplier({
+                            supplier_id: data.supplier_id ?? editingSupplier.supplier_id,
+                            supplier_name: data.supplier_name,
+                            supplier_phone: data.supplier_phone,
+                            supplier_address: data.supplier_address,
+                            supplier_bank_information: data.supplier_bank_information,
+                            supplier_currency: data.supplier_currency,
+                            supplier_origin: data.supplier_origin,
+                            supplier_pic_contact: data.supplier_pic_contact,
+                            supplier_pic_name: data.supplier_pic_name,
+                            supplier_term: data.supplier_term
+                        });
+                    } else {
+                        handleCreateSupplier({
+                            supplier_name: data.supplier_name,
+                            supplier_origin: data.supplier_origin,
+                            supplier_address: data.supplier_address,
+                            supplier_phone: data.supplier_phone,
+                            supplier_pic_name: data.supplier_pic_name,
+                            supplier_pic_contact: data.supplier_pic_contact,
+                            supplier_currency: data.supplier_currency,
+                            supplier_term: data.supplier_term,
+                            supplier_bank_information: data.supplier_bank_information
+                        });
+                    }
+                }}
+            />
 
             <Table.Root showColumnBorder variant="outline" background={"white"} >
                 <Table.Header>
                     <Table.Row bg="bg.panel">
-                        <Table.ColumnHeader textAlign={"center"}>Name</Table.ColumnHeader>
-                        <Table.ColumnHeader textAlign={"center"}>Origin</Table.ColumnHeader>
-                        <Table.ColumnHeader textAlign={"center"}>Currency</Table.ColumnHeader>
-                        <Table.ColumnHeader textAlign={"center"}>Action</Table.ColumnHeader>
+                        <Table.ColumnHeader textAlign={"center"}>{t.supplier.supplier_name}</Table.ColumnHeader>
+                        <Table.ColumnHeader textAlign={"center"}>{t.supplier.supplier_origin}</Table.ColumnHeader>
+                        <Table.ColumnHeader textAlign={"center"}>{t.supplier.supplier_currency}</Table.ColumnHeader>
+                        <Table.ColumnHeader textAlign={"center"}>{t.master.action}</Table.ColumnHeader>
                     </Table.Row>
                 </Table.Header>  
                 
@@ -109,27 +233,34 @@ export default function SettingSupplier(){
                         <Table.Cell textAlign={"center"}>{supplier.supplier_currency}</Table.Cell>
                         <Table.Cell textAlign="center">
                             <Flex justify="center" gap={4} fontSize={"2xl"}>
+                                <FiEdit
+                                    style={{ cursor: "pointer" }}
+                                    onClick={() => {
+                                        setEditingSupplier(supplier);
+                                        setIsSupplierOpen(true);
+                                    }}
+                                />                                
                                 <Dialog.Root>
                                     <Dialog.Trigger asChild>
-                                        <FiTrash />
+                                        <FiTrash color="red"/>
                                     </Dialog.Trigger>
                                     <Portal>
                                         <Dialog.Backdrop/>
                                         <Dialog.Positioner>
                                             <Dialog.Content>
                                                 <Dialog.Header>
-                                                    <Dialog.Title>Hapus Kode Akun</Dialog.Title>
+                                                    <Dialog.Title>{t.delete_popup.title}</Dialog.Title>
                                                 </Dialog.Header>
 
                                                 <Dialog.Body>
-                                                    <Text>Apakah anda yakin ingin menghapus term ini ?</Text>
+                                                    <Text>{t.delete_popup.description}</Text>
                                                 </Dialog.Body>
 
                                                 <Dialog.Footer>
                                                     <Dialog.ActionTrigger asChild>
-                                                        <Button variant="outline">Batal</Button>
+                                                        <Button variant="outline">{t.delete_popup.cancel}</Button>
                                                     </Dialog.ActionTrigger>
-                                                    <Button>Hapus</Button>
+                                                    <Button bg={"red"} color={"white"} cursor={"pointer"} onClick={() => handleDeleteSupplier({ supplier_id: supplier.supplier_id })}>{t.delete_popup.delete}</Button>
                                                 </Dialog.Footer>
                                                             
                                                 <Dialog.CloseTrigger asChild>

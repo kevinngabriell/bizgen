@@ -1,8 +1,8 @@
 "use client";
-import Loading from "@/components/loading";
+
 import { getLang } from "@/lib/i18n";
 import { Dialog, Portal, Field, Input, Button, SimpleGrid, CloseButton, Select, createListCollection } from "@chakra-ui/react";
-import { ReactNode, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
 interface AccountCodeDialogProps {
   isOpen: boolean;
@@ -89,17 +89,9 @@ export default function AccountCodeDialog({title, isOpen, setIsOpen, placeholder
                 </Field.Root>
 
                 <Field.Root required>
-                  <Field.Label>
-                    {t.account_code.account_type} <Field.RequiredIndicator />
-                  </Field.Label>
-
-                  <Select.Root
-                    collection={accountTypeCollection}
-                    value={accountType ? [accountType] : []}
-                    onValueChange={(details) => setAccountType(details.value[0])}
-                    size="sm"
-                    width="100%"
-                  >
+                  <Field.Label>{t.account_code.account_type}<Field.RequiredIndicator /></Field.Label>
+                  <Select.Root collection={accountTypeCollection} value={accountType ? [accountType] : []}
+                    onValueChange={(details) => setAccountType(details.value[0])} size="sm" width="100%">
                     <Select.HiddenSelect />
                     <Select.Control>
                       <Select.Trigger>

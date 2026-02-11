@@ -46,8 +46,6 @@ export default function CustomerDialog({
 
     useEffect(() => {
         if (!isOpen) return;
-        
-        // console.log(placeholders);
 
         setCustomerID(placeholders?.customer_id ?? "");
         setCustomerName(placeholders?.customer_name ?? "");
@@ -83,13 +81,11 @@ export default function CustomerDialog({
 
                                 <Field.Root required>
                                     <Field.Label>{t.customer.customer_phone} <Field.RequiredIndicator /> </Field.Label>
-                                    <Input
-                                        value={customerPhone}
-                                        onChange={(e) => {
+                                    <Input value={customerPhone} placeholder={t.customer.customer_phone_placeholder}
+                                        onChange={(e) => { 
                                             const numeric = e.target.value.replace(/[^0-9]/g, "");
                                             setCustomerPhone(numeric);
                                         }}
-                                        placeholder={t.customer.customer_phone_placeholder}
                                     />
                                 </Field.Root>
 
@@ -110,9 +106,7 @@ export default function CustomerDialog({
 
                                 <Field.Root>
                                     <Field.Label>{t.customer.customer_top}</Field.Label>
-                                    <Select.Root
-                                        collection={paymentTypes}
-                                        value={[isCOD ? "cod" : "top"]}
+                                    <Select.Root collection={paymentTypes} value={[isCOD ? "cod" : "top"]}
                                         onValueChange={(details) => {
                                             const cod = details.value[0] === "cod";
                                             setIsCOD(cod);
@@ -122,7 +116,7 @@ export default function CustomerDialog({
                                         <Select.HiddenSelect />
                                         <Select.Control>
                                             <Select.Trigger>
-                                                <Select.ValueText placeholder="Select payment type" />
+                                                <Select.ValueText placeholder={t.customer.customer_top_placeholder} />
                                             </Select.Trigger>
                                             <Select.IndicatorGroup>
                                                 <Select.Indicator />
@@ -146,12 +140,7 @@ export default function CustomerDialog({
                                 {!isCOD && (
                                     <Field.Root>
                                         <Field.Label>{t.customer.customer_top}</Field.Label>
-                                        <Input
-                                            type="number"
-                                            value={customerTOP}
-                                            placeholder={t.customer.customer_top_placeholder}
-                                            onChange={(e) => setCustomerTOP(Number(e.target.value))}
-                                        />
+                                        <Input type="number" value={customerTOP} placeholder={t.customer.customer_top_placeholder} onChange={(e) => setCustomerTOP(Number(e.target.value))}/>
                                     </Field.Root>
                                 )}                             
                             </SimpleGrid>

@@ -1,40 +1,39 @@
 "use client";
 
 import { getLang } from "@/lib/i18n";
-import { Button, CloseButton, Dialog, Field, Input, Portal, SimpleGrid } from "@chakra-ui/react";
+import { Dialog, Portal, SimpleGrid, Field, Textarea, CloseButton, Button, Input } from "@chakra-ui/react";
 import { useEffect, useState } from "react";
 
-interface ShipViaDialogProps {
+interface TermDialogProps {
     isOpen: boolean;
     setIsOpen: (open: boolean) => void;
     title: string;
     placeholders?: {
-        ship_via_id?: string;
-        ship_via_name?: string;
+        term_id?: string;
+        term_name?: string;
     };
     onSubmit?: (data: {
-        ship_via_id?: string;
-        ship_via_name: string;
+        term_id?: string; 
+        term_name: string; 
     }) => void;
 }
 
-export default function ShipViaDialog({
-    isOpen, setIsOpen,
+export default function TermDialog({
+    isOpen, setIsOpen, 
     title,
     placeholders,
-    onSubmit
-}: ShipViaDialogProps) {
-    const [shipviaID, setShipViaID] = useState("");
-    const [shipviaName, setShipViaName] = useState("");
+    onSubmit,
+}: TermDialogProps) {
+    const [termID, setTermID] = useState("");
+    const [termName, setTermName] = useState("");
 
     const t = getLang("en"); 
-        
+    
     useEffect(() => {
         if (!isOpen) return;
-            
-        setShipViaID(placeholders?.ship_via_id ?? "");
-        setShipViaName(placeholders?.ship_via_name ?? "");
-    
+        
+        setTermID(placeholders?.term_id ?? "");
+        setTermName(placeholders?.term_name ?? "");
     }, [placeholders, isOpen]);
 
     return(
@@ -49,9 +48,9 @@ export default function ShipViaDialog({
 
                         <Dialog.Body>
                             <SimpleGrid columns={{ base: 1, md: 1, lg: 1 }} gap="20px">
-                                <Field.Root>
-                                    <Field.Label>{t.ship_via.ship_via_name}</Field.Label>
-                                    <Input value={shipviaName} placeholder={t.ship_via.ship_via_name_placeholder} onChange={(e) => setShipViaName(e.target.value)}/>
+                                <Field.Root required>
+                                    <Field.Label>{t.term.term_name} <Field.RequiredIndicator /> </Field.Label>
+                                    <Input required placeholder={t.term.term_name_placeholder} value={termName} onChange={(e) => setTermName(e.target.value)} />
                                 </Field.Root>                               
                             </SimpleGrid>
                         </Dialog.Body>
@@ -62,10 +61,10 @@ export default function ShipViaDialog({
                             </Dialog.ActionTrigger>
                             <Button bg={"#E77A1F"} color={"white"} cursor={"pointer"} onClick={() =>
                                 onSubmit?.({
-                                    ship_via_id: shipviaID,
-                                    ship_via_name: shipviaName
+                                    term_id: termID,
+                                    term_name: termName
                                 })
-                                }>{t.master.save}</Button>
+                            }>{t.master.save}</Button>
                         </Dialog.Footer>
 
                         <Dialog.CloseTrigger asChild>
@@ -76,5 +75,6 @@ export default function ShipViaDialog({
                 </Dialog.Positioner>
             </Portal>
         </Dialog.Root>
-    );    
+    );
+
 }

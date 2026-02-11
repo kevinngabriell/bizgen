@@ -1,8 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Box, Button, Card, Flex, HStack, Heading, IconButton, Input, Stack, Text, Textarea, SimpleGrid, Separator } from '@chakra-ui/react';
 import SidebarWithHeader from '@/components/ui/SidebarWithHeader';
+import { useRouter } from 'next/router';
+import Loading from '@/components/loading';
+import { DecodedAuthToken, checkAuthOrRedirect, getAuthInfo } from '@/lib/auth/auth';
 // import { AddIcon, DeleteIcon } from '@chakra-ui/icons';
 
 type CostItem = {
@@ -16,6 +19,33 @@ type CostItem = {
 };
 
 export default function CostingExpensePage() {
+  const [auth, setAuth] = useState<DecodedAuthToken | null>(null);
+  const [loading, setLoading] = useState(false);
+  const router = useRouter();
+
+  useEffect(() => {
+    init();
+  }, []);
+
+  const init = async () => {
+    setLoading(true);
+
+    const valid = await checkAuthOrRedirect();
+    if(!valid) return;
+
+    const info = getAuthInfo();
+    setAuth(info);
+
+    try {
+
+    } catch (error: any){
+
+    } finally {
+      setLoading(false);
+    }
+  }
+    
+  if (loading) return <Loading/>;
 //   const toast = useToast();
 
   const [costItems, setCostItems] = useState<CostItem[]>([
@@ -82,7 +112,7 @@ export default function CostingExpensePage() {
   };
 
   return (
-    <SidebarWithHeader username='---'>
+    <SidebarWithHeader username={auth?.username ?? "Unknown"} daysToExpire={auth?.days_remaining ?? 0}>
       <Stack gap={6}>
       <Heading size="lg">Costing &amp; Expense Capture (Actualization)</Heading>
 

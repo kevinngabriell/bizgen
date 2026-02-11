@@ -1,20 +1,44 @@
 "use client";
 
+import Loading from "@/components/loading";
 import SidebarWithHeader from "@/components/ui/SidebarWithHeader";
-import {
-  Box,
-  Flex,
-  Heading,
-  SimpleGrid,
-  Text,
-  Card,
-  Stack,
-  Badge,
-} from "@chakra-ui/react";
+import { DecodedAuthToken, checkAuthOrRedirect, getAuthInfo } from "@/lib/auth/auth";
+import { Box, Flex, Heading, SimpleGrid, Text, Card, Stack, Badge } from "@chakra-ui/react";
+import { useRouter } from "next/router";
+import { useState, useEffect } from "react";
 
 export default function Analytics() {
+  const [auth, setAuth] = useState<DecodedAuthToken | null>(null);
+  const [loading, setLoading] = useState(false);
+  const router = useRouter();
+
+  useEffect(() => {
+    init();
+  }, []);
+
+  const init = async () => {
+    setLoading(true);
+
+    const valid = await checkAuthOrRedirect();
+    if(!valid) return;
+
+    const info = getAuthInfo();
+    setAuth(info);
+
+    try {
+
+    } catch (error: any){
+
+    } finally {
+      setLoading(false);
+    }
+  }
+    
+  if (loading) return <Loading/>;
+
+
   return (
-    <SidebarWithHeader username="kevin">
+    <SidebarWithHeader username={auth?.username ?? "Unknown"} daysToExpire={auth?.days_remaining ?? 0}>
       <Flex direction="column" gap={6} p={4}>
         <Heading size="lg">Analytics Overview</Heading>
 

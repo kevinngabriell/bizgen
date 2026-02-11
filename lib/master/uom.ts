@@ -11,6 +11,12 @@ export interface createUOMData{
     conversion_factor?: number;
 }
 
+export interface updateUOMData{
+    uom_id: string;
+    uom_name?: string;
+    conversion_factor?: number;
+}
+
 export async function getAllUOM(page: number = 1, limit = 10, search: string = '') : Promise<{data: UOMData[]; pagination: any}>{
     const baseUrl = process.env.NEXT_PUBLIC_API_URL;
     const token = localStorage.getItem("token");
@@ -63,20 +69,16 @@ export async function createUOM(input: createUOMData) : Promise<any>{
     const baseUrl = process.env.NEXT_PUBLIC_API_URL;
     const token = localStorage.getItem("token");
 
-    const formData = new FormData();
-
-    formData.append('uom_name', String(input.uom_name));
-
-    if (typeof input.conversion_factor === 'number') {
-        formData.append('conversion_factor', String(input.conversion_factor));
-    }
-
     const res = await fetch(`${baseUrl}master/uom.php`, {
         method: 'POST',
-       headers: {
+        headers: {
             Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
         },
-        body: formData,
+        body: JSON.stringify({
+            uom_name: input.uom_name,
+            conversion_factor: input.conversion_factor
+        }),
     });
 
     const json = await res.json();
@@ -89,8 +91,31 @@ export async function createUOM(input: createUOMData) : Promise<any>{
     return json;
 }
 
-export async function updateUOM(){
+export async function updateUOM(input: updateUOMData): Promise<any>{
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL;
+    const token = localStorage.getItem("token");
 
+    const res = await fetch(`${baseUrl}master/uom.php`, {
+        method: 'PUT',
+       headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            uom_id: input.uom_id,
+            uom_name: input.uom_name,
+            conversion_factor: input.conversion_factor
+        })
+    });
+
+    const json = await res.json();
+
+    //Jika statusnya bukan 201 atau 200 maka error 
+    if (json.status_code !== 201 && json.status_code !== 200) {
+        throw new Error(json.status_message || 'Failed to update uom');
+    }
+
+    return json;
 }
 
 export async function deleteUOM(uom_id: string) : Promise<any>{

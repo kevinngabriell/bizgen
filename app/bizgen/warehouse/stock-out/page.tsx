@@ -1,11 +1,42 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Heading, SimpleGrid, Field, Input, Textarea, Button, Flex, Text, Card } from "@chakra-ui/react";
 import SidebarWithHeader from "@/components/ui/SidebarWithHeader";
+import Loading from "@/components/loading";
+import { DecodedAuthToken, checkAuthOrRedirect, getAuthInfo } from "@/lib/auth/auth";
+import { useRouter } from "next/router";
 
 export default function CreateStockOutPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [auth, setAuth] = useState<DecodedAuthToken | null>(null);
+  const [loading, setLoading] = useState(false);
+  const router = useRouter();
+
+  useEffect(() => {
+    init();
+  }, []);
+
+  const init = async () => {
+    setLoading(true);
+
+    const valid = await checkAuthOrRedirect();
+    if(!valid) return;
+
+    const info = getAuthInfo();
+    setAuth(info);
+
+    try {
+
+    } catch (error: any){
+
+    } finally {
+      setLoading(false);
+    }
+  }
+    
+  if (loading) return <Loading/>;
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -18,7 +49,7 @@ export default function CreateStockOutPage() {
   };
 
   return (
-    <SidebarWithHeader username="====">
+    <SidebarWithHeader username={auth?.username ?? "Unknown"} daysToExpire={auth?.days_remaining ?? 0}>
       <Flex flexDir={"column"}>
         <Heading mb={1}>Create Stock Out</Heading>
         <Text color="gray.500" fontSize={"sm"}>Record goods leaving warehouse (sales delivery, transfer, sample, damaged, etc.)</Text>

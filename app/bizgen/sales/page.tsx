@@ -1,12 +1,41 @@
 "use client";
 
+import Loading from "@/components/loading";
 import SidebarWithHeader from "@/components/ui/SidebarWithHeader";
+import { DecodedAuthToken, checkAuthOrRedirect, getAuthInfo } from "@/lib/auth/auth";
 import { Button, Card, Flex, Heading, Text, SimpleGrid, Badge, Icon } from "@chakra-ui/react";
 import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
 import { FiFolder, FiFileText, FiCheckSquare, FiClipboard, FiDollarSign, FiShoppingCart, FiTruck, FiTrendingUp } from "react-icons/fi";
 
 export default function Sales (){
+  const [auth, setAuth] = useState<DecodedAuthToken | null>(null);
+  const [loading, setLoading] = useState(false);
   const router = useRouter();
+
+  useEffect(() => {
+    init();
+  }, []);
+
+  const init = async () => {
+    setLoading(true);
+
+    const valid = await checkAuthOrRedirect();
+    if(!valid) return;
+
+    const info = getAuthInfo();
+    setAuth(info);
+
+    try {
+
+    } catch (error: any){
+
+    } finally {
+      setLoading(false);
+    }
+  }
+    
+  if (loading) return <Loading/>;
   
   const handleDirectToDetailInquiry = () => {
     router.push('/bizgen/sales/inquiry');
@@ -34,7 +63,7 @@ export default function Sales (){
 
 
     return (
-      <SidebarWithHeader username="kevin">
+      <SidebarWithHeader username={auth?.username ?? "Unknown"} daysToExpire={auth?.days_remaining ?? 0}>
           <Flex gap={2} mb="6" mt="2" alignItems="center" justifyContent="space-between">
             <Heading>Sales Module</Heading>
             <Button bg={"#E77A1F"} color={"white"} cursor={"pointer"}>+ Create New</Button>

@@ -1,8 +1,11 @@
 'use client';
 
+import Loading from '@/components/loading';
 import SidebarWithHeader from '@/components/ui/SidebarWithHeader';
+import { checkAuthOrRedirect, DecodedAuthToken, getAuthInfo } from '@/lib/auth/auth';
 import { Button, Card, Separator, Flex, Field, Heading, IconButton, Input, NumberInput, Textarea, SimpleGrid} from '@chakra-ui/react';
-import { useState } from 'react';
+import { useRouter } from 'next/router';
+import { useEffect, useState } from 'react';
 import { FaPlus, FaTrash } from 'react-icons/fa';
 
 interface PurchaseItem {
@@ -15,6 +18,34 @@ interface PurchaseItem {
 }
 
 export default function CreatePurchaseLocalPage() {
+  const [auth, setAuth] = useState<DecodedAuthToken | null>(null);
+  const [loading, setLoading] = useState(false);
+  const router = useRouter();
+
+  useEffect(() => {
+    init();
+  }, []);
+
+  const init = async () => {
+    setLoading(true);
+
+    const valid = await checkAuthOrRedirect();
+    if(!valid) return;
+
+    const info = getAuthInfo();
+    setAuth(info);
+
+    try {
+
+    } catch (error: any){
+
+    } finally {
+      setLoading(false);
+    }
+  }
+    
+  if (loading) return <Loading/>;
+
   const [form, setForm] = useState({
     poNumber: '',
     poDate: '',
@@ -71,7 +102,7 @@ export default function CreatePurchaseLocalPage() {
   };
 
   return (
-    <SidebarWithHeader username='--'>
+    <SidebarWithHeader username={auth?.username ?? "Unknown"} daysToExpire={auth?.days_remaining ?? 0}>
       <Flex justify="space-between" align="center">
         <Heading size="lg">Create Purchase (Local)</Heading>
         <Flex gap={6}>

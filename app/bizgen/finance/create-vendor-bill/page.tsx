@@ -1,8 +1,11 @@
 "use client";
 
+import Loading from "@/components/loading";
 import SidebarWithHeader from "@/components/ui/SidebarWithHeader";
+import { DecodedAuthToken, checkAuthOrRedirect, getAuthInfo } from "@/lib/auth/auth";
 import { Button, Card, Separator, Flex, Field, IconButton, Input, NumberInput, Text, Textarea, Heading, SimpleGrid,} from "@chakra-ui/react";
-import { useState } from "react";
+import { useRouter } from "next/router";
+import { useEffect, useState } from "react";
 import { FaTrash } from "react-icons/fa";
 
 interface LineItem {
@@ -22,6 +25,34 @@ export default function CreateVendorBillPage() {
   const [exchangeRate, setExchangeRate] = useState(1);
   const [reference, setReference] = useState("");
   const [notes, setNotes] = useState("");
+
+  const [auth, setAuth] = useState<DecodedAuthToken | null>(null);
+  const [loading, setLoading] = useState(false);
+  const router = useRouter();
+
+  useEffect(() => {
+    init();
+  }, []);
+
+  const init = async () => {
+    setLoading(true);
+
+    const valid = await checkAuthOrRedirect();
+    if(!valid) return;
+
+    const info = getAuthInfo();
+    setAuth(info);
+
+    try {
+
+    } catch (error: any){
+
+    } finally {
+      setLoading(false);
+    }
+  }
+    
+  if (loading) return <Loading/>;
 
   const [items, setItems] = useState<LineItem[]>([
     { id: crypto.randomUUID(), description: "", qty: 1, unitPrice: 0, tax: 0 },
@@ -61,7 +92,7 @@ export default function CreateVendorBillPage() {
   };
 
   return (
-    <SidebarWithHeader username="---">
+    <SidebarWithHeader username={auth?.username ?? "Unknown"} daysToExpire={auth?.days_remaining ?? 0}>
       <Heading>Create Vendor Bill</Heading>
 
       <Card.Root mt={4}>

@@ -1,32 +1,45 @@
 "use client";
 
+import { getLang } from "@/lib/i18n";
 import { Button, CloseButton, Dialog, Field, Input, Portal, SimpleGrid } from "@chakra-ui/react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 interface UOMDialogProps {
     isOpen: boolean;
     setIsOpen: (open: boolean) => void;
     title: string;
-    uomID: string;
     placeholders?: {
-        uomName?: string;
-        convensionFactor?: number;
+        uom_id?: string;
+        uom_name?: string;
+        conversion_factor?: number;
     };
     onSubmit?: (data: {
-        uomName: string;
-        convensionFactor: number;
+        uom_id?: string;
+        uom_name: string;
+        conversion_factor: number;
     }) => void;
 }
 
 export default function UOMDialog({
-    isOpen, 
-    setIsOpen,
+    isOpen, setIsOpen,
     title,
     placeholders,
     onSubmit
 }: UOMDialogProps) {
+    const [uomID, setUOMID] = useState("");
     const [uomName, setUOMName] = useState("");
     const [conversionFactor, setConversionFactor] = useState<number>(0);
+
+    const t = getLang("en"); 
+
+    useEffect(() => {
+        if (!isOpen) return;
+            
+        setUOMID(placeholders?.uom_id ?? "");
+        setUOMName(placeholders?.uom_name ?? "");
+        setConversionFactor(placeholders?.conversion_factor ?? 0);
+    
+    }, [placeholders, isOpen]);
 
     return(
         <Dialog.Root open={isOpen} onOpenChange={(details) => setIsOpen(details.open)}>
@@ -41,20 +54,20 @@ export default function UOMDialog({
                         <Dialog.Body>
                             <SimpleGrid columns={{ base: 1, md: 1, lg: 1 }} gap="20px">
                                 <Field.Root w={{base: "100%", md: "100%", lg: "100%"}}>
-                                    <Field.Label>Nama UOM</Field.Label>
+                                    <Field.Label>{t.uom.uom_name}</Field.Label>
                                     <Input 
-                                        placeholder={placeholders?.uomName ?? "Masukkan nama satuan"} 
+                                        placeholder={t.uom.uom_name_placeholder} 
                                         value={uomName} 
                                         onChange={(e) => setUOMName(e.target.value)}
                                     />
                                 </Field.Root>  
 
                                 <Field.Root w={{base: "100%", md: "100%", lg: "100%"}}>
-                                    <Field.Label>Convension Factor</Field.Label>
+                                    <Field.Label>{t.uom.conversion_factor}</Field.Label>
                                     <Input 
                                         type="number"
                                         step="any" 
-                                        placeholder={placeholders?.convensionFactor?.toString() ?? "Masukkan faktor konversi"}
+                                        placeholder={t.uom.conversion_factor_placeholder}
                                         value={conversionFactor}
                                         onChange={(e) => setConversionFactor(parseFloat(e.target.value) || 0)}
                                     />
@@ -64,14 +77,15 @@ export default function UOMDialog({
 
                         <Dialog.Footer>
                             <Dialog.ActionTrigger asChild>
-                                <Button variant="outline">Batal</Button>
+                                <Button variant="outline">{t.delete_popup.cancel}</Button>
                             </Dialog.ActionTrigger>
-                            <Button onClick={() =>
+                            <Button bg={"#E77A1F"} color={"white"} cursor={"pointer"}  onClick={() =>
                                 onSubmit?.({
-                                    uomName: uomName,
-                                    convensionFactor: conversionFactor
+                                    uom_id: uomID,
+                                    uom_name: uomName,
+                                    conversion_factor: conversionFactor
                                 })
-                                }>Simpan</Button>
+                                }>{t.master.save}</Button>
                         </Dialog.Footer>
 
                         <Dialog.CloseTrigger asChild>

@@ -1,8 +1,11 @@
 "use client";
 
+import Loading from "@/components/loading";
 import SidebarWithHeader from "@/components/ui/SidebarWithHeader";
+import { DecodedAuthToken, checkAuthOrRedirect, getAuthInfo } from "@/lib/auth/auth";
 import {Box, Button, Flex, Heading, HStack, Input, Select, SimpleGrid, Stack, Text, Textarea, Badge, IconButton, Separator, Card, Field,} from "@chakra-ui/react";
-import { useState } from "react";
+import { useRouter } from "next/router";
+import { useEffect, useState } from "react";
 import { FaTrash } from "react-icons/fa";
 
 interface QuotationItem {
@@ -14,6 +17,34 @@ interface QuotationItem {
 }
 
 export default function CreateQuotation() {
+  const [auth, setAuth] = useState<DecodedAuthToken | null>(null);
+  const [loading, setLoading] = useState(false);
+  const router = useRouter();
+
+  useEffect(() => {
+    init();
+  }, []);
+
+  const init = async () => {
+    setLoading(true);
+
+    const valid = await checkAuthOrRedirect();
+    if(!valid) return;
+
+    const info = getAuthInfo();
+    setAuth(info);
+
+    try {
+
+    } catch (error: any){
+
+    } finally {
+      setLoading(false);
+    }
+  }
+    
+  if (loading) return <Loading/>;
+  
   const [items, setItems] = useState<QuotationItem[]>([
     { id: crypto.randomUUID(), product: "", description: "", qty: 1, unitPrice: 0 },
   ]);
@@ -30,7 +61,7 @@ export default function CreateQuotation() {
   };
 
   return (
-    <SidebarWithHeader username="-">
+    <SidebarWithHeader username={auth?.username ?? "Unknown"} daysToExpire={auth?.days_remaining ?? 0}>
       <Heading size="lg" mb={4}>Create Quotation</Heading>
 
       <Card.Root p={6} gap={6}>

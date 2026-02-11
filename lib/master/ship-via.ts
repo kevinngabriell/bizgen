@@ -11,6 +11,11 @@ export interface createShipViaData{
     ship_via_name: string;
 }
 
+export interface updateShipViaData{
+    ship_via_id: string;
+    ship_via_name: string;
+}
+
 export async function getAllShipVia(page: number = 1, limit = 10, search: string = '') : Promise<{data: GetShipViaData[]; pagination: any}>{
     const baseUrl = process.env.NEXT_PUBLIC_API_URL;
     const token = localStorage.getItem("token");
@@ -69,10 +74,13 @@ export async function createShipVia(input: createShipViaData) : Promise<any> {
 
     const res = await fetch(`${baseUrl}master/ship-via.php`, {
         method: 'POST',
-       headers: {
+        headers: {
             Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
         },
-        body: formData,
+        body: JSON.stringify({
+            ship_via_name: input.ship_via_name
+        }),
     });
 
     const json = await res.json();
@@ -85,8 +93,30 @@ export async function createShipVia(input: createShipViaData) : Promise<any> {
     return json;
 }
 
-export async function updateShipVia(){
+export async function updateShipVia(input: updateShipViaData): Promise<any>{
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL;
+    const token = localStorage.getItem("token");
 
+    const res = await fetch(`${baseUrl}master/ship-via.php`, {
+        method: 'PUT',
+       headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            ship_via_id: input.ship_via_id,
+            ship_via_name: input.ship_via_name,
+        })
+    });
+
+    const json = await res.json();
+
+    //Jika statusnya bukan 201 atau 200 maka error 
+    if (json.status_code !== 201 && json.status_code !== 200) {
+        throw new Error(json.status_message || 'Failed to update ship via');
+    }
+
+    return json;
 }
 
 export async function deleteShipVia(ship_via_id: string) : Promise<any>{

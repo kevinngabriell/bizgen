@@ -15,6 +15,13 @@ export interface CreateOriginData{
     region: string;
 }
 
+export interface UpdateOriginData{
+    origin_id: string;
+    origin_name: string;
+    is_free_trade: number;
+    region: string;
+}
+
 export async function getAllOrigin(page: number = 1, limit = 10, search: string = '') : Promise<{data: GetOriginData[]; pagination: any}>{
     const baseUrl = process.env.NEXT_PUBLIC_API_URL;
     const token = localStorage.getItem("token");
@@ -67,21 +74,17 @@ export async function createOrigin(input: CreateOriginData) : Promise<any>{
     const baseUrl = process.env.NEXT_PUBLIC_API_URL;
     const token = localStorage.getItem("token");
 
-    const formData = new FormData();
-
-    formData.append('origin_name', String(input.origin_name));
-    formData.append('region', String(input.region));
-
-    if (typeof input.is_free_trade === 'boolean') {
-        formData.append('is_free_trade', input.is_free_trade ? '1' : '0');
-    }
-
     const res = await fetch(`${baseUrl}master/origin.php`, {
         method: 'POST',
         headers: {
-                Authorization: `Bearer ${token}`,
-            },
-        body: formData,
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            origin_name: input.origin_name,
+            is_free_trade: input.is_free_trade,
+            region: input.region
+        }),
     });
 
     const json = await res.json();
@@ -94,8 +97,32 @@ export async function createOrigin(input: CreateOriginData) : Promise<any>{
     return json;
 }
 
-export async function updateOrigin(){
+export async function updateOrigin(input: UpdateOriginData): Promise<any>{
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL;
+    const token = localStorage.getItem("token");
 
+    const res = await fetch(`${baseUrl}master/origin.php`, {
+        method: 'PUT',
+       headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            origin_id: input.origin_id,
+            origin_name: input.origin_name,
+            is_free_trade: input.is_free_trade,
+            region: input.region
+        })
+    });
+
+    const json = await res.json();
+
+    //Jika statusnya bukan 201 atau 200 maka error 
+    if (json.status_code !== 201 && json.status_code !== 200) {
+        throw new Error(json.status_message || 'Failed to update origin');
+    }
+
+    return json;
 }
 
 export async function deleteOrigin(origin_id: string) : Promise<any>{

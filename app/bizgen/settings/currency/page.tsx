@@ -7,9 +7,10 @@ import { FiEdit, FiTrash } from "react-icons/fi";
 import { LuChevronLeft, LuChevronRight } from "react-icons/lu";
 import CurrencyDialog from "./currencydialog";
 import Loading from "@/components/loading";
-import { createCurrency, deleteCurrency, getAllCurrency, GetCurrencyData } from "@/lib/master/currency";
+import { createCurrency, deleteCurrency, getAllCurrency, GetCurrencyData, updateCurrency } from "@/lib/master/currency";
 import { checkAuthOrRedirect, DecodedAuthToken, getAuthInfo } from "@/lib/auth/auth";
 import { AlertMessage } from "@/components/ui/alert";
+import { getLang } from "@/lib/i18n";
 
 export default function SettingCurrency(){
     const [auth, setAuth] = useState<DecodedAuthToken | null>(null);
@@ -26,6 +27,8 @@ export default function SettingCurrency(){
     const [titlePopup, setTitlePopup] = useState('');
     const [messagePopup, setMessagePopup] = useState('');
     const [isSuccess, setIsSuccess] = useState(false);
+
+    const t = getLang("en"); 
 
     useEffect(() => {
         init();
@@ -64,30 +67,20 @@ export default function SettingCurrency(){
         currency_code: string;
         currency_symbol: string; 
     }) => {
-        
-        if (!data.currency_code?.trim() || !data.currency_name?.trim() || !data.currency_symbol?.trim()) {
-            setShowAlert(true);
-            setIsSuccess(false);
-            setTitlePopup("Data tidak lengkap");
-            setMessagePopup("Kode, nama, dan simbol mata uang wajib diisi");
-            setTimeout(() => setShowAlert(false), 6000);
-            return;
-        }
-
         try {
             setLoading(true);
             await createCurrency(data);
             setShowAlert(true);
             setIsSuccess(true);
-            setTitlePopup("Success");
-            setMessagePopup("Mata uang berhasil ditambahkan");
+            setTitlePopup(t.master.success);
+            setMessagePopup(t.currency.success_currency_create);
             setIsCurrencyOpen(false);
             init();
         } catch (err: any) {
             setShowAlert(true);
             setIsSuccess(false);
-            setTitlePopup("Gagal");
-            setMessagePopup(err.message || "Terjadi kesalahan");
+            setTitlePopup(t.master.error);
+            setMessagePopup(err.message || t.master.error_msg);
         } finally {
             setLoading(false);
         }
@@ -97,8 +90,31 @@ export default function SettingCurrency(){
         setIsCurrencyOpen(true);
     };
 
-    const handleUpdateCurrency = async() => {
-
+    const handleUpdateCurrency  = async(data: {
+        currency_id: string;
+        currency_code: string;
+        currency_symbol: string;
+        currency_name: string;
+    }) => {
+        try {
+            setLoading(true);
+            await updateCurrency(data);
+            setShowAlert(true);
+            setIsSuccess(true);
+            setTitlePopup(t.master.success);
+            setMessagePopup(t.currency.success_currency_update);
+            setTimeout(() => setShowAlert(false), 6000);
+            setIsCurrencyOpen(false);
+            init();
+        } catch (err: any) {
+            setShowAlert(true);
+            setIsSuccess(false);
+            setTitlePopup(t.master.error);
+            setMessagePopup(err.message || t.master.error_msg);
+            setTimeout(() => setShowAlert(false), 6000);
+        } finally {
+            setLoading(false);
+        }
     }
 
     const handleDeleteCurrency = async({ currency_id }: { currency_id: string }) => {
@@ -107,15 +123,15 @@ export default function SettingCurrency(){
             await deleteCurrency(currency_id);
             setShowAlert(true);
             setIsSuccess(true);
-            setTitlePopup('Success');
-            setMessagePopup('Data mata uang telah berhasil di hapus');
+            setTitlePopup(t.master.success);
+            setMessagePopup(t.currency.success_currency_delete);
             setTimeout(() => setShowAlert(false), 8000);
             init();
         } catch (error : any){
             setShowAlert(true);
             setIsSuccess(false);
-            setTitlePopup('Gagal');
-            setMessagePopup('Terdapat error dengan detail error : ' + error.message);
+            setTitlePopup(t.master.error);
+            setMessagePopup(t.master.error_msg + error.message);
             setTimeout(() => setShowAlert(false), 8000);
             init();
         } finally {
@@ -124,10 +140,10 @@ export default function SettingCurrency(){
     }
 
     return(
-        <SidebarWithHeader username={auth?.username ?? "Unknown"} daysToExpire={2}>
+        <SidebarWithHeader username={auth?.username ?? "Unknown"} daysToExpire={auth?.days_remaining ?? 0}>
             <Flex gap={2} display={"flex"} mb={"2"} mt={"2"}>
-                <Heading mb={6} width={"100%"}>Currency ERP Settings</Heading>
-                <Button onClick={handleOpenCurrencyDialog} bg={"#E77A1F"} color={"white"} cursor={"pointer"}>Create New Currency</Button>
+                <Heading mb={6} width={"100%"}>{t.currency.title}</Heading>
+                <Button onClick={handleOpenCurrencyDialog} bg={"#E77A1F"} color={"white"} cursor={"pointer"}>{t.currency.create_button}</Button>
             </Flex>
 
             {showAlert && <AlertMessage title={titlePopup} description={messagePopup} isSuccess={isSuccess} />}
@@ -137,19 +153,32 @@ export default function SettingCurrency(){
                     setIsCurrencyOpen(open);
                     if (!open) setEditingCurrency(null);
                 }}
-                title={editingCurrency ? "Update Currency" : "Create Currency"}
+                title={editingCurrency ? t.currency.update_button : t.currency.create_button}
                 placeholders={{ currency_id: editingCurrency?.currency_id, currency_name: editingCurrency?.currency_name, currency_code: editingCurrency?.currency_code, currency_symbol: editingCurrency?.currency_symbol}}
-                onSubmit={(data) =>
-                   editingCurrency ? handleUpdateCurrency() : handleCreateCurrency(data)
-                }
+                onSubmit={(data) => {
+                    if (editingCurrency) {
+                        handleUpdateCurrency({
+                            currency_id: data.currency_id ?? editingCurrency.currency_id,
+                            currency_code: data.currency_code,
+                            currency_name: data.currency_name,
+                            currency_symbol: data.currency_symbol
+                        });
+                    } else {
+                        handleCreateCurrency({
+                            currency_code: data.currency_code,
+                            currency_name: data.currency_name,
+                            currency_symbol: data.currency_symbol
+                        });
+                    }
+                }}
             />
 
             <Table.Root showColumnBorder variant="outline" background={"white"} >
                 <Table.Header>
                     <Table.Row bg="bg.panel">
-                        <Table.ColumnHeader textAlign={"center"}>Currency Name</Table.ColumnHeader>
-                        <Table.ColumnHeader textAlign={"center"}>Currency Symbol</Table.ColumnHeader>
-                        <Table.ColumnHeader textAlign={"center"}>Action</Table.ColumnHeader>
+                        <Table.ColumnHeader textAlign={"center"}>{t.currency.currency_name}</Table.ColumnHeader>
+                        <Table.ColumnHeader textAlign={"center"}>{t.currency.currency_symbol}</Table.ColumnHeader>
+                        <Table.ColumnHeader textAlign={"center"}>{t.master.action}</Table.ColumnHeader>
                     </Table.Row>
                 </Table.Header>
                 <Table.Body>
@@ -175,18 +204,18 @@ export default function SettingCurrency(){
                                         <Dialog.Positioner>
                                             <Dialog.Content>
                                                 <Dialog.Header>
-                                                    <Dialog.Title>Hapus Mata Uang</Dialog.Title>
+                                                    <Dialog.Title>{t.delete_popup.title}</Dialog.Title>
                                                 </Dialog.Header>
 
                                                 <Dialog.Body>
-                                                    <Text>Apakah anda yakin ingin menghapus mata uang ini ?</Text>
+                                                    <Text>{t.delete_popup.description}</Text>
                                                 </Dialog.Body>
 
                                                 <Dialog.Footer>
                                                     <Dialog.ActionTrigger asChild>
-                                                        <Button variant="outline" cursor={"pointer"}>Batal</Button>
+                                                        <Button variant="outline" cursor={"pointer"}>{t.delete_popup.cancel}</Button>
                                                     </Dialog.ActionTrigger>
-                                                    <Button bg={"#E77A1F"} color={"white"} cursor={"pointer"} onClick={() => handleDeleteCurrency({ currency_id: currency.currency_id })}>Hapus</Button>
+                                                    <Button bg={"#E77A1F"} color={"white"} cursor={"pointer"} onClick={() => handleDeleteCurrency({ currency_id: currency.currency_id })}>{t.delete_popup.delete}</Button>
                                                 </Dialog.Footer>
                                                             
                                                 <Dialog.CloseTrigger asChild>

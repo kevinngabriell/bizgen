@@ -1,8 +1,11 @@
 "use client";
 
+import Loading from "@/components/loading";
 import SidebarWithHeader from "@/components/ui/SidebarWithHeader";
+import { DecodedAuthToken, checkAuthOrRedirect, getAuthInfo } from "@/lib/auth/auth";
 import {Button, Flex, Heading, Input, SimpleGrid, Text, Separator, NumberInput, Badge, Card, Field} from "@chakra-ui/react";
-import { useState } from "react";
+import { useRouter } from "next/router";
+import { useEffect, useState } from "react";
 
 type LineItem = {
   id: string;
@@ -20,6 +23,34 @@ export default function CreateProfitSummaryPage() {
 
   const [revenue, setRevenue] = useState<LineItem[]>([]);
   const [costs, setCosts] = useState<LineItem[]>([]);
+
+  const [auth, setAuth] = useState<DecodedAuthToken | null>(null);
+  const [loading, setLoading] = useState(false);
+  const router = useRouter();
+
+  useEffect(() => {
+    init();
+  }, []);
+
+  const init = async () => {
+    setLoading(true);
+
+    const valid = await checkAuthOrRedirect();
+    if(!valid) return;
+
+    const info = getAuthInfo();
+    setAuth(info);
+
+    try {
+
+    } catch (error: any){
+
+    } finally {
+      setLoading(false);
+    }
+  }
+    
+  if (loading) return <Loading/>;
 
   const addRevenue = () => {
     setRevenue([
@@ -73,7 +104,7 @@ export default function CreateProfitSummaryPage() {
   };
 
   return (
-    <SidebarWithHeader username="---">
+    <SidebarWithHeader username={auth?.username ?? "Unknown"} daysToExpire={auth?.days_remaining ?? 0}>
       <Flex justify="space-between" align="center" mb={4}>
         <Heading size="lg">Create Profit Summary</Heading>
         <Badge colorScheme="blue">Sales &amp; Costing</Badge>

@@ -2,12 +2,13 @@
 
 "use client";
 
+import Loading from "@/components/loading";
 import SidebarWithHeader from "@/components/ui/SidebarWithHeader";
-import { Box, Button, Flex, Heading, SimpleGrid, Field, Input, IconButton, Separator, Text, Stack, Card, NumberInput } from "@chakra-ui/react";
-// import { AddIcon, DeleteIcon } from "@chakra-ui/icons";
-import { useState, useMemo } from "react";
+import { DecodedAuthToken, checkAuthOrRedirect, getAuthInfo } from "@/lib/auth/auth";
+import { Button, Flex, Heading, SimpleGrid, Field, Input, IconButton, Separator, Text, Card, NumberInput } from "@chakra-ui/react";
+import { useRouter } from "next/navigation";
+import { useState, useMemo, useEffect } from "react";
 import { FaTrash } from "react-icons/fa";
-import { FiDelete } from "react-icons/fi";
 
 type ItemRow = {
   sku: string;
@@ -27,6 +28,34 @@ export default function CreatePurchaseImportPage() {
   const [portOfDischarge, setPortOfDischarge] = useState("");
   const [freightCost, setFreightCost] = useState(0);
   const [customsCost, setCustomsCost] = useState(0);
+
+  const [auth, setAuth] = useState<DecodedAuthToken | null>(null);
+  const [loading, setLoading] = useState(false);
+  const router = useRouter();
+
+  useEffect(() => {
+    init();
+  }, []);
+
+  const init = async () => {
+    setLoading(true);
+
+    const valid = await checkAuthOrRedirect();
+    if(!valid) return;
+
+    const info = getAuthInfo();
+    setAuth(info);
+
+    try {
+
+    } catch (error: any){
+
+    } finally {
+      setLoading(false);
+    }
+  }
+    
+  if (loading) return <Loading/>;
 
   const [items, setItems] = useState<ItemRow[]>([
     { sku: "", description: "", qty: 1, unitPrice: 0 },
@@ -70,7 +99,7 @@ export default function CreatePurchaseImportPage() {
   );
 
   return (
-    <SidebarWithHeader username="--">
+    <SidebarWithHeader username={auth?.username ?? "Unknown"} daysToExpire={auth?.days_remaining ?? 0}>
       {/* Heading Area */}
       <Heading size="lg">Create Purchase — Import</Heading>
 

@@ -1,15 +1,46 @@
 'use client';
 
+import Loading from '@/components/loading';
 import SidebarWithHeader from '@/components/ui/SidebarWithHeader';
+import { DecodedAuthToken, checkAuthOrRedirect, getAuthInfo } from '@/lib/auth/auth';
 import { Box, Button, Card, Flex, Heading, Icon, Input, Stack, Text, Textarea, Badge, SimpleGrid, Separator, Field } from '@chakra-ui/react';
-import { useState } from 'react';
+import { useRouter } from 'next/router';
+import { useEffect, useState } from 'react';
 import { FiFileText } from 'react-icons/fi';
 
 export default function BookingConfirmationPage() {
   const [isEdit, setIsEdit] = useState(true);
 
+  const [auth, setAuth] = useState<DecodedAuthToken | null>(null);
+  const [loading, setLoading] = useState(false);
+  const router = useRouter();
+
+  useEffect(() => {
+    init();
+  }, []);
+
+  const init = async () => {
+    setLoading(true);
+
+    const valid = await checkAuthOrRedirect();
+    if(!valid) return;
+
+    const info = getAuthInfo();
+    setAuth(info);
+
+    try {
+
+    } catch (error: any){
+
+    } finally {
+      setLoading(false);
+    }
+  }
+    
+  if (loading) return <Loading/>;
+
   return (
-    <SidebarWithHeader username='--'>
+    <SidebarWithHeader username={auth?.username ?? "Unknown"} daysToExpire={auth?.days_remaining ?? 0}>
       
       <Box p={{ base: 4, md: 6 }} maxW="1280px" mx="auto">
       {/* Header */}

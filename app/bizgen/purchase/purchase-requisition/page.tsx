@@ -1,8 +1,11 @@
 "use client";
 
+import Loading from "@/components/loading";
 import SidebarWithHeader from "@/components/ui/SidebarWithHeader";
+import { DecodedAuthToken, checkAuthOrRedirect, getAuthInfo } from "@/lib/auth/auth";
 import { Box, Button, Container, Flex, Grid, GridItem, Heading, HStack, IconButton, Input, Select, Stack, Text, Textarea, Separator, Field, Card, SimpleGrid} from "@chakra-ui/react";
-import { useState } from "react";
+import { useRouter } from "next/router";
+import { useEffect, useState } from "react";
 import { FaTrash } from "react-icons/fa";
 
 type RequisitionItem = {
@@ -15,6 +18,34 @@ type RequisitionItem = {
 };
 
 export default function PurchaseRequisitionCreatePage() {
+  const [auth, setAuth] = useState<DecodedAuthToken | null>(null);
+  const [loading, setLoading] = useState(false);
+  const router = useRouter();
+
+  useEffect(() => {
+    init();
+  }, []);
+
+  const init = async () => {
+    setLoading(true);
+
+    const valid = await checkAuthOrRedirect();
+    if(!valid) return;
+
+    const info = getAuthInfo();
+    setAuth(info);
+
+    try {
+
+    } catch (error: any){
+
+    } finally {
+      setLoading(false);
+    }
+  }
+    
+  if (loading) return <Loading/>;
+  
   const [form, setForm] = useState({
     prNumber: "",
     prDate: "",
@@ -70,7 +101,7 @@ export default function PurchaseRequisitionCreatePage() {
   };
 
   return (
-    <SidebarWithHeader username="---">
+    <SidebarWithHeader username={auth?.username ?? "Unknown"} daysToExpire={auth?.days_remaining ?? 0}>
       <Flex justify="space-between" align="center" mb={6}>
         <Flex flexDir={"column"}>
           <Heading size="lg">Create Purchase Requisition</Heading>

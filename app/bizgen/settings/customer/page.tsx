@@ -155,9 +155,7 @@ export default function SettingCustomer(){
 
                     <Flex gap={2} alignItems={"center"}>
                         <InputGroup startElement={<LuSearch />}>
-                            <Input placeholder={t.customer.search} bg={"white"}
-                                value={findCustomer}
-                                onChange={(e) => setFindCustomer(e.target.value)}
+                            <Input placeholder={t.customer.search} bg={"white"} value={findCustomer} onChange={(e) => setFindCustomer(e.target.value)}
                                 onKeyDown={(e) => {
                                     if (e.key === "Enter") {
                                         setCustomerPage(1);

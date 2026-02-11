@@ -2,14 +2,14 @@
 
 import UpgradeRequiredDialog from "@/components/dialog/UpgradeRequiredDialog";
 import SidebarWithHeader from "@/components/ui/SidebarWithHeader";
-import { Button, ButtonGroup, CloseButton, Dialog, Flex, Heading, IconButton, Pagination, Portal, Table, Tabs, Text } from "@chakra-ui/react";
+import { Button, ButtonGroup, CloseButton, Dialog, Flex, Heading, IconButton, Input, InputGroup, Pagination, Portal, Table, Tabs, Text } from "@chakra-ui/react";
 import { useDebugValue, useEffect, useState } from "react";
 import { FiTrash, FiEdit } from "react-icons/fi";
-import { LuChevronLeft, LuChevronRight } from "react-icons/lu";
+import { LuChevronLeft, LuChevronRight, LuSearch } from "react-icons/lu";
 import AccountCodeDialog from "./accountcodedialog";
 import BankAccountDialog from "./bankaccountdialog";
 import Loading from "@/components/loading";
-import { GetAccountCodeData, getAllAccountCode } from "@/lib/master/account-code";
+import { createAccountCode, deleteAccountCode, GetAccountCodeData, getAllAccountCode, updateAccountCode } from "@/lib/master/account-code";
 import { createBankAccount, deleteBankAccount, getAllBankAccount, GetBankAccountData, updateBankAccount } from "@/lib/master/bank-account";
 import { checkAuthOrRedirect, DecodedAuthToken, getAuthInfo } from "@/lib/auth/auth";
 import { AlertMessage } from "@/components/ui/alert";
@@ -167,6 +167,85 @@ export default function SettingFinance(){
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleCreateAccountCode = async (data: {
+        account_code: string;
+        account_code_name: string;
+        account_code_name_alias: string;
+        account_type: string;
+        parent_account_code_id: string; 
+    }) => {
+        try {
+            setLoading(true);
+            await createAccountCode(data);
+            setShowAlert(true);
+            setIsSuccess(true);
+            setTitlePopup(t.master.success);
+            setMessagePopup(t.account_code.success_account_create);
+            setTimeout(() => setShowAlert(false), 6000);
+            setIsAccountDialogOpen(false);
+            init();
+        } catch (err: any) {
+            setShowAlert(true);
+            setIsSuccess(false);
+            setTitlePopup(t.master.error);
+            setMessagePopup(err.message || t.master.error_msg);
+            setTimeout(() => setShowAlert(false), 6000);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleUpdateAccountCode = async (data: {
+        account_code_id: string;
+        account_code_name: string;
+        account_code_name_alias: string;
+        account_type: string;
+        parent_account_code_id: string;
+        is_active: boolean;
+    }) => {
+        try {
+            setLoading(true);
+            await updateAccountCode(data);
+            setShowAlert(true);
+            setIsSuccess(true);
+            setTitlePopup(t.master.success);
+            setMessagePopup(t.account_code.success_account_update);
+            setTimeout(() => setShowAlert(false), 6000);
+            setIsAccountDialogOpen(false);
+            init();
+        } catch (err: any) {
+            setShowAlert(true);
+            setIsSuccess(false);
+            setTitlePopup(t.master.error);
+            setMessagePopup(err.message || t.master.error_msg);
+            setTimeout(() => setShowAlert(false), 6000);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleDeleteAccountCode = async({account_code_id} : {account_code_id: string}) => {
+        try {
+            setLoading(true);
+            await deleteAccountCode(account_code_id);
+            setShowAlert(true);
+            setIsSuccess(true);
+            setTitlePopup(t.master.success);
+            setMessagePopup(t.account_code.success_account_delete);
+            setTimeout(() => setShowAlert(false), 8000);
+            init();
+        } catch (error : any){
+            setShowAlert(true);
+            setIsSuccess(false);
+            setTitlePopup(t.master.error);
+            setMessagePopup(t.master.error_msg + error.message);
+            setTimeout(() => setShowAlert(false), 8000);
+            init();
+        } finally {
+            setLoading(false);
+        }
     }
     
     return(
@@ -185,7 +264,21 @@ export default function SettingFinance(){
 
                     <Flex gap={2} display={"flex"} mb={"2"} mt={"2"}>
                         <Heading mb={6} width={"100%"}>{t.bank_account.title_2}</Heading>
-                        <Button bg={"#E77A1F"} color={"white"} cursor={"pointer"} onClick={handleOpenBankAccountDialog}>{t.bank_account.create_button}</Button>
+                        <Flex gap={2} alignItems={"center"}>
+                            <InputGroup startElement={<LuSearch />}>
+                                <Input placeholder={t.bank_account.search} bg={"white"} value={findBankAccount}
+                                    onChange={(e) => setFindBankAccount(e.target.value)}
+                                    onKeyDown={(e) => {
+                                        if (e.key === "Enter") {
+                                            setBankAccountPage(1);
+                                            init();
+                                        }
+                                    }}
+                                    width="250px"
+                                />
+                            </InputGroup>
+                            <Button bg={"#E77A1F"} color={"white"} cursor={"pointer"} onClick={handleOpenBankAccountDialog}>{t.bank_account.create_button}</Button>
+                        </Flex>
                     </Flex>           
 
                     <BankAccountDialog isOpen={isBankDialogOpen}
@@ -227,8 +320,8 @@ export default function SettingFinance(){
                         <Table.Header>
                             <Table.Row bg="bg.subtle">
                                 <Table.ColumnHeader textAlign={"center"}>{t.bank_account.bank_number}</Table.ColumnHeader>
-                                <Table.ColumnHeader textAlign={"center"}>{t.bank_account.bank_branch}</Table.ColumnHeader>
                                 <Table.ColumnHeader textAlign={"center"}>{t.bank_account.bank_name}</Table.ColumnHeader>
+                                <Table.ColumnHeader textAlign={"center"}>{t.bank_account.bank_branch}</Table.ColumnHeader>
                                 <Table.ColumnHeader textAlign={"center"}>{t.bank_account.currency}</Table.ColumnHeader>
                                 <Table.ColumnHeader textAlign={"center"}>{t.master.action}</Table.ColumnHeader>
                             </Table.Row>
@@ -237,8 +330,8 @@ export default function SettingFinance(){
                             {bankAccountData?.map((bank) => (
                             <Table.Row key={bank.bank_number}>
                                 <Table.Cell textAlign={"center"}>{bank.bank_number}</Table.Cell>
-                                <Table.Cell textAlign={"center"}>{bank.bank_branch}</Table.Cell>
                                 <Table.Cell textAlign={"center"}>{bank.bank_name}</Table.Cell>
+                                <Table.Cell textAlign={"center"}>{bank.bank_branch}</Table.Cell>
                                 <Table.Cell textAlign={"center"}>{bank.currency_name} ({bank.currency_symbol})</Table.Cell>
                                 <Table.Cell textAlign="center">
                                     <Flex justify="center" gap={4} fontSize={"2xl"}>
@@ -312,7 +405,21 @@ export default function SettingFinance(){
                 <Tabs.Content value="account-code">
                     <Flex gap={2} display={"flex"} mb={"2"} mt={"2"}>
                         <Heading mb={6} width={"100%"}>{t.account_code.title_2}</Heading>
-                        <Button bg={"#E77A1F"} color={"white"} cursor={"pointer"} onClick={handleOpenAccountCodeDialog}>{t.account_code.create_button}</Button>
+                        <Flex gap={2} alignItems={"center"}>
+                            <InputGroup startElement={<LuSearch />}>
+                                <Input placeholder={t.account_code.search} bg={"white"} value={findAccountCode}
+                                    onChange={(e) => setFindAccountCode(e.target.value)}
+                                    onKeyDown={(e) => {
+                                        if (e.key === "Enter") {
+                                            setAccountCodePage(1);
+                                            init();
+                                        }
+                                    }}
+                                    width="250px"
+                                />
+                            </InputGroup>
+                            <Button bg={"#E77A1F"} color={"white"} cursor={"pointer"} onClick={handleOpenAccountCodeDialog}>{t.account_code.create_button}</Button>
+                        </Flex>
                     </Flex>
 
                     <AccountCodeDialog
@@ -335,9 +442,26 @@ export default function SettingFinance(){
                                 }
                             : undefined
                         }
-                        onSubmit={(data) =>
-                            editingAccountCode ? undefined : undefined
-                        }
+                        onSubmit={(data) => {
+                            if(editingAccountCode) {
+                                handleUpdateAccountCode({
+                                    account_code_id: data.account_code_id ?? editingAccountCode.account_code_id,
+                                    account_code_name: data.account_code_name,
+                                    account_code_name_alias: data.account_code_name_alias ?? editingAccountCode.account_code_name_alias,
+                                    account_type: data.account_type,
+                                    parent_account_code_id: data.parent_account_code_id ?? editingAccountCode.parent_account_code_id,
+                                    is_active: data.is_active
+                                })
+                            } else {
+                                handleCreateAccountCode({
+                                    account_code: data.account_code,
+                                    account_code_name: data.account_code_name,
+                                    account_code_name_alias: data.account_code_name_alias ?? '',
+                                    account_type: data.account_type,
+                                    parent_account_code_id: data.parent_account_code_id ?? ''
+                                })
+                            }
+                        }}
                     />
 
                     <UpgradeRequiredDialog
@@ -391,7 +515,7 @@ export default function SettingFinance(){
                                                             <Dialog.ActionTrigger asChild>
                                                                 <Button variant="outline">{t.delete_popup.cancel}</Button>
                                                             </Dialog.ActionTrigger>
-                                                            {/* <Button onClick={() => handleDeleteAccountCode({ accountcode: account.code })}>Hapus</Button> */}
+                                                            <Button bg={"red"} color={"white"} cursor={"pointer"} onClick={() => handleDeleteAccountCode({ account_code_id: account.account_code_id })}>{t.delete_popup.delete}</Button>
                                                         </Dialog.Footer>
                                                         
                                                         <Dialog.CloseTrigger asChild>

@@ -1,8 +1,13 @@
 "use client";
 
+import Loading from "@/components/loading";
 import SidebarWithHeader from "@/components/ui/SidebarWithHeader";
-import { Button, Card, Separator, Flex, Field, Heading, IconButton, Input, NumberInput, Text, Textarea, SimpleGrid } from "@chakra-ui/react";
-import { useState } from "react";
+import { DecodedAuthToken, checkAuthOrRedirect, getAuthInfo } from "@/lib/auth/auth";
+import { getLang } from "@/lib/i18n";
+import { getAllCurrency, GetCurrencyData } from "@/lib/master/currency";
+import { Button, Card, Separator, Flex, Field, Heading, IconButton, Input, NumberInput, Text, Textarea, SimpleGrid, createListCollection, Select, Portal } from "@chakra-ui/react";
+import { useRouter } from "next/router";
+import { useEffect, useState } from "react";
 import { FaTrash } from "react-icons/fa";
 
 type LineItem = {
@@ -16,6 +21,61 @@ type LineItem = {
 export default function CreateInvoicePage() {
   const [currency, setCurrency] = useState<string>("IDR");
   const [exchangeRate, setExchangeRate] = useState<number>(1);
+
+  const [auth, setAuth] = useState<DecodedAuthToken | null>(null);
+  const [loading, setLoading] = useState(false);
+  const router = useRouter();
+
+  const [currencySelected, setCurrencySelected] = useState<string>();
+  const [currencyOptions, setCurrencyOptions] = useState<GetCurrencyData[]>([]);
+
+  const t = getLang("en"); 
+  
+  const currencyCollection = createListCollection({
+      items: currencyOptions.map((currency) => ({
+        label: `${currency.currency_name} (${currency.currency_symbol})`,
+        value: currency.currency_id,
+      })),
+    });
+
+  useEffect(() => {
+    const fetchCurrency = async () => {
+          try {
+            setLoading(true);
+            const currencyRes = await getAllCurrency(1, 1000);
+            setCurrencyOptions(currencyRes?.data ?? []);
+          } catch (error) {
+            console.error(error);
+            setCurrencyOptions([]);
+          } finally {
+            setLoading(false);
+          }
+        };
+    
+    fetchCurrency();
+    init();
+  }, []);
+
+  const init = async () => {
+    setLoading(true);
+
+    const valid = await checkAuthOrRedirect();
+    if(!valid) return;
+
+    const info = getAuthInfo();
+    setAuth(info);
+
+    try {
+
+    } catch (error: any){
+
+    } finally {
+      setLoading(false);
+    }
+  }
+    
+  if (loading) return <Loading/>;
+
   const [items, setItems] = useState<LineItem[]>([
     {
       id: crypto.randomUUID(),
@@ -64,7 +124,7 @@ export default function CreateInvoicePage() {
   };
 
   return (
-    <SidebarWithHeader username="----">
+    <SidebarWithHeader username={auth?.username ?? "Unknown"} daysToExpire={auth?.days_remaining ?? 0}>
       <Heading>Create Invoice</Heading>
 
       <Card.Root mt={4}>
@@ -91,15 +151,29 @@ export default function CreateInvoicePage() {
             </Field.Root>
             <Field.Root>
               <Field.Label>Currency</Field.Label>
-              {/* <Select
-                  value={currency}
-                  onChange={(e) => setCurrency(e.target.value)}
-                >
-                  <option value="IDR">IDR</option>
-                  <option value="USD">USD</option>
-                  <option value="SGD">SGD</option>
-                  <option value="EUR">EUR</option>
-                </Select> */}
+              <Select.Root collection={currencyCollection} value={currencySelected ? [currencySelected] : []} onValueChange={(details) => setCurrencySelected(details.value[0])} size="sm" width="100%">
+                              <Select.HiddenSelect />
+                              <Select.Control>
+                                <Select.Trigger>
+                                  <Select.ValueText placeholder={t.bank_account.select_currency_placeholder} />
+                                </Select.Trigger>
+                                <Select.IndicatorGroup>
+                                  <Select.Indicator />
+                                </Select.IndicatorGroup>
+                              </Select.Control>
+                              <Portal>
+                                <Select.Positioner>
+                                  <Select.Content>
+                                    {currencyCollection.items.map((currency) => (
+                                      <Select.Item item={currency} key={currency.value}>
+                                        {currency.label}
+                                        <Select.ItemIndicator />
+                                      </Select.Item>
+                                    ))}
+                                  </Select.Content>
+                                </Select.Positioner>
+                              </Portal>
+                          </Select.Root>
             </Field.Root>
             <Field.Root>
               <Field.Label>Exchange Rate</Field.Label>
