@@ -5,7 +5,8 @@ import { Heading, SimpleGrid, Field, Input, Textarea, Button, Flex, Text, Card }
 import SidebarWithHeader from "@/components/ui/SidebarWithHeader";
 import Loading from "@/components/loading";
 import { DecodedAuthToken, checkAuthOrRedirect, getAuthInfo } from "@/lib/auth/auth";
-import { useRouter } from "next/router";
+import { useRouter } from "next/navigation";
+
 
 export default function CreateStockOutPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);

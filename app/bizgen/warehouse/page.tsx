@@ -4,7 +4,8 @@ import Loading from "@/components/loading";
 import SidebarWithHeader from "@/components/ui/SidebarWithHeader";
 import { DecodedAuthToken, checkAuthOrRedirect, getAuthInfo } from "@/lib/auth/auth";
 import { Flex, Heading, Text, Badge, Button, Icon, Tabs, SimpleGrid, Card } from "@chakra-ui/react";
-import { useRouter } from "next/router";
+import { useRouter } from "next/navigation";
+
 import { useState, useEffect } from "react";
 import { FiArrowDownCircle, FiArrowUpCircle, FiPackage, FiActivity, FiPlus, FiTruck,} from "react-icons/fi";
 
