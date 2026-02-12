@@ -11,11 +11,9 @@ import { GetAccountCodeData, getAllAccountCode } from '@/lib/master/account-code
 import { getAllCurrency, GetCurrencyData } from '@/lib/master/currency';
 
 export default function CreateIncomePage() {
-  const router = useRouter();
-
   const [auth, setAuth] = useState<DecodedAuthToken | null>(null);
   const [loading, setLoading] = useState(false);
-
+  const router = useRouter();
   const [accountCodeSelected, setAccountCodeSelected] = useState<string>();
   const [accountCodeOptions, setAccountCodeOptions] = useState<GetAccountCodeData[]>([]);
   const [currencySelected, setCurrencySelected] = useState<string>();
@@ -111,7 +109,6 @@ export default function CreateIncomePage() {
       return;
     }
 
-    // TODO: connect to API
     console.log('Submitting income payload:', form);
 
     router.back();
@@ -126,7 +123,7 @@ export default function CreateIncomePage() {
         </Flex>
 
         <Flex gap={5}>
-          <Button variant="outline" onClick={() => router.back()}>Cancel</Button>
+          <Button variant="outline" onClick={() => router.back()}>{t.delete_popup.cancel}</Button>
           <Button colorScheme="green" onClick={handleSubmit}>Save Income</Button>
         </Flex>
       </Flex>

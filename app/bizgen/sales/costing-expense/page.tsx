@@ -3,10 +3,10 @@
 import { useEffect, useState } from 'react';
 import { Box, Button, Card, Flex, HStack, Heading, IconButton, Input, Stack, Text, Textarea, SimpleGrid, Separator } from '@chakra-ui/react';
 import SidebarWithHeader from '@/components/ui/SidebarWithHeader';
-import { useRouter } from 'next/router';
 import Loading from '@/components/loading';
 import { DecodedAuthToken, checkAuthOrRedirect, getAuthInfo } from '@/lib/auth/auth';
-// import { AddIcon, DeleteIcon } from '@chakra-ui/icons';
+import { useRouter } from 'next/navigation';
+
 
 type CostItem = {
   id: string;

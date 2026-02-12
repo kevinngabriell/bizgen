@@ -4,9 +4,9 @@ import { useEffect, useState } from "react";
 import { Button, Flex, Input, Textarea, Heading, Badge, Field, Card, Text, Table, IconButton, SimpleGrid } from "@chakra-ui/react";
 import SidebarWithHeader from "@/components/ui/SidebarWithHeader";
 import { FaTrash } from "react-icons/fa";
-import { useRouter } from "next/router";
 import Loading from "@/components/loading";
 import { DecodedAuthToken, checkAuthOrRedirect, getAuthInfo } from "@/lib/auth/auth";
+import { useRouter } from "next/navigation";
 
 type InquiryMode = "create" | "view" | "edit";
 

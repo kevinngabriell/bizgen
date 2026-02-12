@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Box, Button, Card, Field, Flex, Grid, GridItem, HStack, Heading, Input, Select, Separator, SimpleGrid, Stack, Textarea } from '@chakra-ui/react';
+import { Button, Card, Field, Flex, Heading, Input, Separator, SimpleGrid, Textarea } from '@chakra-ui/react';
 import { useRouter } from 'next/navigation';
 import SidebarWithHeader from '@/components/ui/SidebarWithHeader';
 import { checkAuthOrRedirect, DecodedAuthToken, getAuthInfo } from '@/lib/auth/auth';

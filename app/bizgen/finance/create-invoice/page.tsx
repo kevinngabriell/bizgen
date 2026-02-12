@@ -6,7 +6,8 @@ import { DecodedAuthToken, checkAuthOrRedirect, getAuthInfo } from "@/lib/auth/a
 import { getLang } from "@/lib/i18n";
 import { getAllCurrency, GetCurrencyData } from "@/lib/master/currency";
 import { Button, Card, Separator, Flex, Field, Heading, IconButton, Input, NumberInput, Text, Textarea, SimpleGrid, createListCollection, Select, Portal } from "@chakra-ui/react";
-import { useRouter } from "next/router";
+import { useRouter } from "next/navigation";
+
 import { useEffect, useState } from "react";
 import { FaTrash } from "react-icons/fa";
 
@@ -19,13 +20,8 @@ type LineItem = {
 };
 
 export default function CreateInvoicePage() {
-  const [currency, setCurrency] = useState<string>("IDR");
-  const [exchangeRate, setExchangeRate] = useState<number>(1);
-
   const [auth, setAuth] = useState<DecodedAuthToken | null>(null);
   const [loading, setLoading] = useState(false);
-  const router = useRouter();
-
   const [currencySelected, setCurrencySelected] = useState<string>();
   const [currencyOptions, setCurrencyOptions] = useState<GetCurrencyData[]>([]);
 
@@ -119,7 +115,7 @@ export default function CreateInvoicePage() {
   );
   const grandTotal = subtotal + taxTotal;
 
-  const handleSave = (mode: "draft" | "post") => {
+  const handleSave = () => {
     // TODO: integrate with API
   };
 
@@ -152,28 +148,28 @@ export default function CreateInvoicePage() {
             <Field.Root>
               <Field.Label>Currency</Field.Label>
               <Select.Root collection={currencyCollection} value={currencySelected ? [currencySelected] : []} onValueChange={(details) => setCurrencySelected(details.value[0])} size="sm" width="100%">
-                              <Select.HiddenSelect />
-                              <Select.Control>
-                                <Select.Trigger>
-                                  <Select.ValueText placeholder={t.bank_account.select_currency_placeholder} />
-                                </Select.Trigger>
-                                <Select.IndicatorGroup>
-                                  <Select.Indicator />
-                                </Select.IndicatorGroup>
-                              </Select.Control>
-                              <Portal>
-                                <Select.Positioner>
-                                  <Select.Content>
-                                    {currencyCollection.items.map((currency) => (
-                                      <Select.Item item={currency} key={currency.value}>
-                                        {currency.label}
-                                        <Select.ItemIndicator />
-                                      </Select.Item>
-                                    ))}
-                                  </Select.Content>
-                                </Select.Positioner>
-                              </Portal>
-                          </Select.Root>
+                <Select.HiddenSelect />
+                <Select.Control>
+                  <Select.Trigger>
+                    <Select.ValueText placeholder={t.bank_account.select_currency_placeholder} />
+                  </Select.Trigger>
+                  <Select.IndicatorGroup>
+                    <Select.Indicator />
+                  </Select.IndicatorGroup>
+                </Select.Control>
+                <Portal>
+                  <Select.Positioner>
+                    <Select.Content>
+                      {currencyCollection.items.map((currency) => (
+                        <Select.Item item={currency} key={currency.value}>
+                          {currency.label}
+                          <Select.ItemIndicator />
+                        </Select.Item>
+                      ))}
+                    </Select.Content>
+                  </Select.Positioner>
+                </Portal>
+              </Select.Root>
             </Field.Root>
             <Field.Root>
               <Field.Label>Exchange Rate</Field.Label>
@@ -277,8 +273,8 @@ export default function CreateInvoicePage() {
       </Card.Root>
 
       <Flex gap={3} justify="flex-end" mt={6}>
-        <Button variant="outline" onClick={() => handleSave("draft")}>Save as Draft</Button>
-        <Button colorScheme="blue" onClick={() => handleSave("post")}>Post Invoice</Button>
+        <Button variant="outline" onClick={() => handleSave()}>Save as Draft</Button>
+        <Button colorScheme="blue" onClick={() => handleSave()}>Post Invoice</Button>
       </Flex>
     </SidebarWithHeader>
     

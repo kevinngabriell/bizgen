@@ -3,8 +3,10 @@
 import Loading from "@/components/loading";
 import SidebarWithHeader from "@/components/ui/SidebarWithHeader";
 import { DecodedAuthToken, checkAuthOrRedirect, getAuthInfo } from "@/lib/auth/auth";
-import { Button, Card, Separator, Flex, Field, IconButton, Input, NumberInput, Text, Textarea, Heading, SimpleGrid,} from "@chakra-ui/react";
-import { useRouter } from "next/router";
+import { getLang } from "@/lib/i18n";
+import { getAllCurrency, GetCurrencyData } from "@/lib/master/currency";
+import { Button, Card, Separator, Flex, Field, IconButton, Input, NumberInput, Text, Textarea, Heading, SimpleGrid, createListCollection, Select, Portal,} from "@chakra-ui/react";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { FaTrash } from "react-icons/fa";
 
@@ -17,20 +19,46 @@ interface LineItem {
 }
 
 export default function CreateVendorBillPage() {
+  const [auth, setAuth] = useState<DecodedAuthToken | null>(null);
+  const [loading, setLoading] = useState(false);
+  
   const [vendor, setVendor] = useState("");
   const [billNo, setBillNo] = useState("");
   const [billDate, setBillDate] = useState("");
   const [dueDate, setDueDate] = useState("");
-  const [currency, setCurrency] = useState("IDR");
+  
+  const [currencySelected, setCurrencySelected] = useState<string>();
+  const [currencyOptions, setCurrencyOptions] = useState<GetCurrencyData[]>([]);
+
   const [exchangeRate, setExchangeRate] = useState(1);
   const [reference, setReference] = useState("");
   const [notes, setNotes] = useState("");
-
-  const [auth, setAuth] = useState<DecodedAuthToken | null>(null);
-  const [loading, setLoading] = useState(false);
   const router = useRouter();
 
+   const t = getLang("en"); 
+
+  const currencyCollection = createListCollection({
+    items: currencyOptions.map((currency) => ({
+      label: `${currency.currency_name} (${currency.currency_symbol})`,
+      value: currency.currency_id,
+    })),
+  });
+
   useEffect(() => {
+    const fetchCurrency = async () => {
+      try {
+        setLoading(true);
+        const currencyRes = await getAllCurrency(1, 1000);
+        setCurrencyOptions(currencyRes?.data ?? []);
+      } catch (error) {
+        console.error(error);
+        setCurrencyOptions([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+        
+    fetchCurrency();    
     init();
   }, []);
 
@@ -132,13 +160,29 @@ export default function CreateVendorBillPage() {
 
             <Field.Root>
               <Field.Label>Currency</Field.Label>
-              <Flex>
-                {/* Select Currency */}
-                <NumberInput.Root>
-                  <NumberInput.Control/>
-                  <NumberInput.Input/>
-                </NumberInput.Root>
-              </Flex>
+              <Select.Root collection={currencyCollection} value={currencySelected ? [currencySelected] : []} onValueChange={(details) => setCurrencySelected(details.value[0])} size="sm" width="100%">
+                <Select.HiddenSelect />
+                <Select.Control>
+                  <Select.Trigger>
+                    <Select.ValueText placeholder={t.bank_account.select_currency_placeholder} />
+                  </Select.Trigger>
+                  <Select.IndicatorGroup>
+                    <Select.Indicator />
+                  </Select.IndicatorGroup>
+                </Select.Control>
+                <Portal>
+                  <Select.Positioner>
+                    <Select.Content>
+                      {currencyCollection.items.map((currency) => (
+                        <Select.Item item={currency} key={currency.value}>
+                          {currency.label}
+                          <Select.ItemIndicator />
+                        </Select.Item>
+                      ))}
+                    </Select.Content>
+                  </Select.Positioner>
+                </Portal>
+              </Select.Root>
             </Field.Root>
           </SimpleGrid>
 

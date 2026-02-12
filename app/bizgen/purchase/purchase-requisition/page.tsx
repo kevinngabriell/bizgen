@@ -3,8 +3,9 @@
 import Loading from "@/components/loading";
 import SidebarWithHeader from "@/components/ui/SidebarWithHeader";
 import { DecodedAuthToken, checkAuthOrRedirect, getAuthInfo } from "@/lib/auth/auth";
-import { Box, Button, Container, Flex, Grid, GridItem, Heading, HStack, IconButton, Input, Select, Stack, Text, Textarea, Separator, Field, Card, SimpleGrid} from "@chakra-ui/react";
-import { useRouter } from "next/router";
+import { Button, Flex, Heading, IconButton, Input, Text, Textarea, Field, Card, SimpleGrid} from "@chakra-ui/react";
+import { useRouter } from "next/navigation";
+
 import { useEffect, useState } from "react";
 import { FaTrash } from "react-icons/fa";
 

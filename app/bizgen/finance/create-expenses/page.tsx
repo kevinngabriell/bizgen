@@ -7,7 +7,7 @@ import { getLang } from "@/lib/i18n";
 import { GetAccountCodeData, getAllAccountCode } from "@/lib/master/account-code";
 import { getAllCurrency, GetCurrencyData } from "@/lib/master/currency";
 import { Button, Card, Flex, Field, Input, Text, Textarea, Heading, SimpleGrid, createListCollection, Select, Portal } from "@chakra-ui/react";
-import { useRouter } from "next/router";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 export default function CreateExpensePage() {

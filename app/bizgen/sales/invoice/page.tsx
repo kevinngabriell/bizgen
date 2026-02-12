@@ -5,9 +5,9 @@ import { useState, useMemo, useEffect } from "react";
 import dayjs from "dayjs";
 import SidebarWithHeader from "@/components/ui/SidebarWithHeader";
 import { FaTrash } from "react-icons/fa";
-import { useRouter } from "next/router";
 import Loading from "@/components/loading";
 import { DecodedAuthToken, checkAuthOrRedirect, getAuthInfo } from "@/lib/auth/auth";
+import { useRouter } from "next/navigation";
 
 type LineItem = {
   id: string;

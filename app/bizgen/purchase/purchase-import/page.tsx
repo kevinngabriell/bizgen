@@ -5,7 +5,11 @@
 import Loading from "@/components/loading";
 import SidebarWithHeader from "@/components/ui/SidebarWithHeader";
 import { DecodedAuthToken, checkAuthOrRedirect, getAuthInfo } from "@/lib/auth/auth";
-import { Button, Flex, Heading, SimpleGrid, Field, Input, IconButton, Separator, Text, Card, NumberInput } from "@chakra-ui/react";
+import { GetCurrencyData } from "@/lib/master/currency";
+import { GetOriginData } from "@/lib/master/origin";
+import { GetSupplierData } from "@/lib/master/supplier";
+import { GetTermData } from "@/lib/master/term";
+import { Button, Flex, Heading, SimpleGrid, Field, Input, IconButton, Separator, Text, Card, NumberInput, createListCollection, Select, Portal } from "@chakra-ui/react";
 import { useRouter } from "next/navigation";
 import { useState, useMemo, useEffect } from "react";
 import { FaTrash } from "react-icons/fa";
@@ -18,20 +22,59 @@ type ItemRow = {
 };
 
 export default function CreatePurchaseImportPage() {
-  const [supplier, setSupplier] = useState("");
   const [poNumber, setPoNumber] = useState("");
   const [poDate, setPoDate] = useState("");
-  const [currency, setCurrency] = useState("USD");
   const [exchangeRate, setExchangeRate] = useState(15000);
-  const [incoterm, setIncoterm] = useState("FOB");
-  const [portOfLoading, setPortOfLoading] = useState("");
-  const [portOfDischarge, setPortOfDischarge] = useState("");
   const [freightCost, setFreightCost] = useState(0);
   const [customsCost, setCustomsCost] = useState(0);
 
   const [auth, setAuth] = useState<DecodedAuthToken | null>(null);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+
+  const [supplierSelected, setSupplierSelected] = useState<string>();
+  const [supplierOptions, setSupplierOptions] = useState<GetSupplierData[]>([]);
+
+  const supplierCollection = createListCollection({
+    items: supplierOptions.map((supplier) => ({
+        label: `${supplier.supplier_name}`,
+        value: supplier.supplier_id,
+      })),
+  });
+
+  //currency
+  const [currencySelected, setCurrencySelected] = useState<string>();
+  const [currencyOptions, setCurrencyOptions] = useState<GetCurrencyData[]>([]);
+
+  const currencyCollection = createListCollection({
+    items: currencyOptions.map((currency) => ({
+        label: `${currency.currency_name} (${currency.currency_symbol})`,
+        value: currency.currency_id,
+      })),
+  });
+
+  //term
+  const [termSelected, setTermSelected] = useState<string>();
+  const [termOptions, seetTermOptions] = useState<GetTermData[]>([]);
+
+  const termCollection = createListCollection({
+    items: termOptions.map((term) => ({
+        label: `${term.term_name}`,
+        value: term.term_id,
+      })),
+  });
+
+  //origin
+  const [portofloadingSelected, setPortofLoadingSelected] = useState<string>();
+  const [portofdischargeSelected, setPortofDischargeSelected] = useState<string>();
+  const [originOptions, setOriginOptions] = useState<GetOriginData[]>([]);
+
+  const originCollection = createListCollection({
+    items: originOptions.map((origin) => ({
+        label: `${origin.origin_name}`,
+        value: origin.origin_id,
+      })),
+  });
 
   useEffect(() => {
     init();
@@ -124,7 +167,29 @@ export default function CreatePurchaseImportPage() {
             {/* Supplier Name */}
             <Field.Root>
               <Field.Label>Supplier Name</Field.Label>
-              <Input value={supplier} onChange={(e) => setSupplier(e.target.value)} placeholder="AUTO / Manual"/>
+              <Select.Root collection={supplierCollection} value={supplierSelected ? [supplierSelected] : []} onValueChange={(details) => setSupplierSelected(details.value[0])} size="sm" width="100%">
+                <Select.HiddenSelect />
+                <Select.Control>
+                  <Select.Trigger>
+                    <Select.ValueText placeholder={"t.bank_account.select_currency_placeholder"} />
+                  </Select.Trigger>
+                  <Select.IndicatorGroup>
+                    <Select.Indicator />
+                  </Select.IndicatorGroup>
+                </Select.Control>
+                <Portal>
+                  <Select.Positioner>
+                    <Select.Content>
+                      {supplierCollection.items.map((supplier) => (
+                        <Select.Item item={supplier} key={supplier.value}>
+                          {supplier.label}
+                          <Select.ItemIndicator />
+                        </Select.Item>
+                      ))}
+                    </Select.Content>
+                  </Select.Positioner>
+                </Portal>
+              </Select.Root>
             </Field.Root>
           </SimpleGrid>
 
@@ -138,15 +203,29 @@ export default function CreatePurchaseImportPage() {
             {/* Currency */}
             <Field.Root>
               <Field.Label>Currency</Field.Label>
-              {/* <Select
-                value={currency}
-                onChange={(e) => setCurrency(e.target.value)}
-              >
-                <option value="USD">USD</option>
-                <option value="CNY">CNY</option>
-                <option value="EUR">EUR</option>
-                <option value="IDR">IDR</option>
-              </Select> */}
+              <Select.Root collection={currencyCollection} value={currencySelected ? [currencySelected] : []} onValueChange={(details) => setCurrencySelected(details.value[0])} size="sm" width="100%">
+                <Select.HiddenSelect />
+                <Select.Control>
+                  <Select.Trigger>
+                    <Select.ValueText placeholder={"t.bank_account.select_currency_placeholder"} />
+                  </Select.Trigger>
+                  <Select.IndicatorGroup>
+                    <Select.Indicator />
+                  </Select.IndicatorGroup>
+                </Select.Control>
+                <Portal>
+                  <Select.Positioner>
+                    <Select.Content>
+                      {currencyCollection.items.map((currency) => (
+                        <Select.Item item={currency} key={currency.value}>
+                          {currency.label}
+                          <Select.ItemIndicator />
+                        </Select.Item>
+                      ))}
+                    </Select.Content>
+                  </Select.Positioner>
+                </Portal>
+              </Select.Root>
             </Field.Root>
             {/* Exchange Rate */}
             <Field.Root>
@@ -162,24 +241,83 @@ export default function CreatePurchaseImportPage() {
             {/* Incoterm */}
             <Field.Root>
               <Field.Label>Incoterm</Field.Label>
-              {/* <Select
-                value={incoterm}
-                onChange={(e) => setIncoterm(e.target.value)}
-              >
-                <option value="FOB">FOB</option>
-                <option value="CIF">CIF</option>
-                <option value="EXW">EXW</option>
-              </Select> */}
+              <Select.Root collection={termCollection} value={termSelected ? [termSelected] : []} onValueChange={(details) => setTermSelected(details.value[0])} size="sm" width="100%">
+                <Select.HiddenSelect />
+                <Select.Control>
+                  <Select.Trigger>
+                    <Select.ValueText placeholder={"t.bank_account.select_currency_placeholder"} />
+                  </Select.Trigger>
+                  <Select.IndicatorGroup>
+                    <Select.Indicator />
+                  </Select.IndicatorGroup>
+                </Select.Control>
+                <Portal>
+                  <Select.Positioner>
+                    <Select.Content>
+                      {termCollection.items.map((term) => (
+                        <Select.Item item={term} key={term.value}>
+                          {term.label}
+                          <Select.ItemIndicator />
+                        </Select.Item>
+                      ))}
+                    </Select.Content>
+                  </Select.Positioner>
+                </Portal>
+              </Select.Root>
             </Field.Root>
             {/* Port of Loading */}
             <Field.Root>
               <Field.Label>Port of Loading</Field.Label>
-              <Input value={portOfLoading} onChange={(e) => setPortOfLoading(e.target.value)} placeholder="e.g. Shanghai"/>
+              <Select.Root collection={originCollection} value={portofloadingSelected ? [portofloadingSelected] : []} onValueChange={(details) => setPortofLoadingSelected(details.value[0])} size="sm" width="100%">
+                <Select.HiddenSelect />
+                <Select.Control>
+                  <Select.Trigger>
+                    <Select.ValueText placeholder={"t.bank_account.select_currency_placeholder"} />
+                  </Select.Trigger>
+                  <Select.IndicatorGroup>
+                    <Select.Indicator />
+                  </Select.IndicatorGroup>
+                </Select.Control>
+                <Portal>
+                  <Select.Positioner>
+                    <Select.Content>
+                      {originCollection.items.map((origin) => (
+                        <Select.Item item={origin} key={origin.value}>
+                          {origin.label}
+                          <Select.ItemIndicator />
+                        </Select.Item>
+                      ))}
+                    </Select.Content>
+                  </Select.Positioner>
+                </Portal>
+              </Select.Root>
             </Field.Root>
             {/* Port of Discharge */}
             <Field.Root>
               <Field.Label>Port of Discharge</Field.Label>
-              <Input value={portOfDischarge} onChange={(e) => setPortOfDischarge(e.target.value)} placeholder="e.g. Jakarta"/>
+              <Select.Root collection={originCollection} value={portofdischargeSelected ? [portofdischargeSelected] : []} onValueChange={(details) => setPortofDischargeSelected(details.value[0])} size="sm" width="100%">
+                <Select.HiddenSelect />
+                <Select.Control>
+                  <Select.Trigger>
+                    <Select.ValueText placeholder={"t.bank_account.select_currency_placeholder"} />
+                  </Select.Trigger>
+                  <Select.IndicatorGroup>
+                    <Select.Indicator />
+                  </Select.IndicatorGroup>
+                </Select.Control>
+                <Portal>
+                  <Select.Positioner>
+                    <Select.Content>
+                      {originCollection.items.map((origin) => (
+                        <Select.Item item={origin} key={origin.value}>
+                          {origin.label}
+                          <Select.ItemIndicator />
+                        </Select.Item>
+                      ))}
+                    </Select.Content>
+                  </Select.Positioner>
+                </Portal>
+              </Select.Root>
             </Field.Root>
             {/* Freight Cost (USD) */}
             <Field.Root>
@@ -249,7 +387,7 @@ export default function CreatePurchaseImportPage() {
                   </SimpleGrid>
 
                   <Flex justify="space-between" mt={2} align="center">
-                    <Text fontSize="sm" color="gray.600"> Line Total:{" "} {(row.qty || 0) * (row.unitPrice || 0)} {currency}</Text>
+                    <Text fontSize="sm" color="gray.600"> Line Total:{" "} {(row.qty || 0) * (row.unitPrice || 0)} </Text>
                     {items.length > 1 && (
                       <IconButton p={3} aria-label="Remove item" size="sm" color={"red"} variant="ghost" onClick={() => removeItem(i)}>
                         <FaTrash/>
@@ -267,9 +405,9 @@ export default function CreatePurchaseImportPage() {
         <Card.Body>
           <Heading size="sm" mb={3}>Cost Summary</Heading>
           
-          <Text fontSize={"md"}>Items Subtotal: {itemsSubtotal.toLocaleString()} {currency}</Text>
-          <Text>Freight + Customs:{" "} {(Number(freightCost) + Number(customsCost)).toLocaleString()}{" "}{currency}</Text>
-          <Text fontWeight="semibold">Landed Cost: {landedCost.toLocaleString()} {currency}</Text>
+          <Text fontSize={"md"}>Items Subtotal: {itemsSubtotal.toLocaleString()} </Text>
+          <Text>Freight + Customs:{" "} {(Number(freightCost) + Number(customsCost)).toLocaleString()}{" "}</Text>
+          <Text fontWeight="semibold">Landed Cost: {landedCost.toLocaleString()} </Text>
           <Text color="gray.600">Local Currency (IDR): {localCurrencyTotal.toLocaleString("id-ID")}</Text>
         </Card.Body>
       </Card.Root>

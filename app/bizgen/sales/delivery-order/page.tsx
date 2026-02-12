@@ -4,7 +4,8 @@ import Loading from '@/components/loading';
 import SidebarWithHeader from '@/components/ui/SidebarWithHeader';
 import { DecodedAuthToken, checkAuthOrRedirect, getAuthInfo } from '@/lib/auth/auth';
 import {Button, Card, Flex, Heading, Input, Text, Textarea, Field, Separator, NumberInput} from '@chakra-ui/react';
-import { useRouter } from 'next/router';
+import { useRouter } from 'next/navigation';
+
 import { useEffect, useState } from 'react';
 
 type LineItem = {

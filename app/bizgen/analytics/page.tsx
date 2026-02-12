@@ -4,7 +4,7 @@ import Loading from "@/components/loading";
 import SidebarWithHeader from "@/components/ui/SidebarWithHeader";
 import { DecodedAuthToken, checkAuthOrRedirect, getAuthInfo } from "@/lib/auth/auth";
 import { Box, Flex, Heading, SimpleGrid, Text, Card, Stack, Badge } from "@chakra-ui/react";
-import { useRouter } from "next/router";
+import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 
 export default function Analytics() {
