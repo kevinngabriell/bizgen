@@ -1,4 +1,5 @@
 "use client";
+import { getAuthInfo } from "@/lib/auth/auth";
 import { getLang } from "@/lib/i18n";
 import { Dialog, Portal, Field, Input, Button, SimpleGrid, CloseButton, Textarea } from "@chakra-ui/react";
 import { useEffect, useState } from "react";
@@ -31,11 +32,24 @@ export default function ProductDialog({
     const [productName, setProductName] = useState("");
     const [productDesc, setProductDesc] = useState("");
     const [productID, setProductID] = useState("");
+    
+    //language state 
+    const [lang, setLang] = useState<"en" | "id">("en");
+    const t = getLang(lang);
 
-    const t = getLang("en"); 
+    const init = async () => {
+        //get info from authentication
+        const info = getAuthInfo();
+
+        //set language from token authentication
+        const language = info?.language === "id" ? "id" : "en";
+        setLang(language);
+    }
     
     useEffect(() => {
         if (!isOpen) return;
+
+        init();
         
         setProductID(placeholders?.product_id ?? "");
         setProductCode(placeholders?.product_code ?? "");

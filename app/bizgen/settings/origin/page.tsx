@@ -28,7 +28,9 @@ export default function SettingOrigin(){
     const [messagePopup, setMessagePopup] = useState('');
     const [isSuccess, setIsSuccess] = useState(false);
 
-    const t = getLang("en"); 
+    //language state 
+    const [lang, setLang] = useState<"en" | "id">("en");
+    const t = getLang(lang);
     
     useEffect(() => {
         init();
@@ -37,11 +39,17 @@ export default function SettingOrigin(){
     const init = async () => {
         setLoading(true);
 
+        //check authentication redirect
         const valid = await checkAuthOrRedirect();
         if(!valid) return;
 
+        //get info from authentication
         const info = getAuthInfo();
         setAuth(info);        
+
+        //set language from token authentication
+        const language = info?.language === "id" ? "id" : "en";
+        setLang(language);
 
         try {
             const originRes = await getAllOrigin(originPage, 10, findOrigin);

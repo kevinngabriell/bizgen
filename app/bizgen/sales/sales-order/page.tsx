@@ -57,7 +57,7 @@ export default function CreateSalesOrderPage() {
     <SidebarWithHeader username={auth?.username ?? "Unknown"} daysToExpire={auth?.days_remaining ?? 0}>
       <Heading size="lg">Create Sales Order</Heading>
 
-      <Card.Root>
+      <Card.Root mt={4}>
         <Card.Header>
           <Heading>Order Information</Heading>
         </Card.Header>
@@ -154,8 +154,8 @@ export default function CreateSalesOrderPage() {
           </Field.Root>
 
           <Flex justify="flex-end" gap={3}>
-            <Button variant="outline" onClick={() => router.back()}>Cancel</Button>
-            <Button colorScheme="blue" type="submit">Save Sales Order</Button>
+            <Button variant="outline" bg={"transparent"} borderColor={"#E77A1F"} color={"#E77A1F"} cursor={"pointer"}  onClick={() => router.back()}>Cancel</Button>
+            <Button bg={"#E77A1F"} color={"white"} cursor={"pointer"} type="submit">Save Sales Order</Button>
           </Flex>
 
         </Card.Body>

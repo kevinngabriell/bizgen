@@ -1,5 +1,6 @@
 "use client";
 
+import { getAuthInfo } from "@/lib/auth/auth";
 import { getLang } from "@/lib/i18n";
 import { Button, CloseButton, Dialog, Field, Input, Portal, SimpleGrid } from "@chakra-ui/react";
 import { useEffect, useState } from "react";
@@ -33,10 +34,23 @@ export default function ShipmentDialog({
     const [shipmentDateStart, setShipmentDateStart] = useState("");
     const [shipmentDateEnd, setShipmentDateEnd] = useState("");
 
-    const t = getLang("en"); 
+    //language state 
+    const [lang, setLang] = useState<"en" | "id">("en");
+    const t = getLang(lang);
+
+    const init = async () => {
+        //get info from authentication
+        const info = getAuthInfo();
+
+        //set language from token authentication
+        const language = info?.language === "id" ? "id" : "en";
+        setLang(language);
+    }
         
     useEffect(() => {
         if (!isOpen) return;
+
+        init();
             
         setShipmentPeriodID(placeholders?.shipment_period_id ?? "");
         setShipmentPeriodName(placeholders?.shipment_period_name ?? "");

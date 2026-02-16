@@ -1,4 +1,5 @@
 "use client";
+import { getAuthInfo } from "@/lib/auth/auth";
 import { getLang } from "@/lib/i18n";
 import { Dialog, Portal, Field, Input, Button, SimpleGrid, CloseButton } from "@chakra-ui/react";
 import { useEffect, useState } from "react";
@@ -17,10 +18,23 @@ export default function CurrencyDialog({isOpen, setIsOpen, title, placeholders, 
     const [currencyID, setCurrencyID] = useState("");
     const [currencySymbol, setCurrencySymbol] = useState("");
 
-    const t = getLang("en"); 
+    //language state 
+    const [lang, setLang] = useState<"en" | "id">("en");
+    const t = getLang(lang);
+
+    const init = async () => {
+        //get info from authentication
+        const info = getAuthInfo();
+
+        //set language from token authentication
+        const language = info?.language === "id" ? "id" : "en";
+        setLang(language);
+    }
     
     useEffect(() => {
         if (!isOpen) return;
+
+        init();
 
         setCurrencyID(placeholders?.currency_id ?? "");
         setCurrencyName(placeholders?.currency_name ?? "");

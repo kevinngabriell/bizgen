@@ -5,24 +5,25 @@ import { AlertMessage } from "@/components/ui/alert";
 import SidebarWithHeader from "@/components/ui/SidebarWithHeader";
 import { checkAuthOrRedirect, DecodedAuthToken, getAuthInfo } from "@/lib/auth/auth";
 import { getLang } from "@/lib/i18n";
-import { createTerm, deleteTerm, getAllTerm, GetTermData, updateTerm } from "@/lib/master/term";
+import { createPort, deletePort, getAllPort, GetPortData, updatePort, UpdatePortData } from "@/lib/master/port";
+import { getAllSupplier } from "@/lib/master/supplier";
 import { Button, ButtonGroup, CloseButton, Dialog, Flex, Heading, IconButton, Input, InputGroup, Pagination, Portal, Table, Text } from "@chakra-ui/react";
 import { useEffect, useState } from "react";
-import { FiEdit, FiTrash } from "react-icons/fi";
 import { LuChevronLeft, LuChevronRight, LuSearch } from "react-icons/lu";
-import TermDialog from "./termdialog";
+import PortDialog from "./portDialog";
+import { FiEdit, FiTrash } from "react-icons/fi";
 
-export default function SettingTerm(){
+export default function SettingPort(){
     const [auth, setAuth] = useState<DecodedAuthToken | null>(null);
     const [loading, setLoading] = useState(false);
-    const [isTermOpen, setIsTermOpen] = useState(false);
-    
-    const [termPage, setTermPage] = useState(1);
-    const [termPagination, setTermPagination] = useState({ total_pages: 1, page: 1 });
-    const [findTerm, setFindTerm] = useState('');
-    const [termData, setTermData] = useState<GetTermData[]>([]);
-    const [editingTerm, setEditingTerm] = useState<GetTermData | null>(null);
-    
+    const [isPortOpen, setIsPortOpen] = useState(false);
+
+    const [portPage, setPortPage] = useState(1);
+    const [portPagination, setPortPagination] = useState({ total_pages: 1, page: 1 });
+    const [findPort, setFindPort] = useState('');
+    const [portData, setPortData] = useState<GetPortData[]>([]);
+    const [editingPort, setEditingPort] = useState<GetPortData | null>(null);
+
     const [showAlert, setShowAlert] = useState(false);
     const [titlePopup, setTitlePopup] = useState('');
     const [messagePopup, setMessagePopup] = useState('');
@@ -34,7 +35,7 @@ export default function SettingTerm(){
 
     useEffect(() => {
         init();
-    }, [termPage]);
+    }, [portPage]);
 
     const init = async () => {
         setLoading(true);
@@ -52,36 +53,35 @@ export default function SettingTerm(){
         setLang(language);
 
         try {
-            const termRes = await getAllTerm(termPage, 10, findTerm);
-            setTermData(termRes.data);
-            setTermPagination((prev) => ({
+            const portRes = await getAllPort(portPage, 10, findPort);
+            setPortData(portRes.data);
+            setPortPagination((prev) => ({
                 ...prev,
-                total_pages: termRes.pagination?.total_pages || 1,
-                page: termPage,
+                total_pages: portRes.pagination?.total_pages || 1,
+                page: portPage,
             }));
 
         } catch (error: any){
-            setTermData([]);
+            setPortData([]);
 
         } finally {
             setLoading(false);
         }
-    }
-    
-    
+    }    
 
-    const handleCreateTerm = async (data: {
-        term_name: string;
+    const handleCreatePort  = async(data: {
+        port_name: string;
+        origin_id: string;
     }) => {
         try {
             setLoading(true);
-            await createTerm(data);
+            await createPort(data);
             setShowAlert(true);
             setIsSuccess(true);
             setTitlePopup(t.master.success);
-            setMessagePopup(t.term.success_term_create);
+            setMessagePopup(t.port.success_port_create);
             setTimeout(() => setShowAlert(false), 6000);
-            setIsTermOpen(false);
+            setIsPortOpen(false);
             init();
         } catch (err: any) {
             setShowAlert(true);
@@ -94,19 +94,16 @@ export default function SettingTerm(){
         }
     }
 
-    const handleUpdateTerm  = async(data: {
-        term_id: string;
-        term_name:string;
-    }) => {
+    const handleUpdatePort = async (data: UpdatePortData) =>  {
         try {
             setLoading(true);
-            await updateTerm(data);
+            await updatePort(data);
             setShowAlert(true);
             setIsSuccess(true);
             setTitlePopup(t.master.success);
-            setMessagePopup(t.term.success_term_update);
+            setMessagePopup(t.port.success_port_update);
             setTimeout(() => setShowAlert(false), 6000);
-            setIsTermOpen(false);
+            setIsPortOpen(false);
             init();
         } catch (err: any) {
             setShowAlert(true);
@@ -119,18 +116,18 @@ export default function SettingTerm(){
         }
     }
     
-    const handleOpenTermDialog = () => {
-        setIsTermOpen(true);
+    const handleOpenPortDialog = () => {
+        setIsPortOpen(true);
     };
 
-    const handleDeleteTerm = async({ term_id }: { term_id: string }) => {
+    const handleDeletePort = async({ port_id }: { port_id: string }) => {
         try {
             setLoading(true);
-            await deleteTerm(term_id);
+            await deletePort(port_id);
             setShowAlert(true);
             setIsSuccess(true);
             setTitlePopup(t.master.success);
-            setMessagePopup(t.term.success_term_delete);
+            setMessagePopup(t.port.success_port_delete);
             setTimeout(() => setShowAlert(false), 8000);
             init();
         } catch (error : any){
@@ -146,51 +143,54 @@ export default function SettingTerm(){
     }
 
     if (loading) return <Loading/>;
-    
+
     return(
         <SidebarWithHeader username={auth?.username ?? "Unknown"} daysToExpire={auth?.days_remaining ?? 0}>
             <Flex gap={2} display={"flex"} mb={"2"} mt={"2"}>
-                <Heading mb={6} width={"100%"}>{t.term.title}</Heading>
+                <Heading mb={6} width={"100%"}>{t.port.title}</Heading>
                 <Flex gap={2} alignItems={"center"}>
                     <InputGroup startElement={<LuSearch />}>
-                        <Input placeholder={t.term.search} bg={"white"} value={findTerm}
-                            onChange={(e) => setFindTerm(e.target.value)}
+                        <Input placeholder={t.port.search} bg={"white"} value={findPort}
+                            onChange={(e) => setFindPort(e.target.value)}
                             onKeyDown={(e) => {
                                 if (e.key === "Enter") {
-                                    setTermPage(1);
+                                    setPortPage(1);
                                     init();
                                 }
                             }}
                             width="250px"
                         />
                     </InputGroup>
-                    <Button bg={"#E77A1F"} color={"white"} cursor={"pointer"} onClick={handleOpenTermDialog}>{t.term.create_button}</Button>
+                    <Button bg={"#E77A1F"} color={"white"} cursor={"pointer"} onClick={handleOpenPortDialog}>{t.port.create_button}</Button>
                 </Flex>
-            </Flex>            
+            </Flex>
 
             {showAlert && <AlertMessage title={titlePopup} description={messagePopup} isSuccess={isSuccess} />}
-
-            <TermDialog 
-                isOpen={isTermOpen}
+            
+            <PortDialog 
+                isOpen={isPortOpen}
                 setIsOpen={(open) => {
-                    setIsTermOpen(open);
-                    if (!open) setEditingTerm(null);
+                    setIsPortOpen(open);
+                    if (!open) setEditingPort(null);
                 }}
-                title={editingTerm ? t.term.update_button : t.term.create_button}
-                placeholders={editingTerm ? { 
-                    term_id: editingTerm.term_id,
-                    term_name: editingTerm.term_name
+                title={editingPort ? t.port.update_button : t.port.create_button}
+                placeholders={editingPort ? { 
+                    port_id: editingPort.port_id,
+                    port_name: editingPort.port_name, 
+                    origin_id: editingPort.origin_id
                 } 
                 : undefined}
                 onSubmit={(data) => {
-                    if(editingTerm){
-                        handleUpdateTerm({
-                            term_id: data.term_id ?? editingTerm.term_id,
-                            term_name: data.term_name
+                    if(editingPort){
+                        handleUpdatePort({
+                            port_id: data.port_id ?? editingPort.port_id,
+                            port_name: editingPort.port_name, 
+                            origin_id: editingPort.origin_id
                         });
                     } else {
-                        handleCreateTerm({
-                            term_name: data.term_name
+                        handleCreatePort({
+                            port_name: data.port_name,
+                            origin_id: data.origin_id
                         });
                     }
                 }}
@@ -199,25 +199,29 @@ export default function SettingTerm(){
             <Table.Root showColumnBorder variant="outline" background={"white"} >
                 <Table.Header>
                     <Table.Row bg="bg.panel">
-                        <Table.ColumnHeader textAlign={"center"}>{t.term.term_name}</Table.ColumnHeader>
+                        <Table.ColumnHeader textAlign={"center"}>{t.port.port_name}</Table.ColumnHeader>
+                        <Table.ColumnHeader textAlign={"center"}>{t.port.origin_country}</Table.ColumnHeader>
                         <Table.ColumnHeader textAlign={"center"}>{t.master.action}</Table.ColumnHeader>
                     </Table.Row>
-                </Table.Header>        
+                </Table.Header>  
+
                 <Table.Body>
-                    {termData?.map((term) => (
-                    <Table.Row key={term.term_id}>
-                        <Table.Cell textAlign={"center"}>{term.term_name}</Table.Cell>
+                    {portData?.map((port) => (
+                    <Table.Row key={port.port_id}>
+                        <Table.Cell textAlign={"center"}>{port.port_name}</Table.Cell>
+                        <Table.Cell textAlign={"center"}>{port.origin_name}</Table.Cell>
                         <Table.Cell textAlign="center">
                             <Flex justify="center" gap={4} fontSize={"2xl"}>
-                                <FiEdit style={{ cursor: "pointer" }}
+                                <FiEdit
+                                    style={{ cursor: "pointer" }}
                                     onClick={() => {
-                                        setEditingTerm(term);
-                                        setIsTermOpen(true);
+                                        setEditingPort(port);
+                                        setIsPortOpen(true);
                                     }}
-                                />
+                                />                                
                                 <Dialog.Root>
                                     <Dialog.Trigger asChild>
-                                        <FiTrash color="red" />
+                                        <FiTrash color="red"/>
                                     </Dialog.Trigger>
                                     <Portal>
                                         <Dialog.Backdrop/>
@@ -235,7 +239,7 @@ export default function SettingTerm(){
                                                     <Dialog.ActionTrigger asChild>
                                                         <Button variant="outline">{t.delete_popup.cancel}</Button>
                                                     </Dialog.ActionTrigger>
-                                                    <Button bg={"#E77A1F"} color={"white"} cursor={"pointer"} onClick={() => handleDeleteTerm({ term_id: term.term_id })}>{t.delete_popup.delete}</Button>
+                                                    <Button bg={"red"} color={"white"} cursor={"pointer"} onClick={() => handleDeletePort({ port_id: port.port_id })}>{t.delete_popup.delete}</Button>
                                                 </Dialog.Footer>
                                                             
                                                 <Dialog.CloseTrigger asChild>
@@ -249,39 +253,36 @@ export default function SettingTerm(){
                         </Table.Cell>
                     </Table.Row>
                 ))}
-                </Table.Body>                        
+                </Table.Body>           
+
             </Table.Root>
 
             <Flex display={"flex"} justify="flex-end" alignItems={"end"} width={"100%"} mt={"3"}>
-                <Pagination.Root
-                    count={termPagination.total_pages}pageSize={1} 
-                    page={termPage} onPageChange={(details) => setTermPage(details.page)}
-                >
+                <Pagination.Root count={portPagination.total_pages}pageSize={1} page={portPage} onPageChange={(details) => setPortPage(details.page)}>
                     <ButtonGroup variant="ghost" size="sm" wrap="wrap">
-                        <Pagination.PrevTrigger asChild>
-                            <IconButton><LuChevronLeft /></IconButton>
-                        </Pagination.PrevTrigger>
+                    <Pagination.PrevTrigger asChild>
+                        <IconButton>
+                        <LuChevronLeft />
+                        </IconButton>
+                    </Pagination.PrevTrigger>
 
-                        <Pagination.Items
-                            render={(page) => (
-                                <IconButton
-                                    key={page.value}
-                                    variant={page.value === termPage ? "outline" : "ghost"} onClick={() => setTermPage(page.value)}
-                                >
-                                    {page.value}
-                                </IconButton>
-                            )}
-                        />
+                    <Pagination.Items
+                        render={(page) => (
+                            <IconButton key={page.value} variant={page.value === portPage ? "outline" : "ghost"} onClick={() => setPortPage(page.value)}>{page.value} </IconButton>
+                        )}
+                    />
 
-                        <Pagination.NextTrigger asChild>
-                            <IconButton><LuChevronRight /></IconButton>
-                        </Pagination.NextTrigger>
+                    <Pagination.NextTrigger asChild>
+                        <IconButton>
+                        <LuChevronRight />
+                        </IconButton>
+                    </Pagination.NextTrigger>
                     </ButtonGroup>
                 </Pagination.Root>
-            </Flex> 
+
+            </Flex>          
 
         </SidebarWithHeader>
-        // settings
-
     );
+
 }

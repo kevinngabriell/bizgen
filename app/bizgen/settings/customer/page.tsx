@@ -28,7 +28,9 @@ export default function SettingCustomer(){
     const [messagePopup, setMessagePopup] = useState('');
     const [isSuccess, setIsSuccess] = useState(false);
 
-    const t = getLang("en"); 
+    //language state 
+    const [lang, setLang] = useState<"en" | "id">("en");
+    const t = getLang(lang);
 
     useEffect(() => {
         init();
@@ -37,11 +39,17 @@ export default function SettingCustomer(){
     const init = async () => {
         setLoading(true);
         
+        //check authentication redirect
         const valid = await checkAuthOrRedirect();
         if(!valid) return;
         
+        //get info from authentication
         const info = getAuthInfo();
         setAuth(info);
+
+        //set language from token authentication
+        const language = info?.language === "id" ? "id" : "en";
+        setLang(language);
 
         try {
             const customerRes = await getAllCustomer(customerPage, 10, findCustomer);
@@ -58,8 +66,6 @@ export default function SettingCustomer(){
             setLoading(false);
         }
     }
-
-    if (loading) return <Loading/>;
 
     const handleCreateCustomerData = async(data : {
         customer_name: string;
@@ -147,6 +153,8 @@ export default function SettingCustomer(){
             setLoading(false);
         }
     }
+
+    if (loading) return <Loading/>;
 
     return(
         <SidebarWithHeader username={auth?.username ?? "Unknown"} daysToExpire={auth?.days_remaining ?? 0}>

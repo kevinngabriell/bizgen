@@ -1,5 +1,6 @@
 "use client";
 
+import { getAuthInfo } from "@/lib/auth/auth";
 import { getLang } from "@/lib/i18n";
 import { Button, CloseButton, Dialog, Field, Input, Portal, SimpleGrid } from "@chakra-ui/react";
 import { useEffect, useState } from "react";
@@ -30,10 +31,23 @@ export default function UOMDialog({
     const [uomName, setUOMName] = useState("");
     const [conversionFactor, setConversionFactor] = useState<number>(0);
 
-    const t = getLang("en"); 
+    //language state 
+    const [lang, setLang] = useState<"en" | "id">("en");
+    const t = getLang(lang);
+
+    const init = async () => {
+        //get info from authentication
+        const info = getAuthInfo();
+
+        //set language from token authentication
+        const language = info?.language === "id" ? "id" : "en";
+        setLang(language);
+    }
 
     useEffect(() => {
         if (!isOpen) return;
+
+        init();
             
         setUOMID(placeholders?.uom_id ?? "");
         setUOMName(placeholders?.uom_name ?? "");
@@ -55,22 +69,12 @@ export default function UOMDialog({
                             <SimpleGrid columns={{ base: 1, md: 1, lg: 1 }} gap="20px">
                                 <Field.Root w={{base: "100%", md: "100%", lg: "100%"}}>
                                     <Field.Label>{t.uom.uom_name}</Field.Label>
-                                    <Input 
-                                        placeholder={t.uom.uom_name_placeholder} 
-                                        value={uomName} 
-                                        onChange={(e) => setUOMName(e.target.value)}
-                                    />
+                                    <Input placeholder={t.uom.uom_name_placeholder} value={uomName} onChange={(e) => setUOMName(e.target.value)}/>
                                 </Field.Root>  
 
                                 <Field.Root w={{base: "100%", md: "100%", lg: "100%"}}>
                                     <Field.Label>{t.uom.conversion_factor}</Field.Label>
-                                    <Input 
-                                        type="number"
-                                        step="any" 
-                                        placeholder={t.uom.conversion_factor_placeholder}
-                                        value={conversionFactor}
-                                        onChange={(e) => setConversionFactor(parseFloat(e.target.value) || 0)}
-                                    />
+                                    <Input type="number" step="any" placeholder={t.uom.conversion_factor_placeholder} value={conversionFactor} onChange={(e) => setConversionFactor(parseFloat(e.target.value) || 0)}/>
                                 </Field.Root>                               
                             </SimpleGrid>
                         </Dialog.Body>

@@ -92,7 +92,9 @@ export const id = {
         ship: "Metode Pengiriman",
         ship_description: "Kelola metode pengiriman seperti udara, laut, atau darat.",
         uom: "Satuan",
-        uom_description: "Kelola satuan pengukuran yang digunakan pada produk dan transaksi."
+        uom_description: "Kelola satuan pengukuran yang digunakan pada produk dan transaksi.",
+        port: "Pelabuhan",
+        port_description: "Kelola data master pelabuhan termasuk nama pelabuhan serta negara atau wilayah asal untuk mendukung transaksi pengiriman dan logistik."
     },
     products: {
         title: "Master Data Produk",
@@ -121,6 +123,9 @@ export const id = {
         error: "Gagal",
         error_msg: "Terjadi kesalahan",
         action: "Aksi",
+        create_new_button : "+ Tambah baru",
+        create_new : "Tambah baru",
+        see_all : "Lihat Semua" 
     },
     customer: {
         title: "Data Master Customer",
@@ -296,6 +301,21 @@ export const id = {
         success_origin_update: "Negara asal berhasil diperbarui",
         success_origin_delete: "Negara asal berhasil dihapus"
     },
+    port: {
+      title: "Pelabuhan",
+      create_button: "Tambah Pelabuhan",
+      update_button: "Ubah Pelabuhan",
+      port_name: "Nama Pelabuhan",
+      port_name_placeholder: "Masukkan nama pelabuhan",
+      origin_country: "Negara Asal",
+      origin_country_placeholder: "Pilih negara asal",
+      port_code: "Kode Pelabuhan",
+      port_code_placeholder: "Masukkan kode pelabuhan (contoh: IDJKT)",
+      search: "Cari pelabuhan...",
+      success_port_create: "Pelabuhan berhasil dibuat",
+      success_port_update: "Pelabuhan berhasil diperbarui",
+      success_port_delete: "Pelabuhan berhasil dihapus"
+  },
     purchaseModule: {
         title: "Modul Pembelian",
         request_quotation: {
@@ -322,5 +342,304 @@ export const id = {
             title: "Faktur Pembelian",
             description: "Daftarkan dokumen tagihan dari supplier",
         },
-    }
+    },
+    purchase_invoice: {
+  title: "Buat Faktur Pembelian",
+  invoice_details: "Detail Faktur",
+
+  supplier: "Pemasok",
+  supplier_placeholder: "Pilih atau cari pemasok",
+
+  invoice_number: "Nomor Faktur",
+  invoice_number_placeholder: "Masukkan nomor faktur",
+
+  invoice_date: "Tanggal Faktur",
+  due_date: "Tanggal Jatuh Tempo",
+
+  currency: "Mata Uang",
+  exchange_rate: "Kurs",
+
+  po_reference: "Referensi PO",
+  po_reference_placeholder: "Opsional — hubungkan ke purchase order",
+
+  notes: "Catatan",
+  notes_placeholder: "Informasi tambahan",
+
+  invoice_items: "Item Faktur",
+  add_item: "Tambah Item",
+
+  description: "Deskripsi",
+  description_placeholder: "Deskripsi barang",
+
+  qty: "Jumlah",
+  uom: "Satuan",
+  unit_price: "Harga Satuan",
+  tax_percent: "Pajak %",
+  line_total: "Total Baris",
+
+  subtotal: "Subtotal",
+  tax: "Pajak",
+  grand_total: "Total Akhir",
+
+  save_draft: "Simpan sebagai Draft",
+  post_invoice: "Posting Faktur",
+
+  delete: "Hapus",
+
+  success_create: "Faktur pembelian berhasil dibuat.",
+  success_post: "Faktur pembelian berhasil diposting."
+},
+purchase_import: {
+  title: "Buat Pembelian Impor",
+
+  purchase_details: "Detail Pembelian",
+  po_number: "Nomor PO",
+  po_number_placeholder: "Otomatis / Manual",
+
+  po_date: "Tanggal PO",
+  supplier: "Pemasok",
+  supplier_placeholder: "Pilih pemasok",
+
+  import_details: "Detail Impor",
+
+  currency: "Mata Uang",
+  currency_placeholder: "Pilih mata uang",
+
+  exchange_rate: "Kurs (ke IDR)",
+
+  incoterm: "Incoterm",
+  incoterm_placeholder: "Pilih incoterm",
+
+  port_of_loading: "Pelabuhan Muat",
+  port_of_loading_placeholder: "Pilih pelabuhan muat",
+
+  port_of_discharge: "Pelabuhan Bongkar",
+  port_of_discharge_placeholder: "Pilih pelabuhan bongkar",
+
+  freight_cost: "Biaya Pengiriman",
+  customs_cost: "Biaya Bea Masuk / Pajak Impor",
+
+  items: "Item",
+  add_item: "Tambah Item",
+  delete_item: "Hapus Item",
+
+  sku: "SKU",
+  description: "Deskripsi",
+  qty: "Jumlah",
+  unit_price: "Harga Satuan",
+
+  line_total: "Total Baris",
+
+  cost_summary: "Ringkasan Biaya",
+  items_subtotal: "Subtotal Item",
+  freight_customs: "Pengiriman + Bea Masuk",
+  landed_cost: "Total Landed Cost",
+  local_currency: "Mata Uang Lokal (IDR)",
+
+  save_draft: "Simpan sebagai Draft",
+  submit_purchase: "Submit Pembelian",
+
+  success_create: "Pembelian impor berhasil dibuat."
+},
+purchase_local: {
+  title: "Buat Pembelian Lokal",
+
+  purchase_details: "Detail Pembelian",
+  po_number: "Nomor PO",
+  po_number_placeholder: "Otomatis / Manual",
+
+  po_date: "Tanggal PO",
+
+  supplier: "Pemasok",
+  supplier_placeholder: "Pilih pemasok",
+
+  currency: "Mata Uang",
+  currency_placeholder: "Pilih mata uang",
+
+  payment_terms: "Termin Pembayaran",
+  payment_terms_placeholder: "contoh: Net 30, Tunai",
+
+  notes: "Catatan",
+  notes_placeholder: "Catatan tambahan",
+
+  purchase_items: "Item Pembelian",
+  add_item: "Tambah Item",
+  delete_item: "Hapus Item",
+
+  description: "Deskripsi",
+  qty: "Jumlah",
+  uom: "Satuan",
+  unit_price: "Harga Satuan",
+  remarks: "Keterangan",
+
+  subtotal: "Subtotal",
+
+  save_draft: "Simpan sebagai Draft",
+  submit_purchase: "Submit Pembelian",
+
+  success_create: "Pembelian lokal berhasil dibuat."
+},
+sales_module : {
+    title: "Modul Penjualan",
+    subtitle:
+      "Kelola seluruh siklus komersial — dari Inquiry hingga Invoice — dengan alur kerja yang terstruktur.",
+    create_new: "+ Buat Baru",
+
+    inquiry: {
+      title: "Inquiry / RFQ",
+      badge: "Mulai dari sini",
+      description:
+        "Catat permintaan pelanggan, detail pengiriman, dan ruang lingkup layanan sebelum penentuan harga.",
+      see_all: "Lihat Semua",
+      create: "Buat",
+      last_records: "3 data terakhir",
+    },
+
+    quotation: {
+      title: "Quotation",
+      badge: "Penawaran Harga",
+      description:
+        "Susun struktur biaya, margin, dan buat penawaran untuk pelanggan.",
+      see_all: "Lihat Semua",
+      create: "Buat",
+      last_records: "3 data terakhir",
+    },
+
+    booking: {
+      title: "Booking Confirmation / Job Order",
+      badge: "Dikonfirmasi",
+      description:
+        "Ubah quotation yang disetujui menjadi pekerjaan operasional dengan nomor job unik.",
+      see_all: "Lihat Semua",
+      create: "Buat",
+      last_records: "3 data terakhir",
+    },
+
+    shipment: {
+      title: "Proses Pengiriman & Dokumen",
+      badge: "Operasional",
+      description:
+        "Kelola BL, DO, manifest, dokumen kepabeanan, dan milestone pengiriman.",
+      see_all: "Lihat Semua",
+      update: "Perbarui",
+      last_records: "3 data terakhir",
+    },
+
+    costing: {
+      title: "Pencatatan Biaya & Aktualisasi",
+      badge: "Sinkronisasi Finance",
+      description:
+        "Catat biaya operasional aktual dan bandingkan dengan margin pada quotation.",
+      see_all: "Lihat Semua",
+      record: "Catat",
+      last_records: "3 data terakhir",
+    },
+
+    sales_order: {
+      title: "Sales Order",
+      badge: "Komersial",
+      description:
+        "Ubah hasil pekerjaan operasional menjadi layanan yang dapat ditagihkan.",
+      see_all: "Lihat Semua",
+      generate: "Generate",
+      last_records: "3 data terakhir",
+    },
+
+    delivery: {
+      title: "Delivery Order / SPPB",
+      badge: "Release",
+      description:
+        "Terbitkan dokumen pengiriman atau persetujuan bea cukai setelah kargo cleared.",
+      see_all: "Lihat Semua",
+      issue: "Terbitkan",
+      last_records: "3 data terakhir",
+    },
+
+    profit: {
+      title: "Ringkasan Profit",
+      badge: "Analisis",
+      description:
+        "Lihat profitabilitas job berdasarkan perbandingan pendapatan dan biaya aktual.",
+      see_all: "Lihat Semua",
+      view: "Lihat",
+      last_records: "3 data terakhir",
+    },
+
+    invoice: {
+      title: "Invoice",
+      badge: "Penagihan",
+      description:
+        "Buat invoice dari Sales Order dengan dukungan pajak dan multi-mata uang.",
+      see_all: "Lihat Semua",
+      create: "Buat",
+      last_records: "3 data terakhir",
+    },
+  },
+  sales_inquiry: {
+  title_create: "Buat Inquiry",
+  title_view: "Detail Inquiry",
+  title_edit: "Edit Inquiry",
+
+  inquiry_no: "Nomor Inquiry",
+  inquiry_no_placeholder: "Otomatis atau isi manual",
+
+  customer_name: "Customer",
+  customer_placeholder: "Pilih customer",
+
+  contact_person: "PIC / Kontak",
+  contact_person_placeholder: "Masukkan nama PIC",
+
+  phone: "Telepon / WhatsApp",
+  phone_placeholder: "Masukkan nomor telepon",
+
+  shipment_type: "Metode Pengiriman",
+  shipment_type_placeholder: "Pilih metode pengiriman",
+
+  origin_country: "Negara Asal",
+  origin_country_placeholder: "Pilih negara asal",
+
+  destination_country: "Negara Tujuan",
+  destination_country_placeholder: "Pilih negara tujuan",
+
+  commodity: "Komoditas",
+  commodity_placeholder: "Masukkan jenis barang",
+
+  incoterm: "Incoterm",
+  incoterm_placeholder: "Pilih incoterm",
+
+  remarks: "Catatan / Instruksi Khusus",
+  remarks_placeholder: "Tambahkan catatan atau instruksi khusus",
+
+  item_list_title: "Daftar Barang / Komoditas",
+  item_list_description:
+    "Tambahkan satu atau lebih barang. Data ini akan digunakan untuk proses penawaran dan operasional.",
+
+  add_item: "Tambah Barang",
+
+  item_name: "Nama Barang",
+  item_name_placeholder: "Masukkan nama barang",
+
+  hs_code: "Kode HS",
+  hs_code_placeholder: "Masukkan kode HS",
+
+  qty: "Jumlah",
+  qty_placeholder: "Masukkan jumlah",
+
+  unit: "Satuan",
+  unit_placeholder: "Pilih satuan",
+
+  weight: "Berat (KG)",
+  weight_placeholder: "Masukkan berat",
+
+  cbm: "Volume (CBM)",
+  cbm_placeholder: "Masukkan volume",
+
+  packaging: "Jenis Kemasan",
+  packaging_placeholder: "Contoh: Karton, Palet, Drum",
+
+  save_draft: "Simpan Draft",
+  submit: "Kirim Inquiry",
+  edit: "Edit",
+  export_pdf: "Export PDF"
+}
 };

@@ -1,5 +1,6 @@
 "use client";
 
+import { getAuthInfo } from "@/lib/auth/auth";
 import { getLang } from "@/lib/i18n";
 import { Dialog, Portal, Field, Input, Button, SimpleGrid, CloseButton, Select, createListCollection } from "@chakra-ui/react";
 import { useEffect, useState } from "react";
@@ -37,7 +38,18 @@ export default function AccountCodeDialog({title, isOpen, setIsOpen, placeholder
   const [accountType, setAccountType] = useState("");
   const [parentAccountCodeID, setParentAccountCodeID] = useState("");
 
-  const t = getLang("en"); 
+  //language state 
+  const [lang, setLang] = useState<"en" | "id">("en");
+   const t = getLang(lang);
+
+  const init = async () => {
+    //get info from authentication
+    const info = getAuthInfo();
+
+    //set language from token authentication
+    const language = info?.language === "id" ? "id" : "en";
+    setLang(language);
+  }
 
   const accountTypeCollection = createListCollection({
     items: [
@@ -51,6 +63,8 @@ export default function AccountCodeDialog({title, isOpen, setIsOpen, placeholder
 
   useEffect(() => {
     if(!isOpen) return;
+
+    init();
 
     setAccountCodeID(placeholders?.account_code_id ?? "");
     setAccountCode(placeholders?.account_code ?? "");

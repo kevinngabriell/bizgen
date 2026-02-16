@@ -28,7 +28,9 @@ export default function SettingShipVia(){
     const [messagePopup, setMessagePopup] = useState('');
     const [isSuccess, setIsSuccess] = useState(false);
 
-    const t = getLang("en"); 
+    //language state 
+    const [lang, setLang] = useState<"en" | "id">("en");
+    const t = getLang(lang);
      
     useEffect(() => {
         init();
@@ -37,11 +39,17 @@ export default function SettingShipVia(){
     const init = async () => {
         setLoading(true);
 
+        //check authentication redirect
         const valid = await checkAuthOrRedirect();
         if(!valid) return;
 
+        //get info from authentication
         const info = getAuthInfo();
         setAuth(info);
+
+        //set language from token authentication
+        const language = info?.language === "id" ? "id" : "en";
+        setLang(language);
 
         try {
             const shipViaRes = await getAllShipVia(shipViaPage, 10, findShipVia);
@@ -59,8 +67,6 @@ export default function SettingShipVia(){
             setLoading(false);
         }
     }
-
-    if (loading) return <Loading/>;
 
     const handleCreateShipVia = async (data: {
         ship_via_name: string;
@@ -136,22 +142,22 @@ export default function SettingShipVia(){
             setLoading(false);
         }
     }
-    
+
+    if (loading) return <Loading/>;
+
     return(
         <SidebarWithHeader username={auth?.username ?? "Unknown"} daysToExpire={auth?.days_remaining ?? 0}>
             <Flex gap={2} display={"flex"} mb={"2"} mt={"2"}>
                 <Heading mb={6} width={"100%"}>{t.ship_via.title}</Heading>
                 <Flex gap={2} alignItems={"center"}>
                     <InputGroup startElement={<LuSearch />}>
-                        <Input placeholder={t.ship_via.search} bg={"white"} value={findShipVia}
-                            onChange={(e) => setFindShipVia(e.target.value)}
+                        <Input placeholder={t.ship_via.search} bg={"white"} value={findShipVia} onChange={(e) => setFindShipVia(e.target.value)}
                             onKeyDown={(e) => {
                                 if (e.key === "Enter") {
                                     SetShipViaPage(1);
                                     init();
                                 }
-                            }}
-                            width="250px"
+                            }} width="250px"
                         />
                     </InputGroup>
                     <Button bg={"#E77A1F"} color={"white"} cursor={"pointer"} onClick={handleOpenShipViaDialog}>{t.ship_via.create_button}</Button>
@@ -239,21 +245,14 @@ export default function SettingShipVia(){
             </Table.Root>          
 
             <Flex display={"flex"} justify="flex-end" alignItems={"end"} width={"100%"} mt={"3"}>
-                <Pagination.Root
-                    count={shipViaPagination.total_pages}pageSize={1} 
-                    page={shipViaPage} onPageChange={(details) => SetShipViaPage(details.page)}
-                >
+                <Pagination.Root count={shipViaPagination.total_pages}pageSize={1} page={shipViaPage} onPageChange={(details) => SetShipViaPage(details.page)}>
                     <ButtonGroup variant="ghost" size="sm" wrap="wrap">
                         <Pagination.PrevTrigger asChild>
                             <IconButton><LuChevronLeft /></IconButton>
                         </Pagination.PrevTrigger>
 
-                        <Pagination.Items
-                            render={(page) => (
-                                <IconButton
-                                    key={page.value}
-                                    variant={page.value === shipViaPage ? "outline" : "ghost"} onClick={() => SetShipViaPage(page.value)}
-                                >
+                        <Pagination.Items render={(page) => (
+                                <IconButton key={page.value} variant={page.value === shipViaPage ? "outline" : "ghost"} onClick={() => SetShipViaPage(page.value)}>
                                     {page.value}
                                 </IconButton>
                             )}

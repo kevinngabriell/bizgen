@@ -44,8 +44,6 @@ export default function CreateQuotation() {
     }
   }
     
-  if (loading) return <Loading/>;
-  
   const [items, setItems] = useState<QuotationItem[]>([
     { id: crypto.randomUUID(), product: "", description: "", qty: 1, unitPrice: 0 },
   ]);
@@ -60,12 +58,14 @@ export default function CreateQuotation() {
   const removeItem = (id: string) => {
     setItems(items.filter((i) => i.id !== id));
   };
+  
+  if (loading) return <Loading/>;
 
   return (
     <SidebarWithHeader username={auth?.username ?? "Unknown"} daysToExpire={auth?.days_remaining ?? 0}>
       <Heading size="lg" mb={4}>Create Quotation</Heading>
 
-      <Card.Root p={6} gap={6}>
+      <Card.Root gap={6}>
         <Card.Body>
           <SimpleGrid columns={{ base: 1, md: 2 }} gap={9}>
             <Stack>
@@ -98,13 +98,12 @@ export default function CreateQuotation() {
                 <Field.Label>Quotation Date</Field.Label>
                 <Input type="date" placeholder="Quotation Date" />
               </Field.Root>
-              {/* <Select placeholder="Currency">
-                <option value="usd">USD</option>
-                <option value="idr">IDR</option>
-              </Select>
-              <Select placeholder="Linked Inquiry (optional)">
-                <option value="inq-001">INQ-001</option>
-              </Select> */}
+              <Field.Root>
+                <Field.Label>Currency</Field.Label>
+              </Field.Root>
+              <Field.Root>
+                <Field.Label>Linked Inquiry (optional)</Field.Label>
+              </Field.Root>
             </Stack>
           </SimpleGrid>
 
@@ -112,7 +111,7 @@ export default function CreateQuotation() {
 
           <Flex justify="space-between" align="center" mb={4}>
             <Text fontWeight="semibold">Quotation Items</Text>
-            <Button  size="sm" onClick={addItem}>Add Item</Button>
+            <Button size="sm" bg="#E77A1F" color="white"  onClick={addItem}>Add Item</Button>
           </Flex>
 
           {items.map((item) => (
@@ -137,8 +136,8 @@ export default function CreateQuotation() {
 
           <Flex justify="flex-end" gap={3}>
             <Button variant="outline">Cancel</Button>
-            <Button colorScheme="purple">Save Draft</Button>
-            <Button colorScheme="green">Save & Generate PDF</Button>
+            <Button bg="#E77A1F" color="white" >Save Draft</Button>
+            <Button bg="#E77A1F" color="white" >Save & Generate PDF</Button>
           </Flex>
         </Card.Body>
       </Card.Root>

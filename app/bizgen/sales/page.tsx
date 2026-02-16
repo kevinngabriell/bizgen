@@ -3,6 +3,7 @@
 import Loading from "@/components/loading";
 import SidebarWithHeader from "@/components/ui/SidebarWithHeader";
 import { DecodedAuthToken, checkAuthOrRedirect, getAuthInfo } from "@/lib/auth/auth";
+import { getLang } from "@/lib/i18n";
 import { Button, Card, Flex, Heading, Text, SimpleGrid, Badge, Icon } from "@chakra-ui/react";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
@@ -13,6 +14,10 @@ export default function Sales (){
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
+  //language state 
+  const [lang, setLang] = useState<"en" | "id">("en");
+  const t = getLang(lang);
+
   useEffect(() => {
     init();
   }, []);
@@ -20,19 +25,19 @@ export default function Sales (){
   const init = async () => {
     setLoading(true);
 
+    //check authentication redirect
     const valid = await checkAuthOrRedirect();
     if(!valid) return;
 
+    //get info from authentication
     const info = getAuthInfo();
     setAuth(info);
 
-    try {
+    //set language from token authentication
+    const language = info?.language === "id" ? "id" : "en";
+    setLang(language);
 
-    } catch (error: any){
-
-    } finally {
-      setLoading(false);
-    }
+    setLoading(false);
   }
     
   if (loading) return <Loading/>;
@@ -61,33 +66,44 @@ export default function Sales (){
     router.push('/bizgen/sales/sales-order');
   }
 
+  const handleDirectToDeliveryOrder = () => {
+    router.push('/bizgen/sales/delivery-order');
+  }
+
+  const handleDirectToProfitSummary = () => {
+    router.push('/bizgen/sales/profit-summary');
+  }
+
+  const handleDirectToInvoice= () => {
+    router.push('/bizgen/sales/invoice');
+  }
 
     return (
       <SidebarWithHeader username={auth?.username ?? "Unknown"} daysToExpire={auth?.days_remaining ?? 0}>
-          <Flex gap={2} mb="6" mt="2" alignItems="center" justifyContent="space-between">
-            <Heading>Sales Module</Heading>
-            <Button bg={"#E77A1F"} color={"white"} cursor={"pointer"}>+ Create New</Button>
+          {/* title, subtitle, and create new button */}
+          <Flex gap={2} mb={2} mt="2" alignContent="center" justifyContent="space-between">
+            <Flex flexDir={"column"}>
+              <Heading>{t.sales_module.title}</Heading>
+              <Text fontSize="sm" color="gray.500" mb="8">{t.sales_module.subtitle}</Text>
+            </Flex>
+            <Button bg={"#E77A1F"} color={"white"} cursor={"pointer"}>{t.sales_module.create_new}</Button>
           </Flex>
-
-          <Text fontSize="sm" color="gray.500" mb="8">
-            Manage the full commercial lifecycle — from Inquiry to Invoice — with a guided, step‑by‑step workflow.
-          </Text>
-
+          {/* Grid for all menus */}
           <SimpleGrid columns={{ base: 1, md: 1, lg: 2 }} gap={8}>
+            {/* Inquiry card */}
             <Card.Root>
               <Card.Body>
+                {/* Inquiry title and badge */}
                 <Flex align="center" mb="3" gap={2}>
                   <Icon as={FiFolder} />
-                  <Heading size="md" flex="1">Inquiry / RFQ</Heading>
-                  <Badge colorScheme="purple">Start here</Badge>
+                  <Heading size="md" flex="1">{t.sales_module.inquiry.title}</Heading>
+                  <Badge color="purple">{t.sales_module.inquiry.badge}</Badge>
                 </Flex>
-                <Text fontSize="sm" color="gray.600" mb="4">
-                  Capture customer requests, shipment details, and service scope before pricing.
-                </Text>
+                <Text fontSize="sm" color="gray.600" mb="4">{t.sales_module.inquiry.description}</Text>
+                
                 <Flex direction="column" gap={2} mb="3">
-                  <Text fontSize="xs" fontWeight="semibold" color="gray.500">
-                    Last 3 records
-                  </Text>
+                  <Text fontSize="xs" fontWeight="semibold" color="gray.500">{t.sales_module.inquiry.last_records}</Text>
+                  {/* Sample data for inquiry */}
                   <Flex direction="column" gap={1}>
                     <Flex justify="space-between">
                       <Text fontSize="xs" color="gray.600" maxLines={1}>Sample item #1</Text>
@@ -102,28 +118,31 @@ export default function Sales (){
                       <Badge colorScheme="gray" variant="subtle">2d ago</Badge>
                     </Flex>
                   </Flex>
+                  {/* Sample data for inquiry */}
                 </Flex>
+
                 <Flex justify="space-between">
-                  <Button size="sm" bg={"transparent"} borderColor={"#E77A1F"} color={"#E77A1F"} cursor={"pointer"}>See All</Button>
-                  <Button size="sm" bg={"#E77A1F"} color={"white"} cursor={"pointer"} onClick={handleDirectToDetailInquiry} >Create</Button>
+                  <Button size="sm" bg={"transparent"} borderColor={"#E77A1F"} color={"#E77A1F"} cursor={"pointer"}>{t.sales_module.inquiry.see_all}</Button>
+                  <Button size="sm" bg={"#E77A1F"} color={"white"} cursor={"pointer"} onClick={handleDirectToDetailInquiry} >{t.sales_module.inquiry.create}</Button>
                 </Flex>
               </Card.Body>
             </Card.Root>
-
+            {/* Quotation card */}
             <Card.Root>
               <Card.Body>
+                {/* Quotation title and badge */}
                 <Flex align="center" mb="3" gap={2}>
                   <Icon as={FiFileText} />
-                  <Heading size="md" flex="1">Quotation</Heading>
-                  <Badge colorScheme="gray">Pricing</Badge>
+                  <Heading size="md" flex="1">{t.sales_module.quotation.title}</Heading>
+                  <Badge color="gray">{t.sales_module.quotation.badge}</Badge>
                 </Flex>
-                <Text fontSize="sm" color="gray.600" mb="4">
-                  Build cost structure, margin, and generate customer quotation.
-                </Text>
+
+                <Text fontSize="sm" color="gray.600" mb="4">{t.sales_module.quotation.description}</Text>
+                
                 <Flex direction="column" gap={2} mb="3">
-                  <Text fontSize="xs" fontWeight="semibold" color="gray.500">
-                    Last 3 records
-                  </Text>
+                  <Text fontSize="xs" fontWeight="semibold" color="gray.500">{t.sales_module.quotation.last_records}</Text>
+                  
+                  {/* Sample data for quotation */}
                   <Flex direction="column" gap={1}>
                     <Flex justify="space-between">
                       <Text fontSize="xs" color="gray.600" maxLines={1}>Sample item #1</Text>
@@ -139,27 +158,29 @@ export default function Sales (){
                     </Flex>
                   </Flex>
                 </Flex>
+
                 <Flex justify="space-between">
-                  <Button size="sm" bg={"transparent"} borderColor={"#E77A1F"} color={"#E77A1F"} cursor={"pointer"}>See All</Button>
-                  <Button size="sm" bg={"#E77A1F"} color={"white"} cursor={"pointer"} onClick={handleDirectToDetailQuotation}>Create</Button>
+                  <Button size="sm" bg={"transparent"} borderColor={"#E77A1F"} color={"#E77A1F"} cursor={"pointer"}>{t.sales_module.quotation.see_all}</Button>
+                  <Button size="sm" bg={"#E77A1F"} color={"white"} cursor={"pointer"} onClick={handleDirectToDetailQuotation}>{t.sales_module.quotation.create}</Button>
                 </Flex>
               </Card.Body>
             </Card.Root>
-
+            {/* Booking Confirmation card */}
             <Card.Root>
               <Card.Body>
+                {/* Booking Confirmation title and badge */}
                 <Flex align="center" mb="3" gap={2}>
                   <Icon as={FiCheckSquare} />
-                  <Heading size="md" flex="1">Booking Confirmation / Job Order</Heading>
-                  <Badge colorScheme="green">Confirmed</Badge>
+                  <Heading size="md" flex="1">{t.sales_module.booking.title}</Heading>
+                  <Badge color="green">{t.sales_module.booking.badge}</Badge>
                 </Flex>
-                <Text fontSize="sm" color="gray.600" mb="4">
-                  Convert approved quotes into operational jobs with unique job numbers.
-                </Text>
+
+                <Text fontSize="sm" color="gray.600" mb="4">{t.sales_module.booking.description}</Text>
+
                 <Flex direction="column" gap={2} mb="3">
-                  <Text fontSize="xs" fontWeight="semibold" color="gray.500">
-                    Last 3 records
-                  </Text>
+                  <Text fontSize="xs" fontWeight="semibold" color="gray.500">{t.sales_module.booking.last_records}</Text>
+
+                  {/* Sample data for booking confirmation */}
                   <Flex direction="column" gap={1}>
                     <Flex justify="space-between">
                       <Text fontSize="xs" color="gray.600" maxLines={1}>Sample item #1</Text>
@@ -175,27 +196,29 @@ export default function Sales (){
                     </Flex>
                   </Flex>
                 </Flex>
+
                 <Flex justify="space-between">
-                  <Button size="sm" bg={"transparent"} borderColor={"#E77A1F"} color={"#E77A1F"} cursor={"pointer"}>See All</Button>
-                  <Button size="sm" bg={"#E77A1F"} color={"white"} cursor={"pointer"} onClick={handleDirectToBooking}>Create</Button>
+                  <Button size="sm" bg={"transparent"} borderColor={"#E77A1F"} color={"#E77A1F"} cursor={"pointer"}>{t.sales_module.booking.see_all}</Button>
+                  <Button size="sm" bg={"#E77A1F"} color={"white"} cursor={"pointer"} onClick={handleDirectToBooking}>{t.sales_module.booking.create}</Button>
                 </Flex>
               </Card.Body>
             </Card.Root>
-
+            {/* Shipment card */}
             <Card.Root>
               <Card.Body>
+                {/* Shipment title and badge */}
                 <Flex align="center" mb="3" gap={2}>
                   <Icon as={FiClipboard} />
-                  <Heading size="md" flex="1">Shipment Processing & Documents</Heading>
-                  <Badge colorScheme="blue">Operations</Badge>
+                  <Heading size="md" flex="1">{t.sales_module.shipment.title}</Heading>
+                  <Badge color="blue">{t.sales_module.shipment.badge}</Badge>
                 </Flex>
-                <Text fontSize="sm" color="gray.600" mb="4">
-                  Manage BL, DO, manifest, customs docs, and shipment milestones.
-                </Text>
+
+                <Text fontSize="sm" color="gray.600" mb="4">{t.sales_module.shipment.description}</Text>
+
                 <Flex direction="column" gap={2} mb="3">
-                  <Text fontSize="xs" fontWeight="semibold" color="gray.500">
-                    Last 3 records
-                  </Text>
+                  <Text fontSize="xs" fontWeight="semibold" color="gray.500">{t.sales_module.shipment.last_records}</Text>
+
+                  {/* Sample data for shipment */}
                   <Flex direction="column" gap={1}>
                     <Flex justify="space-between">
                       <Text fontSize="xs" color="gray.600" maxLines={1}>Sample item #1</Text>
@@ -211,27 +234,27 @@ export default function Sales (){
                     </Flex>
                   </Flex>
                 </Flex>
+
                 <Flex justify="space-between">
-                  <Button size="sm" bg={"transparent"} borderColor={"#E77A1F"} color={"#E77A1F"} cursor={"pointer"}>See All</Button>
-                  <Button size="sm" bg={"#E77A1F"} color={"white"} cursor={"pointer"} onClick={handleDirectToShipment}>Update</Button>
+                  <Button size="sm" bg={"transparent"} borderColor={"#E77A1F"} color={"#E77A1F"} cursor={"pointer"}>{t.sales_module.shipment.see_all}</Button>
+                  <Button size="sm" bg={"#E77A1F"} color={"white"} cursor={"pointer"} onClick={handleDirectToShipment}>{t.sales_module.shipment.update}</Button>
                 </Flex>
               </Card.Body>
             </Card.Root>
-
+            {/* Costing card */}
             <Card.Root>
               <Card.Body>
+                {/* Costing title and badge */}
                 <Flex align="center" mb="3" gap={2}>
                   <Icon as={FiDollarSign} />
-                  <Heading size="md" flex="1">Costing & Expense Capture (Actualization)</Heading>
-                  <Badge colorScheme="orange">Finance Sync</Badge>
+                  <Heading size="md" flex="1">{t.sales_module.costing.title}</Heading>
+                  <Badge color="orange">{t.sales_module.costing.badge}</Badge>
                 </Flex>
-                <Text fontSize="sm" color="gray.600" mb="4">
-                  Record real operational costs and compare vs quotation margin.
-                </Text>
+                <Text fontSize="sm" color="gray.600" mb="4">{t.sales_module.costing.description}</Text>
+
                 <Flex direction="column" gap={2} mb="3">
-                  <Text fontSize="xs" fontWeight="semibold" color="gray.500">
-                    Last 3 records
-                  </Text>
+                  <Text fontSize="xs" fontWeight="semibold" color="gray.500">{t.sales_module.costing.last_records}</Text>
+                  {/* Sample data for costing */}
                   <Flex direction="column" gap={1}>
                     <Flex justify="space-between">
                       <Text fontSize="xs" color="gray.600" maxLines={1}>Sample item #1</Text>
@@ -247,27 +270,27 @@ export default function Sales (){
                     </Flex>
                   </Flex>
                 </Flex>
+
                 <Flex justify="space-between">
-                  <Button size="sm" bg={"transparent"} borderColor={"#E77A1F"} color={"#E77A1F"} cursor={"pointer"}>See All</Button>
-                  <Button size="sm" bg={"#E77A1F"} color={"white"} cursor={"pointer"} onClick={handleDriectToCostingExpense}>Record</Button>
+                  <Button size="sm" bg={"transparent"} borderColor={"#E77A1F"} color={"#E77A1F"} cursor={"pointer"}>{t.sales_module.costing.see_all}</Button>
+                  <Button size="sm" bg={"#E77A1F"} color={"white"} cursor={"pointer"} onClick={handleDriectToCostingExpense}>{t.sales_module.costing.record}</Button>
                 </Flex>
               </Card.Body>
             </Card.Root>
-
+            {/* Sales Order card */}
             <Card.Root>
               <Card.Body>
+                {/* Sales order title and badge */}
                 <Flex align="center" mb="3" gap={2}>
                   <Icon as={FiShoppingCart} />
-                  <Heading size="md" flex="1">Sales Order</Heading>
-                  <Badge colorScheme="teal">Commercial</Badge>
+                  <Heading size="md" flex="1">{t.sales_module.sales_order.title}</Heading>
+                  <Badge color="teal">{t.sales_module.sales_order.badge}</Badge>
                 </Flex>
-                <Text fontSize="sm" color="gray.600" mb="4">
-                  Convert job operational results into billable services.
-                </Text>
+                <Text fontSize="sm" color="gray.600" mb="4">{t.sales_module.sales_order.description}</Text>
+
                 <Flex direction="column" gap={2} mb="3">
-                  <Text fontSize="xs" fontWeight="semibold" color="gray.500">
-                    Last 3 records
-                  </Text>
+                  <Text fontSize="xs" fontWeight="semibold" color="gray.500">{t.sales_module.sales_order.last_records}</Text>
+                  {/* Sample data for sales order */}
                   <Flex direction="column" gap={1}>
                     <Flex justify="space-between">
                       <Text fontSize="xs" color="gray.600" maxLines={1}>Sample item #1</Text>
@@ -283,27 +306,27 @@ export default function Sales (){
                     </Flex>
                   </Flex>
                 </Flex>
+
                 <Flex justify="space-between">
-                  <Button size="sm" bg={"transparent"} borderColor={"#E77A1F"} color={"#E77A1F"} cursor={"pointer"}>See All</Button>
-                  <Button size="sm" bg={"#E77A1F"} color={"white"} cursor={"pointer"} onClick={handleDirectToSalesOrder}>Generate</Button>
+                  <Button size="sm" bg={"transparent"} borderColor={"#E77A1F"} color={"#E77A1F"} cursor={"pointer"}>{t.sales_module.sales_order.see_all}</Button>
+                  <Button size="sm" bg={"#E77A1F"} color={"white"} cursor={"pointer"} onClick={handleDirectToSalesOrder}>{t.sales_module.sales_order.generate}</Button>
                 </Flex>
               </Card.Body>
             </Card.Root>
-
+            {/* Delivery card */}
             <Card.Root>
               <Card.Body>
+                {/* Delivery title and badge */}
                 <Flex align="center" mb="3" gap={2}>
                   <Icon as={FiTruck} />
-                  <Heading size="md" flex="1">Delivery Order / SPPB</Heading>
-                  <Badge colorScheme="cyan">Release</Badge>
+                  <Heading size="md" flex="1">{t.sales_module.delivery.title}</Heading>
+                  <Badge color="cyan">{t.sales_module.delivery.badge}</Badge>
                 </Flex>
-                <Text fontSize="sm" color="gray.600" mb="4">
-                  Issue delivery / customs release documents when cargo is cleared.
-                </Text>
+                <Text fontSize="sm" color="gray.600" mb="4">{t.sales_module.delivery.description}</Text>
+
                 <Flex direction="column" gap={2} mb="3">
-                  <Text fontSize="xs" fontWeight="semibold" color="gray.500">
-                    Last 3 records
-                  </Text>
+                  <Text fontSize="xs" fontWeight="semibold" color="gray.500">{t.sales_module.delivery.last_records}</Text>
+                  {/* Sample data for delivery */}
                   <Flex direction="column" gap={1}>
                     <Flex justify="space-between">
                       <Text fontSize="xs" color="gray.600" maxLines={1}>Sample item #1</Text>
@@ -319,27 +342,27 @@ export default function Sales (){
                     </Flex>
                   </Flex>
                 </Flex>
+
                 <Flex justify="space-between">
-                  <Button size="sm" bg={"transparent"} borderColor={"#E77A1F"} color={"#E77A1F"} cursor={"pointer"}>See All</Button>
-                  <Button size="sm" bg={"#E77A1F"} color={"white"} cursor={"pointer"}>Issue</Button>
+                  <Button size="sm" bg={"transparent"} borderColor={"#E77A1F"} color={"#E77A1F"} cursor={"pointer"}>{t.sales_module.delivery.see_all}</Button>
+                  <Button size="sm" bg={"#E77A1F"} color={"white"} cursor={"pointer"} onClick={handleDirectToDeliveryOrder}>{t.sales_module.delivery.issue}</Button>
                 </Flex>
               </Card.Body>
             </Card.Root>
-
+            {/* Profit card */}
             <Card.Root>
               <Card.Body>
+                {/* Profit title and badge */}
                 <Flex align="center" mb="3" gap={2}>
                   <Icon as={FiTrendingUp} />
-                  <Heading size="md" flex="1">Profit Summary</Heading>
-                  <Badge colorScheme="pink">Analysis</Badge>
+                  <Heading size="md" flex="1">{t.sales_module.profit.title}</Heading>
+                  <Badge color="pink">{t.sales_module.profit.badge}</Badge>
                 </Flex>
-                <Text fontSize="sm" color="gray.600" mb="4">
-                  View job profitability — revenue vs actual cost breakdown.
-                </Text>
+                <Text fontSize="sm" color="gray.600" mb="4">{t.sales_module.profit.description}</Text>
+
                 <Flex direction="column" gap={2} mb="3">
-                  <Text fontSize="xs" fontWeight="semibold" color="gray.500">
-                    Last 3 records
-                  </Text>
+                  <Text fontSize="xs" fontWeight="semibold" color="gray.500">{t.sales_module.profit.last_records}</Text>
+                  {/* Sample data for profit */}
                   <Flex direction="column" gap={1}>
                     <Flex justify="space-between">
                       <Text fontSize="xs" color="gray.600" maxLines={1}>Sample item #1</Text>
@@ -355,27 +378,27 @@ export default function Sales (){
                     </Flex>
                   </Flex>
                 </Flex>
+
                 <Flex justify="space-between">
-                  <Button size="sm" bg={"transparent"} borderColor={"#E77A1F"} color={"#E77A1F"} cursor={"pointer"}>See All</Button>
-                  <Button size="sm" bg={"#E77A1F"} color={"white"} cursor={"pointer"}>View</Button>
+                  <Button size="sm" bg={"transparent"} borderColor={"#E77A1F"} color={"#E77A1F"} cursor={"pointer"}>{t.sales_module.profit.see_all}</Button>
+                  <Button size="sm" bg={"#E77A1F"} color={"white"} cursor={"pointer"} onClick={handleDirectToProfitSummary}>{t.sales_module.profit.view}</Button>
                 </Flex>
               </Card.Body>
             </Card.Root>
-
+            {/* Invoice card */}
             <Card.Root>
               <Card.Body>
+                {/* Invoice title and badge */}
                 <Flex align="center" mb="3" gap={2}>
                   <Icon as={FiFileText} />
-                  <Heading size="md" flex="1">Invoice</Heading>
-                  <Badge colorScheme="purple">Billing</Badge>
+                  <Heading size="md" flex="1">{t.sales_module.invoice.title}</Heading>
+                  <Badge colorScheme="purple">{t.sales_module.invoice.badge}</Badge>
                 </Flex>
-                <Text fontSize="sm" color="gray.600" mb="4">
-                  Generate invoice from Sales Order with tax & multi‑currency support.
-                </Text>
+                <Text fontSize="sm" color="gray.600" mb="4">{t.sales_module.invoice.description}</Text>
+
                 <Flex direction="column" gap={2} mb="3">
-                  <Text fontSize="xs" fontWeight="semibold" color="gray.500">
-                    Last 3 records
-                  </Text>
+                  <Text fontSize="xs" fontWeight="semibold" color="gray.500">{t.sales_module.invoice.last_records}</Text>
+                  {/* Sample data for invoice */}
                   <Flex direction="column" gap={1}>
                     <Flex justify="space-between">
                       <Text fontSize="xs" color="gray.600" maxLines={1}>Sample item #1</Text>
@@ -391,9 +414,10 @@ export default function Sales (){
                     </Flex>
                   </Flex>
                 </Flex>
+
                 <Flex justify="space-between">
-                  <Button size="sm" bg={"transparent"} borderColor={"#E77A1F"} color={"#E77A1F"} cursor={"pointer"}>See All</Button>
-                  <Button size="sm" bg={"#E77A1F"} color={"white"} cursor={"pointer"}>Create</Button>
+                  <Button size="sm" bg={"transparent"} borderColor={"#E77A1F"} color={"#E77A1F"} cursor={"pointer"}>{t.sales_module.invoice.see_all}</Button>
+                  <Button size="sm" bg={"#E77A1F"} color={"white"} cursor={"pointer"} onClick={handleDirectToInvoice}>{t.sales_module.invoice.create}</Button>
                 </Flex>
               </Card.Body>
             </Card.Root>

@@ -3,7 +3,10 @@
 import Loading from "@/components/loading";
 import SidebarWithHeader from "@/components/ui/SidebarWithHeader";
 import { DecodedAuthToken, checkAuthOrRedirect, getAuthInfo } from "@/lib/auth/auth";
-import { Box, Button, Card, Separator, Flex, Field, Heading, IconButton, Input, NumberInput, SimpleGrid, Table, Text, Textarea } from "@chakra-ui/react";
+import { getLang } from "@/lib/i18n";
+import { getAllCurrency, GetCurrencyData } from "@/lib/master/currency";
+import { getAllSupplier, GetSupplierData } from "@/lib/master/supplier";
+import { Box, Button, Card, Separator, Flex, Field, Heading, IconButton, Input, NumberInput, SimpleGrid, Table, Text, Textarea, createListCollection, Select, Portal } from "@chakra-ui/react";
 import { useRouter } from "next/navigation";
 
 import { useEffect, useState } from "react";
@@ -19,11 +22,9 @@ type InvoiceItem = {
 };
 
 export default function CreatePurchaseInvoicePage() {
-  const [supplier, setSupplier] = useState("");
   const [invoiceNo, setInvoiceNo] = useState("");
   const [invoiceDate, setInvoiceDate] = useState("");
   const [dueDate, setDueDate] = useState("");
-  const [currency, setCurrency] = useState("IDR");
   const [exchangeRate, setExchangeRate] = useState(1);
   const [poRef, setPoRef] = useState("");
   const [notes, setNotes] = useState("");
@@ -32,7 +33,53 @@ export default function CreatePurchaseInvoicePage() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
+  const [supplierSelected, setSupplierSelected] = useState<string>();
+  const [supplierOptions, setSupplierOptions] = useState<GetSupplierData[]>([]);
+
+  const supplierCollection = createListCollection({
+    items: supplierOptions.map((supplier) => ({
+        label: `${supplier.supplier_name}`,
+        value: supplier.supplier_id,
+      })),
+  });
+
+  const [currencySelected, setCurrencySelected] = useState<string>();
+  const [currencyOptions, setCurrencyOptions] = useState<GetCurrencyData[]>([]);
+
+  const currencyCollection = createListCollection({
+    items: currencyOptions.map((currency) => ({
+        label: `${currency.currency_name} (${currency.currency_symbol})`,
+        value: currency.currency_id,
+      })),
+  });
+
+  const t = getLang("en"); 
+
   useEffect(() => {
+
+    const fetchCurrency = async () => {
+      try {
+        const currencyRes = await getAllCurrency(1, 1000);
+        setCurrencyOptions(currencyRes?.data ?? []);
+      } catch (error) {
+        console.error(error);
+        setCurrencyOptions([]);
+      }
+    };
+
+    const fetchSupplier = async () => {
+      try {
+        const supplierRes = await getAllSupplier(1, 1000);
+        setSupplierOptions(supplierRes?.data ?? []);
+      } catch (error) {
+        console.error(error);
+        setSupplierOptions([]);
+      }
+    };
+    
+    fetchCurrency();
+    fetchSupplier();
+
     init();
   }, []);
 
@@ -113,53 +160,89 @@ export default function CreatePurchaseInvoicePage() {
 
   return (
     <SidebarWithHeader username={auth?.username ?? "Unknown"} daysToExpire={auth?.days_remaining ?? 0}>
-      <Heading size="lg">Create Purchase Invoice</Heading>
+      <Heading size="lg">{t.purchase_invoice.title}</Heading>
       
       {/* Invoice Details Card */}
       <Card.Root mt={4}>
         {/* Invoice Details Header */}
         <Card.Header>
-          <Heading size="sm">Invoice Details</Heading>
+          <Heading size="sm">{t.purchase_invoice.invoice_details}</Heading>
         </Card.Header>
         <Card.Body>
           {/* Invoice Details Fields */}
           <SimpleGrid columns={{ base: 1, md: 3 }} gap={4}>
             {/* Supplier Field */}
             <Field.Root>
-              <Field.Label>Supplier</Field.Label>
-              <Input placeholder="Select / search supplier" value={supplier} onChange={(e) => setSupplier(e.target.value)}/>
+              <Field.Label>{t.supplier.supplier_name}</Field.Label>
+              <Select.Root collection={supplierCollection} value={supplierSelected ? [supplierSelected] : []} onValueChange={(details) => setSupplierSelected(details.value[0])} size="sm" width="100%">
+                <Select.HiddenSelect />
+                <Select.Control>
+                  <Select.Trigger>
+                    <Select.ValueText placeholder={t.purchase_invoice.supplier_placeholder} />
+                  </Select.Trigger>
+                  <Select.IndicatorGroup>
+                    <Select.Indicator />
+                  </Select.IndicatorGroup>
+                </Select.Control>
+                <Portal>
+                  <Select.Positioner>
+                    <Select.Content>
+                      {supplierCollection.items.map((supplier) => (
+                        <Select.Item item={supplier} key={supplier.value}>
+                          {supplier.label}
+                          <Select.ItemIndicator />
+                        </Select.Item>
+                      ))}
+                    </Select.Content>
+                  </Select.Positioner>
+                </Portal>
+              </Select.Root>
             </Field.Root>
             {/* Invoice Number */}
             <Field.Root>
-              <Field.Label>Invoice No.</Field.Label>
-              <Input value={invoiceNo} onChange={(e) => setInvoiceNo(e.target.value)} placeholder="INV-xxx"/>
+              <Field.Label>{t.purchase_invoice.invoice_number}</Field.Label>
+              <Input value={invoiceNo} onChange={(e) => setInvoiceNo(e.target.value)} placeholder={t.purchase_invoice.invoice_number_placeholder}/>
             </Field.Root>
             {/* Invoice Date */}
             <Field.Root>
-              <Field.Label>Invoice Date</Field.Label>
+              <Field.Label>{t.purchase_invoice.invoice_date}</Field.Label>
               <Input type="date" value={invoiceDate} onChange={(e) => setInvoiceDate(e.target.value)}/>
             </Field.Root>
             {/* Due Date */}
             <Field.Root>
-              <Field.Label>Due Date</Field.Label>
+              <Field.Label>{t.purchase_invoice.due_date}</Field.Label>
               <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)}/>
             </Field.Root>
             {/* Currency */}
             <Field.Root>
-              <Field.Label>Currency</Field.Label>
-              {/* <Select
-                value={currency}
-                onChange={(e) => setCurrency(e.target.value)}
-              >
-                <option value="IDR">IDR</option>
-                <option value="USD">USD</option>
-                <option value="SGD">SGD</option>
-                <option value="EUR">EUR</option>
-              </Select> */}
+              <Field.Label>{t.purchase_invoice.currency}</Field.Label>
+              <Select.Root collection={currencyCollection} value={currencySelected ? [currencySelected] : []} onValueChange={(details) => setCurrencySelected(details.value[0])} size="sm" width="100%">
+                <Select.HiddenSelect />
+                <Select.Control>
+                  <Select.Trigger>
+                    <Select.ValueText placeholder={t.purchase_invoice.currency} />
+                  </Select.Trigger>
+                  <Select.IndicatorGroup>
+                    <Select.Indicator />
+                  </Select.IndicatorGroup>
+                </Select.Control>
+                <Portal>
+                  <Select.Positioner>
+                    <Select.Content>
+                      {currencyCollection.items.map((currency) => (
+                        <Select.Item item={currency} key={currency.value}>
+                          {currency.label}
+                          <Select.ItemIndicator />
+                        </Select.Item>
+                      ))}
+                    </Select.Content>
+                  </Select.Positioner>
+                </Portal>
+              </Select.Root>
             </Field.Root>
             {/* Exchange Rate */}
             <Field.Root>
-              <Field.Label>Exchange Rate</Field.Label>
+              <Field.Label>{t.purchase_invoice.exchange_rate}</Field.Label>
               <NumberInput.Root>
                 <NumberInput.Control/>
                 <NumberInput.Input/>
@@ -167,13 +250,13 @@ export default function CreatePurchaseInvoicePage() {
             </Field.Root>
             {/* PO Reference */}
             <Field.Root>
-              <Field.Label>PO Reference</Field.Label>
-              <Input placeholder="Optional — link to PO" value={poRef} onChange={(e) => setPoRef(e.target.value)}/>
+              <Field.Label>{t.purchase_invoice.po_reference}</Field.Label>
+              <Input placeholder={t.purchase_invoice.po_reference_placeholder} value={poRef} onChange={(e) => setPoRef(e.target.value)}/>
             </Field.Root>
             {/* Notes */}
             <Field.Root gridColumn={{ md: "1 / span 3" }}>
-              <Field.Label>Notes</Field.Label>
-              <Textarea placeholder="Additional information…" value={notes} onChange={(e) => setNotes(e.target.value)}/>
+              <Field.Label>{t.purchase_invoice.notes}</Field.Label>
+              <Textarea placeholder={t.purchase_invoice.notes_placeholder} value={notes} onChange={(e) => setNotes(e.target.value)}/>
             </Field.Root>
           </SimpleGrid>
         </Card.Body>
@@ -182,9 +265,9 @@ export default function CreatePurchaseInvoicePage() {
       <Card.Root mt={4}>
         <Card.Header>
           <Flex justify="space-between" align="center">
-            <Heading size="sm">Invoice Items</Heading>
+            <Heading size="sm">{t.purchase_invoice.invoice_items}</Heading>
             <Button size="sm" onClick={addItem} variant="outline">
-              <FaPlus/>Add Item
+              <FaPlus/>{t.purchase_invoice.add_item}
             </Button>
           </Flex>
         </Card.Header>
@@ -192,12 +275,12 @@ export default function CreatePurchaseInvoicePage() {
           <Table.Root size="sm">
               <Table.Header>
                 <Table.Row>
-                  <Table.ColumnHeader>Description</Table.ColumnHeader>
-                  <Table.ColumnHeader>Qty</Table.ColumnHeader>
-                  <Table.ColumnHeader>UOM</Table.ColumnHeader>
-                  <Table.ColumnHeader>Unit Price</Table.ColumnHeader>
-                  <Table.ColumnHeader>Tax %</Table.ColumnHeader>
-                  <Table.ColumnHeader>Line Total</Table.ColumnHeader>
+                  <Table.ColumnHeader>{t.purchase_invoice.description}</Table.ColumnHeader>
+                  <Table.ColumnHeader>{t.purchase_invoice.qty}</Table.ColumnHeader>
+                  <Table.ColumnHeader>{t.purchase_invoice.uom}</Table.ColumnHeader>
+                  <Table.ColumnHeader>{t.purchase_invoice.unit_price}</Table.ColumnHeader>
+                  <Table.ColumnHeader>{t.purchase_invoice.tax_percent}</Table.ColumnHeader>
+                  <Table.ColumnHeader>{t.purchase_invoice.line_total}</Table.ColumnHeader>
                 </Table.Row>
               </Table.Header>
               <Table.Body>
@@ -208,7 +291,7 @@ export default function CreatePurchaseInvoicePage() {
                   return(
                     <Table.Row key={i.id}>
                       <Table.Cell>
-                        <Input size="sm" value={i.description} onChange={(e) => updateItem(i.id, "description", e.target.value)}placeholder="Item description"/>
+                        <Input size="sm" value={i.description} onChange={(e) => updateItem(i.id, "description", e.target.value)} placeholder={t.purchase_invoice.description_placeholder}/>
                       </Table.Cell>
                       <Table.Cell>
                         <NumberInput.Root>
@@ -217,7 +300,7 @@ export default function CreatePurchaseInvoicePage() {
                         </NumberInput.Root>
                       </Table.Cell>
                       <Table.Cell>
-                        <Input size="sm" value={i.uom} onChange={(e) => updateItem(i.id, "uom", e.target.value)} placeholder="UoM"/>
+                        <Input size="sm" value={i.uom} onChange={(e) => updateItem(i.id, "uom", e.target.value)} placeholder={t.purchase_invoice.uom}/>
                       </Table.Cell>
                       <Table.Cell>
                         <NumberInput.Root>
@@ -236,7 +319,7 @@ export default function CreatePurchaseInvoicePage() {
                       </Table.Cell>
                       <Table.Cell>
                         <IconButton aria-label="Remove" size="sm" variant="ghost" color={"red"} onClick={() => removeItem(i.id)}>
-                          <FaTrash/> Delete
+                          <FaTrash/> {t.purchase_invoice.delete}
                         </IconButton>
                       </Table.Cell>
                     </Table.Row>
@@ -248,24 +331,24 @@ export default function CreatePurchaseInvoicePage() {
           <Flex justify="flex-end" mt={8}>
               <Box minW="280px">
                 <Flex justify="space-between" mb={2}>
-                  <Text color="gray.600">Subtotal</Text>
+                  <Text color="gray.600">{t.purchase_invoice.subtotal}</Text>
                   <Text fontWeight="medium">{subtotal.toLocaleString()}</Text>
                 </Flex>
                 <Flex justify="space-between" mb={2}>
-                  <Text color="gray.600">Tax</Text>
+                  <Text color="gray.600">{t.purchase_invoice.tax}</Text>
                   <Text fontWeight="medium">{taxTotal.toLocaleString()}</Text>
                 </Flex>
                 <Separator />
                 <Flex justify="space-between">
-                  <Text fontWeight="semibold">Grand Total</Text>
+                  <Text fontWeight="semibold">{t.purchase_invoice.grand_total}</Text>
                   <Text fontWeight="semibold">{grandTotal.toLocaleString()}</Text>
                 </Flex>
               </Box>
           </Flex>
 
           <Flex justify="space-between" mt={8}>
-            <Button variant="outline"  onClick={() => handleSave("draft")}>Save as Draft</Button>
-            <Button colorScheme="teal" onClick={() => handleSave("post")}>Post Invoice</Button>
+            <Button variant="outline"  onClick={() => handleSave("draft")}>{t.purchase_invoice.save_draft}</Button>
+            <Button colorScheme="teal" onClick={() => handleSave("post")}>{t.purchase_invoice.post_invoice}</Button>
           </Flex>
 
         </Card.Body>

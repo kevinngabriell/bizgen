@@ -43,7 +43,7 @@ export default function CreateInvoicePage() {
     }
   }
     
-  if (loading) return <Loading/>;
+  
 
   const [form, setForm] = useState({
     invoiceNo: "",
@@ -118,6 +118,8 @@ export default function CreateInvoicePage() {
     // TODO: replace with API call
     console.log("Create Invoice Payload", payload);
   };
+  
+  if (loading) return <Loading/>;
 
   return (
     <SidebarWithHeader username={auth?.username ?? "Unknown"} daysToExpire={auth?.days_remaining ?? 0}>

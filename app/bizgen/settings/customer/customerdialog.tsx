@@ -1,5 +1,6 @@
 "use client";
 
+import { getAuthInfo } from "@/lib/auth/auth";
 import { getLang } from "@/lib/i18n";
 import { Dialog, Portal, Field, Input, Button, SimpleGrid, CloseButton, Textarea, Select, createListCollection } from "@chakra-ui/react";
 import { useEffect, useState } from "react";
@@ -35,7 +36,18 @@ export default function CustomerDialog({
     const [customerTOP, setCustomerTOP] = useState<number>(0);
     const [isCOD, setIsCOD] = useState(false);
 
-    const t = getLang("en"); 
+    //language state 
+    const [lang, setLang] = useState<"en" | "id">("en");
+    const t = getLang(lang);
+
+    const init = async () => {
+        //get info from authentication
+        const info = getAuthInfo();
+
+        //set language from token authentication
+        const language = info?.language === "id" ? "id" : "en";
+        setLang(language);
+    }
 
     const paymentTypes = createListCollection({
         items: [
@@ -56,6 +68,8 @@ export default function CustomerDialog({
         setCustomerTOP(Number(placeholders?.customer_top ?? 0));
         const topValue = Number(placeholders?.customer_top ?? 0);
         setIsCOD(topValue === 0);
+
+        init();
         
     }, [placeholders, isOpen]);
 

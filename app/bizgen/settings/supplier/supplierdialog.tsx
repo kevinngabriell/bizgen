@@ -1,6 +1,7 @@
 "use client";
 
 import Loading from "@/components/loading";
+import { getAuthInfo } from "@/lib/auth/auth";
 import { getLang } from "@/lib/i18n";
 import { getAllCurrency, GetCurrencyData } from "@/lib/master/currency";
 import { getAllOrigin, GetOriginData } from "@/lib/master/origin";
@@ -56,7 +57,18 @@ export default function SupplierDialog({title, isOpen,
     const [termOptions, setTermOptions] = useState<GetTermData[]>([]);
     const [supplierBankInfo, setSupplierBankInfo] = useState("");
    
-    const t = getLang("en"); 
+    //language state 
+    const [lang, setLang] = useState<"en" | "id">("en");
+    const t = getLang(lang);
+
+    const init = async () => {
+        //get info from authentication
+        const info = getAuthInfo();
+
+        //set language from token authentication
+        const language = info?.language === "id" ? "id" : "en";
+        setLang(language);
+    }
 
     const originCollection = createListCollection({
         items: originOptions.map((or) => ({
@@ -82,6 +94,8 @@ export default function SupplierDialog({title, isOpen,
     useEffect(() => {
         if(!isOpen) return;
 
+        init();
+        
         setSupplierID(placeholders?.supplier_id ?? "");
         setSupplierName(placeholders?.supplier_name ?? "");
         setSelectedOrigin(placeholders?.supplier_origin ?? "");

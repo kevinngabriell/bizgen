@@ -41,8 +41,7 @@ export default function CreateDeliveryOrderPage() {
     }
   }
     
-  if (loading) return <Loading/>;
-
+  
   const [currency, setCurrency] = useState<'USD' | 'EUR' | 'IDR'>('USD');
   const [exchangeRate, setExchangeRate] = useState<number>(15500); // editable currency rate
   const [lineItems, setLineItems] = useState<LineItem[]>([
@@ -79,6 +78,7 @@ export default function CreateDeliveryOrderPage() {
       },
     };
   };
+if (loading) return <Loading/>;
 
   return (
     <SidebarWithHeader username={auth?.username ?? "Unknown"} daysToExpire={auth?.days_remaining ?? 0}>

@@ -13,6 +13,7 @@ export interface DecodedAuthToken {
   app_id: string;
   app_role_id: string;
   days_remaining: number;
+  language: string;
 }
 
 export async function login(username: string, password: string) {
@@ -61,7 +62,7 @@ export async function checkAuthOrRedirect(): Promise<boolean> {
 
     if (!token || isTokenExpired(token)) {
       localStorage.removeItem("token");
-      window.location.href = "/";
+      window.location.href = "/login";
       return false;
     }
 

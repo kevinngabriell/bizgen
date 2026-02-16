@@ -28,7 +28,9 @@ export default function SettingShipment(){
     const [messagePopup, setMessagePopup] = useState('');
     const [isSuccess, setIsSuccess] = useState(false);
 
-    const t = getLang("en"); 
+    //language state 
+    const [lang, setLang] = useState<"en" | "id">("en");
+    const t = getLang(lang);
     
     useEffect(() => {
         init();
@@ -37,11 +39,17 @@ export default function SettingShipment(){
     const init = async () => {
         setLoading(true);
 
+        //check authentication redirect
         const valid = await checkAuthOrRedirect();
         if(!valid) return;
 
+        //get info from authentication
         const info = getAuthInfo();
         setAuth(info);
+
+        //set language from token authentication
+        const language = info?.language === "id" ? "id" : "en";
+        setLang(language);
 
         try {
             const shipmentRes = await getAllShipmentPeriod(shipmentPage, 10, findShipment);
@@ -59,8 +67,6 @@ export default function SettingShipment(){
             setLoading(false);
         }
     }
-
-    if (loading) return <Loading/>;
 
     const handleCreateShipmentPeriod = async (data: {
         shipment_period_name: string;
@@ -139,7 +145,9 @@ export default function SettingShipment(){
         } finally {
             setLoading(false);
         }
-    }
+    } 
+    
+    if (loading) return <Loading/>;
 
     return(
         <SidebarWithHeader username={auth?.username ?? "Unknown"} daysToExpire={auth?.days_remaining ?? 0}>
@@ -147,8 +155,7 @@ export default function SettingShipment(){
                 <Heading mb={6} width={"100%"}>{t.shipment_period.title}</Heading>
                 <Flex gap={2} alignItems={"center"}>
                     <InputGroup startElement={<LuSearch />}>
-                        <Input placeholder={t.shipment_period.search} bg={"white"} value={findShipment}
-                            onChange={(e) => setFindShipment(e.target.value)}
+                        <Input placeholder={t.shipment_period.search} bg={"white"} value={findShipment} onChange={(e) => setFindShipment(e.target.value)}
                             onKeyDown={(e) => {
                                 if (e.key === "Enter") {
                                     setShipmentPage(1);
@@ -230,7 +237,7 @@ export default function SettingShipment(){
                                                     <Dialog.ActionTrigger asChild>
                                                         <Button variant="outline">{t.delete_popup.cancel}</Button>
                                                     </Dialog.ActionTrigger>
-                                                    <Button onClick={() => handleDeleteShipmentPeriod({ shipment_period_id: shipment.shipment_period_id })}>Hapus</Button>
+                                                    <Button bg={"red"} color={"white"} cursor={"pointer"} onClick={() => handleDeleteShipmentPeriod({ shipment_period_id: shipment.shipment_period_id })}>Hapus</Button>
                                                 </Dialog.Footer>
                                                             
                                                 <Dialog.CloseTrigger asChild>

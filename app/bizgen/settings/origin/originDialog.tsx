@@ -1,5 +1,6 @@
 "use client";
 
+import { getAuthInfo } from "@/lib/auth/auth";
 import { getLang } from "@/lib/i18n";
 import { Dialog,Portal, Field, Input, Button, SimpleGrid, CloseButton, createListCollection, Select, Switch } from "@chakra-ui/react";
 import { useEffect, useState } from "react";
@@ -33,10 +34,23 @@ OriginDialogProps) {
     const [regionSelected, setRegionSelected] = useState<string>();
     const [freeTradeSelected, setFreeTradeSelected] = useState(0);
     
-    const t = getLang("en"); 
+    //language state 
+    const [lang, setLang] = useState<"en" | "id">("en");
+    const t = getLang(lang);
+
+    const init = async () => {
+        //get info from authentication
+        const info = getAuthInfo();
+
+        //set language from token authentication
+        const language = info?.language === "id" ? "id" : "en";
+        setLang(language);
+    }
     
     useEffect(() => {
         if (!isOpen) return;
+
+        init();
 
         setOriginID(placeholders?.origin_id ?? "");
         setOriginName(placeholders?.origin_name ?? "");
@@ -70,20 +84,16 @@ OriginDialogProps) {
                                 </Field.Root>
 
                                 <Field.Root>
-                                    <Switch.Root
-                                        checked={freeTradeSelected === 1}
-                                        onCheckedChange={(e) => setFreeTradeSelected(e.checked ? 1 : 0)}
-                                    >
+                                    <Switch.Root checked={freeTradeSelected === 1} onCheckedChange={(e) => setFreeTradeSelected(e.checked ? 1 : 0)}>
                                         <Switch.Label>{t.origin.free_trade}</Switch.Label><Switch.HiddenInput />
                                         <Switch.Control />
-                                        
                                     </Switch.Root>
                                 </Field.Root>
 
                                 <Field.Root w={{base: "100%", md: "100%", lg: "100%"}}>
                                     <Select.Root collection={regions} value={regionSelected ? [regionSelected] : []} onValueChange={(details) => setRegionSelected(details.value[0])}  size="sm" width="100%">
                                         <Select.HiddenSelect />
-                                        <Select.Label>Select region</Select.Label>
+                                        <Select.Label>{t.origin.region_placeholder}</Select.Label>
                                         <Select.Control>
                                             <Select.Trigger>
                                             <Select.ValueText placeholder={t.origin.region} />

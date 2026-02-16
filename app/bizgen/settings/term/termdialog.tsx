@@ -1,7 +1,8 @@
 "use client";
 
+import { getAuthInfo } from "@/lib/auth/auth";
 import { getLang } from "@/lib/i18n";
-import { Dialog, Portal, SimpleGrid, Field, Textarea, CloseButton, Button, Input } from "@chakra-ui/react";
+import { Dialog, Portal, SimpleGrid, Field, CloseButton, Button, Input } from "@chakra-ui/react";
 import { useEffect, useState } from "react";
 
 interface TermDialogProps {
@@ -27,10 +28,22 @@ export default function TermDialog({
     const [termID, setTermID] = useState("");
     const [termName, setTermName] = useState("");
 
-    const t = getLang("en"); 
+    const [lang, setLang] = useState<"en" | "id">("en");
+    const t = getLang(lang);
+
+    const init = async () => {
+        //get info from authentication
+        const info = getAuthInfo();
+
+        //set language from token authentication
+        const language = info?.language === "id" ? "id" : "en";
+        setLang(language);
+    }
     
     useEffect(() => {
         if (!isOpen) return;
+        
+        init();
         
         setTermID(placeholders?.term_id ?? "");
         setTermName(placeholders?.term_name ?? "");

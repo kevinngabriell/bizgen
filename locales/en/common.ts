@@ -92,7 +92,9 @@ export const en = {
     ship: "Ship Via",
     ship_description: "Manage shipment methods such as air, sea, or land transport.",
     uom: "Unit of Measurement",
-    uom_description: "Manage units of measurement used for products and transactions."
+    uom_description: "Manage units of measurement used for products and transactions.",
+    port: "Port",
+    port_description: "Manage port master data including port names and their associated countries or regions to support shipping and logistics transactions."
   },
   products: {
     title: "Master Product Data",
@@ -121,6 +123,9 @@ export const en = {
     error: "Error",
     error_msg: "Failed to fetch from API",
     action: "Action",
+    create_new_button : "+ Create New",
+    create_new : "Create New",
+    see_all : "See All" 
   },
   customer: {
     title: "Customer Master Data",
@@ -299,6 +304,21 @@ export const en = {
       success_origin_update: "Origin has been successfully updated",
       success_origin_delete: "Origin has been successfully deleted"
   },
+  port: {
+      title: "Port",
+      create_button: "Create Port",
+      update_button: "Update Port",
+      port_name: "Port Name",
+      port_name_placeholder: "Enter port name",
+      origin_country: "Origin Country",
+      origin_country_placeholder: "Select origin country",
+      port_code: "Port Code",
+      port_code_placeholder: "Enter port code (e.g. IDJKT)",
+      search: "Search port...",
+      success_port_create: "Port has been successfully created",
+      success_port_update: "Port has been successfully updated",
+      success_port_delete: "Port has been successfully deleted"
+  },
   purchaseModule: {
     title: "Purchase Module",
     request_quotation: {
@@ -325,5 +345,304 @@ export const en = {
       title: "Purchase Invoice",
       description: "Register supplier billing document",
     },
-  }
+  },
+  purchase_invoice: {
+    title: "Create Purchase Invoice",
+    invoice_details: "Invoice Details",
+
+    supplier: "Supplier",
+    supplier_placeholder: "Select or search supplier",
+
+    invoice_number: "Invoice Number",
+    invoice_number_placeholder: "Enter invoice number",
+
+    invoice_date: "Invoice Date",
+    due_date: "Due Date",
+
+    currency: "Currency",
+    exchange_rate: "Exchange Rate",
+
+    po_reference: "PO Reference",
+    po_reference_placeholder: "Optional — link to purchase order",
+
+    notes: "Notes",
+    notes_placeholder: "Additional information",
+
+    invoice_items: "Invoice Items",
+    add_item: "Add Item",
+
+    description: "Description",
+    description_placeholder: "Item description",
+
+    qty: "Quantity",
+    uom: "Unit of Measure",
+    unit_price: "Unit Price",
+    tax_percent: "Tax %",
+    line_total: "Line Total",
+
+    subtotal: "Subtotal",
+    tax: "Tax",
+    grand_total: "Grand Total",
+
+    save_draft: "Save as Draft",
+    post_invoice: "Post Invoice",
+
+    delete: "Delete",
+
+    success_create: "Purchase invoice has been successfully created.",
+    success_post: "Purchase invoice has been successfully posted."
+  },
+  purchase_import: {
+  title: "Create Purchase Import",
+
+  purchase_details: "Purchase Details",
+  po_number: "PO Number",
+  po_number_placeholder: "AUTO / Manual",
+
+  po_date: "PO Date",
+  supplier: "Supplier",
+  supplier_placeholder: "Select supplier",
+
+  import_details: "Import Details",
+
+  currency: "Currency",
+  currency_placeholder: "Select currency",
+
+  exchange_rate: "Exchange Rate (to IDR)",
+
+  incoterm: "Incoterm",
+  incoterm_placeholder: "Select incoterm",
+
+  port_of_loading: "Port of Loading",
+  port_of_loading_placeholder: "Select port of loading",
+
+  port_of_discharge: "Port of Discharge",
+  port_of_discharge_placeholder: "Select port of discharge",
+
+  freight_cost: "Freight Cost",
+  customs_cost: "Customs / Duty Cost",
+
+  items: "Items",
+  add_item: "Add Item",
+  delete_item: "Delete Item",
+
+  sku: "SKU",
+  description: "Description",
+  qty: "Quantity",
+  unit_price: "Unit Price",
+
+  line_total: "Line Total",
+
+  cost_summary: "Cost Summary",
+  items_subtotal: "Items Subtotal",
+  freight_customs: "Freight + Customs",
+  landed_cost: "Landed Cost",
+  local_currency: "Local Currency (IDR)",
+
+  save_draft: "Save Draft",
+  submit_purchase: "Submit Purchase",
+
+  success_create: "Purchase import has been successfully created."
+},
+purchase_local: {
+  title: "Create Local Purchase",
+
+  purchase_details: "Purchase Details",
+  po_number: "PO Number",
+  po_number_placeholder: "Auto / Manual",
+
+  po_date: "PO Date",
+
+  supplier: "Supplier",
+  supplier_placeholder: "Select supplier",
+
+  currency: "Currency",
+  currency_placeholder: "Select currency",
+
+  payment_terms: "Payment Terms",
+  payment_terms_placeholder: "e.g. Net 30, Cash",
+
+  notes: "Notes",
+  notes_placeholder: "Additional notes",
+
+  purchase_items: "Purchase Items",
+  add_item: "Add Item",
+  delete_item: "Delete Item",
+
+  description: "Description",
+  qty: "Quantity",
+  uom: "Unit of Measurement",
+  unit_price: "Unit Price",
+  remarks: "Remarks",
+
+  subtotal: "Subtotal",
+
+  save_draft: "Save Draft",
+  submit_purchase: "Submit Purchase",
+
+  success_create: "Local purchase has been successfully created."
+},
+sales_module : {
+    title: "Sales Module",
+    subtitle:
+      "Manage the full commercial lifecycle — from Inquiry to Invoice — with a guided, step-by-step workflow.",
+    create_new: "+ Create New",
+
+    inquiry: {
+      title: "Inquiry / RFQ",
+      badge: "Start here",
+      description:
+        "Capture customer requests, shipment details, and service scope before pricing.",
+      see_all: "See All",
+      create: "Create",
+      last_records: "Last 3 records",
+    },
+
+    quotation: {
+      title: "Quotation",
+      badge: "Pricing",
+      description:
+        "Build cost structure, margin, and generate customer quotation.",
+      see_all: "See All",
+      create: "Create",
+      last_records: "Last 3 records",
+    },
+
+    booking: {
+      title: "Booking Confirmation / Job Order",
+      badge: "Confirmed",
+      description:
+        "Convert approved quotes into operational jobs with unique job numbers.",
+      see_all: "See All",
+      create: "Create",
+      last_records: "Last 3 records",
+    },
+
+    shipment: {
+      title: "Shipment Processing & Documents",
+      badge: "Operations",
+      description:
+        "Manage BL, DO, manifest, customs documents, and shipment milestones.",
+      see_all: "See All",
+      update: "Update",
+      last_records: "Last 3 records",
+    },
+
+    costing: {
+      title: "Costing & Expense Capture (Actualization)",
+      badge: "Finance Sync",
+      description:
+        "Record actual operational costs and compare them against quotation margins.",
+      see_all: "See All",
+      record: "Record",
+      last_records: "Last 3 records",
+    },
+
+    sales_order: {
+      title: "Sales Order",
+      badge: "Commercial",
+      description:
+        "Convert operational job results into billable services.",
+      see_all: "See All",
+      generate: "Generate",
+      last_records: "Last 3 records",
+    },
+
+    delivery: {
+      title: "Delivery Order / SPPB",
+      badge: "Release",
+      description:
+        "Issue delivery or customs release documents once cargo is cleared.",
+      see_all: "See All",
+      issue: "Issue",
+      last_records: "Last 3 records",
+    },
+
+    profit: {
+      title: "Profit Summary",
+      badge: "Analysis",
+      description:
+        "View job profitability with revenue versus actual cost breakdown.",
+      see_all: "See All",
+      view: "View",
+      last_records: "Last 3 records",
+    },
+
+    invoice: {
+      title: "Invoice",
+      badge: "Billing",
+      description:
+        "Generate invoices from Sales Orders with tax and multi-currency support.",
+      see_all: "See All",
+      create: "Create",
+      last_records: "Last 3 records",
+    },
+},
+sales_inquiry: {
+  title_create: "Create Inquiry",
+  title_view: "Inquiry Details",
+  title_edit: "Edit Inquiry",
+
+  inquiry_no: "Inquiry Number",
+  inquiry_no_placeholder: "Auto-generated or enter manually",
+
+  customer_name: "Customer",
+  customer_placeholder: "Select customer",
+
+  contact_person: "Contact Person",
+  contact_person_placeholder: "Enter contact person",
+
+  phone: "Phone / WhatsApp",
+  phone_placeholder: "Enter phone number",
+
+  shipment_type: "Shipment Method",
+  shipment_type_placeholder: "Select shipment method",
+
+  origin_country: "Country of Origin",
+  origin_country_placeholder: "Select origin country",
+
+  destination_country: "Destination Country",
+  destination_country_placeholder: "Select destination country",
+
+  commodity: "Commodity",
+  commodity_placeholder: "Enter commodity",
+
+  incoterm: "Incoterm",
+  incoterm_placeholder: "Select incoterm",
+
+  remarks: "Remarks / Special Instructions",
+  remarks_placeholder: "Enter additional notes or special handling instructions",
+
+  item_list_title: "Commodity / Item List",
+  item_list_description:
+    "Add one or more items. This information will be used for quotation and operational planning.",
+
+  add_item: "Add Item",
+
+  item_name: "Item Name",
+  item_name_placeholder: "Enter item name",
+
+  hs_code: "HS Code",
+  hs_code_placeholder: "Enter HS code",
+
+  qty: "Quantity",
+  qty_placeholder: "Enter quantity",
+
+  unit: "Unit",
+  unit_placeholder: "Select unit",
+
+  weight: "Weight (KG)",
+  weight_placeholder: "Enter weight",
+
+  cbm: "Volume (CBM)",
+  cbm_placeholder: "Enter volume",
+
+  packaging: "Packaging Type",
+  packaging_placeholder: "e.g., Carton, Pallet, Drum",
+
+  save_draft: "Save as Draft",
+  submit: "Submit Inquiry",
+  edit: "Edit",
+  export_pdf: "Export PDF"
+}
 };

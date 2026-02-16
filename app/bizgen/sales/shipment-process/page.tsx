@@ -53,8 +53,8 @@ export default function ShipmentProcessPage() {
           )}
           {(mode === "create" || mode === "edit") && (
             <>
-              <Button variant="outline">Save Draft</Button>
-              <Button colorScheme="blue">Save &amp; Continue</Button>
+              <Button variant="outline" bg={"transparent"} borderColor={"#E77A1F"} color={"#E77A1F"} cursor={"pointer"}>Save Draft</Button>
+              <Button bg="#E77A1F" color="white">Save &amp; Continue</Button>
             </>
           )}
         </Flex>
@@ -62,7 +62,10 @@ export default function ShipmentProcessPage() {
 
       <Card.Root>
         <Card.Header>
-          <Heading size="md"><Icon as={FiTruck}/> Shipment Overview</Heading>
+          <Flex gap={4} alignItems={"center"}>
+            <Icon as={FiTruck}/>
+            <Heading fontSize={"md"}>Shipment Overview</Heading>
+          </Flex>
         </Card.Header>
         <Card.Body>
           <SimpleGrid templateColumns={{ base: "1fr", md: "1fr 1fr" }} gap={4}>
@@ -106,7 +109,10 @@ export default function ShipmentProcessPage() {
       
       <Card.Root mt={5}>
         <Card.Header>
-          <Heading size="md"><Icon as={FiPackage}/>Routing &amp; Container Details</Heading>
+          <Flex gap={4} alignItems={"center"}>
+            <Icon as={FiPackage}/>
+            <Heading fontSize={"md"}>Routing &amp; Container Details</Heading>
+          </Flex>
         </Card.Header>
         <Card.Body>
           <SimpleGrid templateColumns={{ base: "1fr", md: "1fr 1fr" }} gap={4}>
@@ -140,7 +146,10 @@ export default function ShipmentProcessPage() {
 
       <Card.Root mt={5}>
         <Card.Header>
-          <Heading size="md"><Icon as={FiTruck}/>Milestones Tracking</Heading>
+          <Flex gap={4} alignItems={"center"}>
+            <Icon as={FiTruck}/>
+            <Heading fontSize={"md"}>Milestones Tracking</Heading>
+          </Flex>
         </Card.Header>
         <Card.Body>
           {[
@@ -152,9 +161,9 @@ export default function ShipmentProcessPage() {
             "Arrival Port",
             "Delivery to Consignee",
           ].map((label) => (
-            <SimpleGrid key={label} templateColumns={{ base: "1fr", md: "260px 1fr 200px" }} gap={3} alignItems="center">
+            <SimpleGrid key={label} templateColumns={{ base: "1fr", md: "260px 1fr 200px" }} gap={3} alignItems="center" mb={4}>
               <Text>{label}</Text>
-              <Input placeholder="Notes (optional)" />
+              <Textarea placeholder="Notes (optional)" />
               <Input type="datetime-local" />
             </SimpleGrid>
           ))}
@@ -163,7 +172,10 @@ export default function ShipmentProcessPage() {
 
       <Card.Root mt={5}>
         <Card.Header>
-          <Heading size="md"><Icon as={FiFileText}/>Shipment Documents</Heading>
+          <Flex gap={4} alignItems={"center"}>
+            <Icon as={FiFileText}/>
+            <Heading fontSize={"md"}>Shipment Documents</Heading>
+          </Flex>
           <Text color="gray.600" fontSize={"sm"}>Upload or manage required export / import documents.</Text>
         </Card.Header>
         <Card.Body>
@@ -185,7 +197,7 @@ export default function ShipmentProcessPage() {
                     <Tag.Root>
                       <Tag.Label>Optional</Tag.Label>
                     </Tag.Root>
-                    <Button size="sm" variant="ghost">
+                    <Button size="sm" bg={"#E77A1F"} color={"white"} cursor={"pointer"}>
                       View / Replace
                     </Button>
                   </Field.Root>
@@ -199,8 +211,8 @@ export default function ShipmentProcessPage() {
       <Flex justify="flex-end" mt={6}>
           {(mode === "create" || mode === "edit") && (
             <Flex gap={3}>
-              <Button variant="outline">Save Draft</Button>
-              <Button colorScheme="blue">Mark Shipment as Completed</Button>
+              <Button variant="outline" bg={"transparent"} borderColor={"#E77A1F"} color={"#E77A1F"} cursor={"pointer"}>Save Draft</Button>
+              <Button colorScheme="blue" bg={"#E77A1F"} color={"white"} cursor={"pointer"}>Mark Shipment as Completed</Button>
             </Flex>
           )}
         </Flex>

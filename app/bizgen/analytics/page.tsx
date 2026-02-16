@@ -50,9 +50,7 @@ export default function Analytics() {
             </Card.Header>
             <Card.Body>
               <Text fontSize="2xl" fontWeight="bold">—</Text>
-              <Text color="gray.500" fontSize="sm">
-                Most purchased product this period
-              </Text>
+              <Text color="gray.500" fontSize="sm">Most purchased product this period</Text>
             </Card.Body>
           </Card.Root>
 
@@ -62,9 +60,7 @@ export default function Analytics() {
             </Card.Header>
             <Card.Body>
               <Text fontSize="2xl" fontWeight="bold">—</Text>
-              <Text color="gray.500" fontSize="sm">
-                Highest import / export volume
-              </Text>
+              <Text color="gray.500" fontSize="sm">Highest import / export volume</Text>
             </Card.Body>
           </Card.Root>
 
@@ -74,9 +70,7 @@ export default function Analytics() {
             </Card.Header>
             <Card.Body>
               <Text fontSize="2xl" fontWeight="bold">—</Text>
-              <Text color="gray.500" fontSize="sm">
-                Most active customer
-              </Text>
+              <Text color="gray.500" fontSize="sm">Most active customer</Text>
             </Card.Body>
           </Card.Root>
         </SimpleGrid>

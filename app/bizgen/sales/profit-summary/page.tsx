@@ -51,7 +51,7 @@ export default function CreateProfitSummaryPage() {
     }
   }
     
-  if (loading) return <Loading/>;
+  
 
   const addRevenue = () => {
     setRevenue([
@@ -103,6 +103,8 @@ export default function CreateProfitSummaryPage() {
     console.log("SUBMIT PROFIT SUMMARY", payload);
     // TODO: POST to API endpoint when ready
   };
+  
+  if (loading) return <Loading/>;
 
   return (
     <SidebarWithHeader username={auth?.username ?? "Unknown"} daysToExpire={auth?.days_remaining ?? 0}>

@@ -149,7 +149,7 @@ export default function CostingExpensePage() {
         <Card.Header>
           <Flex justify="space-between" align="center">
             <Heading size="sm">Actual Expense Items</Heading>
-            <Button size="sm" variant="solid" onClick={handleAddRow} >
+            <Button size="sm" variant="solid" bg={"#E77A1F"} color={"white"} cursor={"pointer"} onClick={handleAddRow} >
               Add Cost Item
             </Button>
           </Flex>
@@ -241,10 +241,10 @@ export default function CostingExpensePage() {
 
       {/* Actions */}
       <Flex justify="flex-end" gap={3}>
-        <Button variant="outline" onClick={handleSaveDraft}>
+        <Button variant="outline" bg={"transparent"} borderColor={"#E77A1F"} color={"#E77A1F"} cursor={"pointer"} onClick={handleSaveDraft}>
           Save Draft
         </Button>
-        <Button colorScheme="teal" onClick={handleFinalize}>
+        <Button bg={"#E77A1F"} color={"white"} cursor={"pointer"} onClick={handleFinalize}>
           Finalize Actualization
         </Button>
       </Flex>

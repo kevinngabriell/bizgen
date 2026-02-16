@@ -3,6 +3,7 @@
 import Loading from "@/components/loading";
 import SidebarWithHeader from "@/components/ui/SidebarWithHeader";
 import { DecodedAuthToken, checkAuthOrRedirect, getAuthInfo } from "@/lib/auth/auth";
+import { GetCustomerData } from "@/lib/master/customer";
 import { Button, Card, Flex, Field, IconButton, Input, Text, Textarea, Heading, SimpleGrid } from "@chakra-ui/react";
 import { useRouter } from "next/navigation";
 
@@ -24,6 +25,12 @@ export default function CreateRequestQuotationPage() {
   const [auth, setAuth] = useState<DecodedAuthToken | null>(null);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+
+  const [customerSelected, setCustomerSelected] = useState<string>();
+  const [customerOptions, setCustomerOptions] = useState<GetCustomerData[]>([]);
+
+  const [shipmentTypeSelected, setShipmentTypeSelected] = useState<string>();
+  const [shipmentTypeOptions, setShipmentTypeOptions] = useState<GetCustomerData[]>([]);
 
   useEffect(() => {
     init();
@@ -47,7 +54,7 @@ export default function CreateRequestQuotationPage() {
     }
   }
     
-  if (loading) return <Loading/>;
+ 
 
   const [items, setItems] = useState<ItemRow[]>([
     {
@@ -89,9 +96,9 @@ export default function CreateRequestQuotationPage() {
   const handleSubmit = () => {
 
   };
-
+ if (loading) return <Loading/>;
   return (
-    <SidebarWithHeader username="---">
+    <SidebarWithHeader username={auth?.username ?? "Unknown"} daysToExpire={auth?.days_remaining ?? 0}>
         <Flex justify="space-between" align="center" mb={4}>
           <Heading>Create Request Quotation</Heading>
           <Flex gap={6}>

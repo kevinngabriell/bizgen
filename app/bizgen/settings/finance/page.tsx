@@ -33,16 +33,10 @@ export default function SettingFinance(){
     const [bankAccountData, setBankAccountData] = useState<GetBankAccountData[]>([]);
     const [editingBankAccount, setEditingBankAccount] = useState<GetBankAccountData | null>(null);
 
-    const t = getLang("en"); 
+    //language state 
+    const [lang, setLang] = useState<"en" | "id">("en");
+    const t = getLang(lang);
 
-    const handleOpenBankAccountDialog = () => {
-        setIsBankDialogOpen(true);
-    };
-
-    const handleOpenAccountCodeDialog = () => {
-        setIsAccountDialogOpen(true);
-    }
-    
     const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
     
     const [showAlert, setShowAlert] = useState(false);
@@ -58,12 +52,18 @@ export default function SettingFinance(){
 
     const init = async () => {
         setLoading(true);
-                
+        
+        //check authentication redirect
         const valid = await checkAuthOrRedirect();
         if(!valid) return;
-                
+        
+        //get info from authentication
         const info = getAuthInfo();
         setAuth(info);
+
+        //set language from token authentication
+        const language = info?.language === "id" ? "id" : "en";
+        setLang(language);
 
         try {
             const accountCodeRes = await getAllAccountCode(accountCodePage, 10, findAccountCode);
@@ -89,7 +89,13 @@ export default function SettingFinance(){
         }
     }
 
-    if (loading) return <Loading/>;
+    const handleOpenBankAccountDialog = () => {
+        setIsBankDialogOpen(true);
+    };
+
+    const handleOpenAccountCodeDialog = () => {
+        setIsAccountDialogOpen(true);
+    }
 
     const handleCreateBankAccount =async(data: {
         bank_number: string;
@@ -247,7 +253,9 @@ export default function SettingFinance(){
             setLoading(false);
         }
     }
-    
+
+    if (loading) return <Loading/>;
+
     return(
         <SidebarWithHeader username={auth?.username ?? "Unknown"} daysToExpire={auth?.days_remaining ?? 0}>
             <Heading mb={6}>Finance ERP Settings</Heading>

@@ -28,7 +28,9 @@ export default function SettingProduct(){
     const [messagePopup, setMessagePopup] = useState('');
     const [isSuccess, setIsSuccess] = useState(false);
 
-    const t = getLang("en"); 
+    //language state 
+    const [lang, setLang] = useState<"en" | "id">("en");
+    const t = getLang(lang);
 
     useEffect(() => {
         init();
@@ -37,11 +39,17 @@ export default function SettingProduct(){
     const init = async () => {
         setLoading(true);
 
+        //check authentication redirect
         const valid = await checkAuthOrRedirect();
         if(!valid) return;
 
+        //get info from authentication
         const info = getAuthInfo();
         setAuth(info);
+
+        //set language from token authentication
+        const language = info?.language === "id" ? "id" : "en";
+        setLang(language);
 
         try {
             const productRes = await getAllProduct(productPage, 10, findProduct);
@@ -59,8 +67,6 @@ export default function SettingProduct(){
             setLoading(false);
         }
     }
-
-    if (loading) return <Loading/>;
 
     const handleCreateProduct  = async(data: {
         product_code: string;
@@ -140,6 +146,8 @@ export default function SettingProduct(){
             setLoading(false);
         }
     }
+
+    if (loading) return <Loading/>;
 
     return(
         <SidebarWithHeader username={auth?.username ?? ""} daysToExpire={auth?.days_remaining ?? 0}>

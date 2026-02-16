@@ -10,10 +10,10 @@ import { useEffect, useState } from 'react';
 import { FiFileText } from 'react-icons/fi';
 
 export default function BookingConfirmationPage() {
-  const [isEdit, setIsEdit] = useState(true);
-
   const [auth, setAuth] = useState<DecodedAuthToken | null>(null);
   const [loading, setLoading] = useState(false);
+
+  const [isEdit, setIsEdit] = useState(true);
   const router = useRouter();
 
   useEffect(() => {
@@ -52,10 +52,10 @@ export default function BookingConfirmationPage() {
           <Badge fontSize="sm">
             Draft
           </Badge>
-          <Button variant="outline" onClick={() => setIsEdit(false)}>
+          <Button variant="outline" color={"#E77A1F"} borderColor={"#E77A1F"} onClick={() => setIsEdit(false)}>
             Save Draft
           </Button>
-          <Button >
+          <Button bg="#E77A1F" color="white">
             Confirm & Create Job
           </Button>
         </SimpleGrid>
@@ -113,7 +113,7 @@ export default function BookingConfirmationPage() {
             <Heading size="sm">Parties Information</Heading>
           </Card.Header>
           <Card.Body>
-            <SimpleGrid column={{ base: '1fr', md: '1fr 1fr' }} gap={6}>
+            <SimpleGrid column={{ base: 1, md: 2 }} gap={6}>
 
 
               <Field.Root>

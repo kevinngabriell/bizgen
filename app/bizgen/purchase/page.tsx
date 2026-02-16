@@ -73,7 +73,7 @@ export default function Purchase (){
         <Dialog.Root>
           {/* Trigger Dialog */}
           <Dialog.Trigger asChild>
-            <Button variant="outline" size="sm" bg={"#E77A1F"} color={"white"} cursor={"pointer"}>+ Create New</Button>
+            <Button variant="outline" size="sm" bg={"#E77A1F"} color={"white"} cursor={"pointer"}>{t.master.create_new_button}</Button>
           </Dialog.Trigger>
           {/* Dialog Content */}
           <Portal>
@@ -82,7 +82,7 @@ export default function Purchase (){
               <Dialog.Content>
                 {/* Dialog Header */}
                 <Dialog.Header>
-                  <Heading size="md">Create New</Heading>
+                  <Heading size="md">{t.master.create_new}</Heading>
                 </Dialog.Header>
 
                 {/* Dialog Body */}
@@ -155,7 +155,7 @@ export default function Purchase (){
           <Card.Body>
               <Flex>
                 <Heading size="md" flex="1">{t.purchaseModule.request_quotation.title}</Heading>
-                <Text fontSize="sm" cursor="pointer">See All</Text>
+                <Text fontSize="sm" cursor="pointer">{t.master.see_all}</Text>
               </Flex>
           </Card.Body>
         </Card.Root>
@@ -165,7 +165,7 @@ export default function Purchase (){
           <Card.Body>
               <Flex>
                 <Heading size="md" flex="1">{t.purchaseModule.purchase_requisition.title}</Heading>
-                <Text fontSize="sm" cursor="pointer">See All</Text>
+                <Text fontSize="sm" cursor="pointer">{t.master.see_all}</Text>
               </Flex>
           </Card.Body>
         </Card.Root>
@@ -175,7 +175,7 @@ export default function Purchase (){
           <Card.Body>
               <Flex>
                 <Heading size="md" flex="1">{t.purchaseModule.purchase_local.title}</Heading>
-                <Text fontSize="sm" cursor="pointer">See All</Text>
+                <Text fontSize="sm" cursor="pointer">{t.master.see_all}</Text>
               </Flex>
           </Card.Body>
         </Card.Root>
@@ -185,7 +185,7 @@ export default function Purchase (){
           <Card.Body>
               <Flex>
                 <Heading size="md" flex="1">{t.purchaseModule.purchase_import.title}</Heading>
-                <Text fontSize="sm" cursor="pointer">See All</Text>
+                <Text fontSize="sm" cursor="pointer">{t.master.see_all}</Text>
               </Flex>
           </Card.Body>
         </Card.Root>
@@ -195,7 +195,7 @@ export default function Purchase (){
           <Card.Body>
               <Flex>
                 <Heading size="md" flex="1">{t.purchaseModule.receiving_items.title}</Heading>
-                <Text fontSize="sm" cursor="pointer">See All</Text>
+                <Text fontSize="sm" cursor="pointer">{t.master.see_all}</Text>
               </Flex>
           </Card.Body>
         </Card.Root>
@@ -205,7 +205,7 @@ export default function Purchase (){
           <Card.Body>
               <Flex>
                 <Heading size="md" flex="1">{t.purchaseModule.purchase_invoice.title}</Heading>
-                <Text fontSize="sm" cursor="pointer">See All</Text>
+                <Text fontSize="sm" cursor="pointer">{t.master.see_all}</Text>
               </Flex>
           </Card.Body>
         </Card.Root>

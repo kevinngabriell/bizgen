@@ -28,7 +28,9 @@ export default function SettingUOM(){
     const [messagePopup, setMessagePopup] = useState('');
     const [isSuccess, setIsSuccess] = useState(false);
 
-    const t = getLang("en"); 
+    //language state 
+    const [lang, setLang] = useState<"en" | "id">("en");
+    const t = getLang(lang);
 
     useEffect(() => {
         init();
@@ -37,11 +39,17 @@ export default function SettingUOM(){
     const init = async () => {
         setLoading(true);
 
+        //check authentication redirect
         const valid = await checkAuthOrRedirect();
         if(!valid) return;
 
+        //get info from authentication
         const info = getAuthInfo();
         setAuth(info);
+
+        //set language from token authentication
+        const language = info?.language === "id" ? "id" : "en";
+        setLang(language);
 
         try {
             const uomRes = await getAllUOM(uomPage, 10, findUOM);
@@ -59,8 +67,6 @@ export default function SettingUOM(){
             setLoading(false);
         }
     }
-    
-    if (loading) return <Loading/>;
 
     const handleCreateUOM = async (data: {
         uom_name: string;
@@ -138,22 +144,22 @@ export default function SettingUOM(){
             setLoading(false);
         }
     }
-    
+
+    if (loading) return <Loading/>;
+
     return(
         <SidebarWithHeader username={auth?.username ?? "Unknown"} daysToExpire={auth?.days_remaining ?? 0}>
             <Flex gap={2} display={"flex"} mb={"2"} mt={"2"}>
                 <Heading mb={6} width={"100%"}>{t.uom.title}</Heading>
                 <Flex gap={2} alignItems={"center"}>
                     <InputGroup startElement={<LuSearch />}>
-                        <Input placeholder={t.uom.search} bg={"white"} value={findUOM}
-                            onChange={(e) => setFindUOM(e.target.value)}
+                        <Input placeholder={t.uom.search} bg={"white"} value={findUOM} onChange={(e) => setFindUOM(e.target.value)}
                             onKeyDown={(e) => {
                                 if (e.key === "Enter") {
                                     setUOMPage(1);
                                     init();
                                 }
-                            }}
-                            width="250px"
+                            }} width="250px"
                         />
                     </InputGroup>
                     <Button bg={"#E77A1F"} color={"white"} cursor={"pointer"} onClick={handleOpenUOMDialog}>{t.uom.create_button}</Button>
@@ -162,13 +168,10 @@ export default function SettingUOM(){
 
             {showAlert && <AlertMessage title={titlePopup} description={messagePopup} isSuccess={isSuccess} />}
 
-            <UOMDialog 
-                isOpen={isUOMOpen} 
+            <UOMDialog isOpen={isUOMOpen} title={editingUOM ? t.uom.update_button : t.uom.create_button} placeholders={editingUOM ? {uom_id: editingUOM.uom_id, uom_name: editingUOM.uom_name, conversion_factor: editingUOM.conversion_factor} : undefined}
                 setIsOpen={(open) => {
                     setIsUOMOpen(open);
                 }}
-                title={editingUOM ? t.uom.update_button : t.uom.create_button}
-                placeholders={editingUOM ? {uom_id: editingUOM.uom_id, uom_name: editingUOM.uom_name, conversion_factor: editingUOM.conversion_factor} : undefined}
                 onSubmit={(data) => {
                     if(editingUOM) { 
                         handleUpdateUOM({
@@ -244,10 +247,7 @@ export default function SettingUOM(){
             </Table.Root>          
 
             <Flex display={"flex"} justify="flex-end" alignItems={"end"} width={"100%"} mt={"3"}>
-                <Pagination.Root
-                    count={uomPagination.total_pages}pageSize={1} 
-                    page={uomPage} onPageChange={(details) => setUOMPage(details.page)}
-                >
+                <Pagination.Root count={uomPagination.total_pages}pageSize={1} page={uomPage} onPageChange={(details) => setUOMPage(details.page)}>
                     <ButtonGroup variant="ghost" size="sm" wrap="wrap">
                         <Pagination.PrevTrigger asChild>
                             <IconButton><LuChevronLeft /></IconButton>
@@ -255,10 +255,7 @@ export default function SettingUOM(){
 
                         <Pagination.Items
                             render={(page) => (
-                                <IconButton
-                                    key={page.value}
-                                    variant={page.value === uomPage ? "outline" : "ghost"} onClick={() => setUOMPage(page.value)}
-                                >
+                                <IconButton key={page.value} variant={page.value === uomPage ? "outline" : "ghost"} onClick={() => setUOMPage(page.value)}>
                                     {page.value}
                                 </IconButton>
                             )}

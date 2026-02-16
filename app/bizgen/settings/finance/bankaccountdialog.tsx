@@ -1,6 +1,7 @@
 "use client";
 
 import Loading from "@/components/loading";
+import { getAuthInfo } from "@/lib/auth/auth";
 import { getLang } from "@/lib/i18n";
 import { getAllCurrency, GetCurrencyData } from "@/lib/master/currency";
 import { Dialog, Portal, Field, Input, Button, SimpleGrid, CloseButton, Switch, Select, createListCollection } from "@chakra-ui/react";
@@ -40,7 +41,18 @@ export default function BankAccountDialog({title, isOpen, setIsOpen,
     const [currencyOptions, setCurrencyOptions] = useState<GetCurrencyData[]>([]);
     const [isPrimary, setIsPrimary] = useState(false);
 
-    const t = getLang("en"); 
+    //language state 
+    const [lang, setLang] = useState<"en" | "id">("en");
+    const t = getLang(lang);
+
+    const init = async () => {
+        //get info from authentication
+        const info = getAuthInfo();
+
+        //set language from token authentication
+        const language = info?.language === "id" ? "id" : "en";
+        setLang(language);
+    }
 
     const currencyCollection = createListCollection({
         items: currencyOptions.map((cur) => ({
@@ -52,6 +64,8 @@ export default function BankAccountDialog({title, isOpen, setIsOpen,
     useEffect(() => {
         if(!isOpen) return;
 
+        init();
+        
         setBankAccountID(placeholders?.bank_account_id ?? "");
         setBankNumber(placeholders?.bank_number ?? "");
         setBankName(placeholders?.bank_name ?? "");
