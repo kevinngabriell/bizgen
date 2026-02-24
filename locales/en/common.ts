@@ -8,7 +8,7 @@ export const en = {
     apps_description : "BizGen is an ERP system designed for high‑volume trading and export‑import businesses — helping you manage procurement, inventory, logistics, orders, finance, and reporting in one integrated platform.",
     action_desc: `Plans start from <b>&nbsp;Rp 150.000 / month</b> — upgrade up tomulti‑user teams and extended features for growing operations.` ,
     subscribe_button: "Subscribe",
-    contact_button: "Contact Us",
+    contact_button: "Contact Us ",
     pricing_plan_header : "Pricing Plans",
     pricing_plan_desc : "Choose a plan that fits your trading & export‑import operations"
   },
