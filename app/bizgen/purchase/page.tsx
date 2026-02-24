@@ -13,7 +13,9 @@ export default function Purchase (){
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
-  const t = getLang("en"); 
+  //language state 
+  const [lang, setLang] = useState<"en" | "id">("en");
+  const t = getLang(lang);
 
   useEffect(() => {
     init();
@@ -22,23 +24,21 @@ export default function Purchase (){
   const init = async () => {
     setLoading(true);
 
+    //check authentication redirect
     const valid = await checkAuthOrRedirect();
     if(!valid) return;
 
+    //get info from authentication
     const info = getAuthInfo();
     setAuth(info);
 
-    try {
+    //set language from token authentication
+    const language = info?.language === "id" ? "id" : "en";
+    setLang(language);
 
-    } catch (error: any){
-
-    } finally {
-      setLoading(false);
-    }
+    setLoading(false);
   }
     
-  if (loading) return <Loading/>;
-
   const navigateToPurchaseImport = () => {
     router.push('/bizgen/purchase/purchase-import')
   }
@@ -62,6 +62,8 @@ export default function Purchase (){
   const navigateToRequestQuotation = () => {
     router.push('/bizgen/purchase/request-quotation')
   }
+
+  if (loading) return <Loading/>;
 
   return (
     <SidebarWithHeader username={auth?.username ?? "Unknown"} daysToExpire={auth?.days_remaining ?? 0}>

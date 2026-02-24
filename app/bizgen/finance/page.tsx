@@ -35,6 +35,22 @@ export default function Finance() {
       setLoading(false);
     }
   }
+
+  const handleDirectToCreateInvoice = () => {
+    router.push('/bizgen/finance/create-invoice');
+  }
+
+  const handleDirectToCreateVendorBill = () => {
+    router.push('/bizgen/finance/create-vendor-bill');
+  }
+
+  const handleDirectToCreateIncome = () => {
+    router.push('/bizgen/finance/create-income');
+  }
+
+  const handleDirectToCreateExpenses = () => {
+    router.push('/bizgen/finance/create-expenses');
+  }
     
   if (loading) return <Loading/>;
 
@@ -82,7 +98,7 @@ export default function Finance() {
         <Card.Header>
           <Flex justify="space-between" align="center">
             <Heading size="md">Accounts Receivable & Billing</Heading>
-            <Button size="sm" bg={"#E77A1F"} color={"white"} cursor={"pointer"}>Create Invoice</Button>
+            <Button size="sm" bg={"#E77A1F"} color={"white"} cursor={"pointer"} onClick={handleDirectToCreateInvoice}>Create Invoice</Button>
           </Flex>
         </Card.Header>
         <Card.Body>
@@ -136,7 +152,7 @@ export default function Finance() {
         <Card.Header>
           <Flex justify="space-between" align="center">
             <Heading size="md">Accounts Payable & Vendor Bills</Heading>
-            <Button size="sm" bg={"#E77A1F"} color={"white"} cursor={"pointer"}>Add Vendor Bill</Button>
+            <Button size="sm" bg={"#E77A1F"} color={"white"} cursor={"pointer"} onClick={handleDirectToCreateVendorBill}>Add Vendor Bill</Button>
           </Flex>
         </Card.Header>
         <Card.Body>
@@ -186,8 +202,8 @@ export default function Finance() {
             <Flex justify="space-between" align="center">
               <Heading size="md">Operational Income & Expenses</Heading>
               <Flex gap={2}>
-                <Button size="sm" bg={"#E77A1F"} color={"white"} cursor={"pointer"}>Add Income</Button>
-                <Button size="sm" bg={"#E77A1F"} color={"white"} cursor={"pointer"}>Add Expense</Button>
+                <Button size="sm" bg={"#E77A1F"} color={"white"} cursor={"pointer"} onClick={handleDirectToCreateIncome}>Add Income</Button>
+                <Button size="sm" bg={"#E77A1F"} color={"white"} cursor={"pointer"} onClick={handleDirectToCreateExpenses}>Add Expense</Button>
               </Flex>
             </Flex>
           </Card.Header>

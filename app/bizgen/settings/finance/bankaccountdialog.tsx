@@ -29,8 +29,7 @@ interface BankAccountDialogProps {
     }) => void;
 }
 
-export default function BankAccountDialog({title, isOpen, setIsOpen,
-    placeholders, onSubmit,
+export default function BankAccountDialog({title, isOpen, setIsOpen, placeholders, onSubmit,
 }: BankAccountDialogProps) {
     const [loading, setLoading] = useState(false);
     const [bankAccountID, setBankAccountID] = useState("");

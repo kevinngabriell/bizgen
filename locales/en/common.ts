@@ -644,5 +644,532 @@ sales_inquiry: {
   submit: "Submit Inquiry",
   edit: "Edit",
   export_pdf: "Export PDF"
+},
+sales_quotation: {
+  title_create: "Create Quotation",
+
+  //sections
+  customer_information: "Customer Information",
+  quotation_details: "Quotation Details",
+  quotation_items: "Quotation Items",
+
+  //customer
+  customer_name: "Customer",
+  customer_name_placeholder: "Select customer",
+
+  contact_person: "Contact Person",
+  contact_person_placeholder: "Enter contact person",
+
+  phone_number: "Phone Number",
+  phone_number_placeholder: "Enter phone number",
+
+  customer_address: "Customer Address",
+  customer_address_placeholder: "Enter customer address",
+
+  //quotation info
+  quotation_no: "Quotation Number",
+  quotation_no_placeholder: "Auto-generated or enter manually",
+
+  quotation_date: "Quotation Date",
+
+  currency: "Currency",
+  currency_placeholder: "Select currency",
+
+  linked_inquiry: "Linked Inquiry (Optional)",
+  linked_inquiry_placeholder: "Select inquiry",
+
+  //items
+  add_item: "Add Item",
+
+  product_service: "Product / Service",
+  product_service_placeholder: "Enter product or service name",
+
+  description: "Description",
+  description_placeholder: "Enter description",
+
+  quantity: "Quantity",
+  quantity_placeholder: "Enter quantity",
+
+  unit_price: "Unit Price",
+  unit_price_placeholder: "Enter unit price",
+
+  subtotal_auto: "Subtotal will be calculated automatically",
+
+  //buttons
+  cancel: "Cancel",
+  save_draft: "Save Draft",
+  save_generate_pdf: "Save & Generate PDF",
+
+  //success messages (VERY recommended)
+  success_create: "Quotation successfully created.",
+  success_update: "Quotation successfully updated.",
+  success_delete: "Quotation successfully deleted."
+},
+booking_confirmation: {
+  title: "Booking Confirmation / Job Order",
+
+  draft: "Draft",
+  save_draft: "Save Draft",
+  confirm_create_job: "Confirm & Create Job",
+
+  //sections
+  job_details: "Job Details",
+  parties_information: "Parties Information",
+  routing_cargo: "Routing & Cargo Details",
+  charges_summary: "Charges Summary",
+  attachments: "Attachments",
+
+  //job meta
+  booking_no: "Booking Number",
+  booking_no_placeholder: "Auto-generated or enter manually",
+
+  job_type: "Job Type",
+  job_type_placeholder: "Select job type",
+
+  service: "Service",
+  service_placeholder: "Select shipment/service",
+
+  estimated_departure: "Estimated Departure",
+  estimated_arrival: "Estimated Arrival",
+
+  //parties
+  shipper: "Shipper",
+  consignee: "Consignee",
+
+  company_name: "Company Name",
+  company_name_placeholder: "Enter company name",
+
+  contact_person: "Contact Person",
+  contact_person_placeholder: "Enter contact person",
+
+  address: "Address",
+  address_placeholder: "Enter address",
+
+  //routing
+  origin_port: "Port of Loading / Origin",
+  origin_port_placeholder: "Select origin port",
+
+  destination_port: "Port of Discharge / Destination",
+  destination_port_placeholder: "Select destination port",
+
+  incoterm: "Incoterm",
+  incoterm_placeholder: "Select incoterm",
+
+  //cargo
+  package_type: "Package Type",
+  package_type_placeholder: "e.g., Carton, Pallet, Loose Cargo",
+
+  total_packages: "Total Packages",
+  total_packages_placeholder: "Enter total packages",
+
+  gross_weight: "Gross Weight (KG)",
+  gross_weight_placeholder: "Enter total weight",
+
+  cbm: "Volume (CBM)",
+  cbm_placeholder: "Enter cargo volume",
+
+  //charges
+  freight_charge: "Freight Charge",
+  local_charge: "Local Charge",
+  other_charge: "Other Charge",
+
+  remarks: "Remarks / Special Instructions",
+  remarks_placeholder: "Enter optional notes",
+
+  //attachments
+  upload_documents: "Upload supporting documents (optional)",
+  choose_file: "Choose File",
+
+  //success messages
+  success_draft: "Booking saved as draft.",
+  success_confirm: "Booking confirmed and job created successfully."
+},
+sales_shipment_process: {
+  title: "Shipment Processing & Documents",
+  description: "Manage shipment execution, operational milestones, and export/import documentation for this job.",
+
+  save_draft: "Save Draft",
+  save_continue: "Save & Continue",
+  edit: "Edit",
+  mark_completed: "Mark Shipment as Completed",
+
+  //sections
+  shipment_overview: "Shipment Overview",
+  routing_container: "Routing & Container Details",
+  milestones: "Milestones Tracking",
+  shipment_documents: "Shipment Documents",
+  shipment_documents_desc: "Upload or manage required export/import documents.",
+
+  //overview
+  job_booking_no: "Job / Booking Number",
+  job_booking_no_placeholder: "Auto-generated or manual input",
+
+  shipment_type: "Shipment Type",
+  shipment_type_placeholder: "Select shipment type",
+
+  incoterm: "Incoterm",
+  incoterm_placeholder: "Select incoterm",
+
+  shipment_status: "Shipment Status",
+  shipment_status_placeholder: "Select shipment status",
+
+  //routing
+  port_loading: "Port of Loading",
+  port_loading_placeholder: "Select origin port",
+
+  port_discharge: "Port of Discharge",
+  port_discharge_placeholder: "Select destination port",
+
+  eta: "Estimated Time of Arrival (ETA)",
+  etd: "Estimated Time of Departure (ETD)",
+
+  container_info: "Container / Package Information",
+  container_info_placeholder: "20ft / 40ft container, CBM, weight, total packages…",
+
+  remarks: "Operational Remarks",
+  remarks_placeholder: "Operation notes, handling instructions, etc.",
+
+  //milestones
+  cargo_pickup: "Cargo Pickup",
+  stuffing: "Stuffing / Warehouse In",
+  customs_declaration: "Customs Declaration",
+  port_in: "Port In",
+  onboard: "On Board Vessel / Flight",
+  arrival_port: "Arrival at Destination Port",
+  delivery: "Delivery to Consignee",
+
+  notes_optional: "Notes (optional)",
+
+  //documents
+  commercial_invoice: "Commercial Invoice",
+  packing_list: "Packing List",
+  bill_of_lading: "Bill of Lading / Air Waybill",
+  coo: "Certificate of Origin (COO)",
+  insurance_document: "Insurance Document",
+  customs_document: "Customs Declaration",
+  gate_pass: "Gate Pass / Delivery Order",
+  supporting_docs: "Other Supporting Documents",
+
+  optional: "Optional",
+  view_replace: "View / Replace"
+},
+sales_costing_expense: {
+  title: "Costing & Expense Capture (Actualization)",
+  description: "Record actual shipment costs to monitor profitability and control operational spending.",
+
+  //shipment context
+  shipment_context: "Shipment Context",
+
+  job_booking_number: "Job / Booking Number",
+  job_booking_number_placeholder: "Enter job or booking number",
+
+  customer: "Customer",
+  customer_placeholder: "Choose customer",
+
+  shipment_type: "Shipment Type",
+  shipment_type_placeholder: "Select shipment type",
+
+  origin_port: "Origin Port / Location",
+  origin_port_placeholder: "Select origin port",
+
+  destination_port: "Destination Port / Location",
+  destination_port_placeholder: "Select destination port",
+
+  notes_optional: "Notes (optional)",
+  notes_optional_placeholder: "Add internal notes if necessary",
+
+  //cost items
+  actual_expense_items: "Actual Expense Items",
+  add_cost_item: "Add Cost Item",
+  expense_line: "Expense Line",
+
+  cost_category: "Cost Category",
+  cost_category_placeholder: "Select cost category",
+
+  cost_description: "Description",
+  cost_description_placeholder: "Enter cost description",
+
+  supplier: "Vendor / Supplier",
+  supplier_placeholder: "Choose supplier",
+
+  currency: "Currency",
+  currency_placeholder: "Select currency",
+
+  amount: "Amount",
+  amount_placeholder: "Enter amount",
+
+  remarks_reference: "Remarks / Reference (optional)",
+  remarks_reference_placeholder: "Invoice number, reference, or notes",
+
+  total_actual_cost: "Total Actual Cost",
+
+  //actions
+  save_draft: "Save Draft",
+  finalize_actualization: "Finalize Actualization",
+
+  //success
+  success_draft: "Costing draft saved successfully.",
+  success_finalize: "Actual costs finalized successfully."
+},
+sales_order: {
+  title_create: "Create Sales Order",
+  title_edit: "Edit Sales Order",
+  title_view: "Sales Order Details",
+
+  description: "Create a confirmed sales order to initiate shipment execution and operational planning.",
+
+  //sections
+  order_information: "Order Information",
+  origin_destination: "Origin & Destination",
+  cargo_details: "Cargo Details",
+
+  //order info
+  customer: "Customer",
+  customer_placeholder: "Select customer",
+
+  inquiry_quotation_ref: "Inquiry / Quotation Reference",
+  inquiry_quotation_ref_placeholder: "Reference number (optional)",
+
+  order_date: "Order Date",
+
+  sales_person: "Sales Person",
+  sales_person_placeholder: "Assign sales person",
+
+  service_type: "Service Type",
+  service_type_placeholder: "Select service type",
+
+  shipment_mode: "Shipment Mode",
+  shipment_mode_placeholder: "Select shipment mode",
+
+  //routing
+  origin_port: "Origin Port / Country",
+  origin_port_placeholder: "Select origin port",
+
+  destination_port: "Destination Port / Country",
+  destination_port_placeholder: "Select destination port",
+
+  eta_etd: "ETA / ETD",
+
+  incoterm: "Incoterm",
+  incoterm_placeholder: "Select incoterm",
+
+  //cargo
+  commodity: "Commodity",
+  commodity_placeholder: "Cargo / commodity description",
+
+  hs_code: "HS Code (optional)",
+  hs_code_placeholder: "e.g., 0901.21.00",
+
+  quantity_packaging: "Quantity / Packaging",
+  quantity_packaging_placeholder: "e.g., 120 Cartons",
+
+  weight_volume: "Weight & Volume",
+  weight_volume_placeholder: "e.g., 2,450 KG | 12.4 CBM",
+
+  remarks: "Remarks / Special Instruction",
+  remarks_placeholder: "Notes for operations or customer",
+
+  //actions
+  cancel: "Cancel",
+  save_sales_order: "Save Sales Order",
+
+  //status suggestion (VERY recommended)
+  draft: "Draft",
+  confirmed: "Confirmed",
+  in_progress: "In Progress",
+  completed: "Completed",
+  cancelled: "Cancelled",
+
+  //success
+  success_create: "Sales order successfully created.",
+  success_update: "Sales order successfully updated."
+},
+sales_delivery_order: {
+  title_create: "Create Delivery Order",
+  title_edit: "Edit Delivery Order",
+  title_view: "Delivery Order Details",
+
+  description: "Issue a delivery order to authorize cargo release and coordinate final delivery.",
+
+  //sections
+  document_information: "Document Information",
+  currency_exchange: "Currency & Exchange Rate",
+  charges_items: "Items / Charges",
+  totals: "Totals",
+
+  //document info
+  do_number: "Delivery Order Number",
+  do_number_placeholder: "e.g. DO-2026-0001",
+
+  issue_date: "Issue Date",
+
+  reference: "Reference (Sales Order / Job)",
+  reference_placeholder: "Link to sales order or shipment job",
+
+  //currency
+  currency: "Currency",
+  currency_placeholder: "Select currency",
+
+  exchange_rate: "Exchange Rate (to IDR)",
+  exchange_rate_helper: "Adjust this rate if customs or bank rates differ.",
+
+  //items
+  description_label: "Description",
+  description_placeholder: "Cargo or charge description",
+
+  quantity: "Quantity",
+  unit_price: "Unit Price",
+  line_total: "Line Total",
+
+  add_item: "Add Item / Charge",
+  remove: "Remove",
+
+  //totals
+  subtotal_foreign: "Subtotal (Foreign Currency)",
+  converted_to_idr: "Converted to IDR using the selected exchange rate",
+  subtotal_idr: "Subtotal (IDR)",
+
+  //remarks
+  remarks: "Remarks",
+  remarks_placeholder: "Additional notes or delivery instructions",
+
+  //actions
+  cancel: "Cancel",
+  save: "Save Delivery Order",
+
+  //success
+  success_create: "Delivery order successfully created.",
+  success_update: "Delivery order successfully updated."
+},
+sales_profit_summary: {
+  title_create: "Create Profit Summary",
+  title_edit: "Edit Profit Summary",
+  title_view: "Profit Summary Details",
+
+  description: "Analyze shipment profitability by comparing revenue against actual operational costs.",
+
+  badge: "Sales & Costing",
+
+  //header
+  header_information: "Header Information",
+
+  reference_no: "Reference Number",
+  reference_no_placeholder: "e.g. PS-2026-001",
+
+  job_order_booking: "Job Order / Booking Number",
+  job_order_booking_placeholder: "Enter job order or booking number",
+
+  customer: "Customer",
+  customer_placeholder: "Select customer",
+
+  currency: "Currency",
+  currency_placeholder: "Select currency",
+
+  exchange_rate: "Exchange Rate to IDR",
+  exchange_rate_helper: "Used for profit conversion and financial reporting.",
+
+  //revenue
+  revenue_section: "Revenue",
+  add_revenue: "Add Revenue Line",
+
+  description_label: "Description",
+  description_placeholder: "Freight charge, handling fee, documentation, etc.",
+
+  amount: "Amount",
+
+  revenue_total: "Total Revenue",
+
+  //cost
+  cost_section: "Costs / Expenses",
+  add_cost: "Add Cost Line",
+
+  cost_total: "Total Cost",
+
+  //profit
+  result_section: "Profit Summary Result",
+
+  gross_profit: "Gross Profit",
+  gross_profit_idr: "Gross Profit (IDR)",
+
+  profit_indicator_positive: "Profitable Shipment",
+  profit_indicator_negative: "Loss-Making Shipment",
+
+  //actions
+  cancel: "Cancel",
+  save: "Save Profit Summary",
+
+  //success
+  success_create: "Profit summary successfully saved.",
+  success_update: "Profit summary successfully updated."
+},
+sales_invoice: {
+  title_create: "Create Sales Invoice",
+  title_edit: "Edit Sales Invoice",
+  title_view: "Sales Invoice Details",
+
+  description: "Generate an invoice to bill customers for completed services or shipment milestones.",
+
+  //sections
+  invoice_information: "Invoice Information",
+  billing_details: "Billing Details",
+  line_items: "Invoice Line Items",
+  totals: "Invoice Totals",
+
+  //invoice info
+  invoice_number: "Invoice Number",
+  invoice_number_placeholder: "e.g. INV-2026-0001",
+
+  invoice_date: "Invoice Date",
+  due_date: "Due Date",
+
+  customer: "Customer",
+  customer_placeholder: "Select customer",
+
+  job_reference: "Job / Shipment Reference",
+  job_reference_placeholder: "Link to shipment, job, or sales order",
+
+  currency: "Currency",
+  currency_placeholder: "Select currency",
+
+  exchange_rate: "Exchange Rate (to IDR)",
+  exchange_rate_helper: "Used for financial reporting and currency conversion.",
+
+  //items
+  description_label: "Description",
+  description_placeholder: "Freight, handling, documentation, trucking, etc.",
+
+  quantity: "Quantity",
+  unit_price: "Unit Price",
+  amount: "Amount",
+
+  add_item: "Add Line Item",
+  remove_item: "Remove",
+
+  //notes
+  notes: "Invoice Notes",
+  notes_placeholder: "Payment instructions, bank details, or additional remarks.",
+
+  //totals
+  subtotal: "Subtotal",
+  tax_percent: "Tax (%)",
+  tax_amount: "Tax Amount",
+  grand_total: "Grand Total",
+
+  //buttons
+  preview_pdf: "Preview PDF",
+  save_invoice: "Save Invoice",
+  cancel: "Cancel",
+
+  //status (VERY IMPORTANT — don't skip)
+  draft: "Draft",
+  issued: "Issued",
+  partially_paid: "Partially Paid",
+  paid: "Paid",
+  overdue: "Overdue",
+  cancelled: "Cancelled",
+
+  //success
+  success_create: "Sales invoice successfully created.",
+  success_update: "Sales invoice successfully updated."
 }
 };

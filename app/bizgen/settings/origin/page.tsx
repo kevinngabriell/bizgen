@@ -13,16 +13,19 @@ import { FiEdit, FiTrash } from "react-icons/fi";
 import { getLang } from "@/lib/i18n";
 
 export default function SettingOrigin(){
+    //authentication & loading variable
     const [auth, setAuth] = useState<DecodedAuthToken | null>(null);
     const [loading, setLoading] = useState(false);
-    const [isOriginOpen, setIsOriginOpen] = useState(false);
 
+    //related to origin variable
+    const [isOriginOpen, setIsOriginOpen] = useState(false);
     const [originPage, setOriginPage] = useState(1);
     const [originPagination, setOriginPagination] = useState({ total_pages: 1, page: 1 });
     const [findOrigin, setFindOrigin] = useState('');
     const [originData, setOriginData] = useState<GetOriginData[]>([]);
     const [editingOrigin, setEditingOrigin] = useState<GetOriginData | null>(null);
 
+    //alert & success variable
     const [showAlert, setShowAlert] = useState(false);
     const [titlePopup, setTitlePopup] = useState('');
     const [messagePopup, setMessagePopup] = useState('');
@@ -67,8 +70,6 @@ export default function SettingOrigin(){
             setLoading(false);
         }        
     }
-
-    if (loading) return <Loading/>;
 
     const handleCreateOrigin  = async(data: { 
         origin_name: string;
@@ -149,9 +150,7 @@ export default function SettingOrigin(){
         }
     }
 
-    if (!auth) {
-        return <Loading />;
-    }
+    if (loading) return <Loading/>;
     
     return(
         <SidebarWithHeader username={auth?.username ?? "Unknown"}>
@@ -166,8 +165,7 @@ export default function SettingOrigin(){
                                     setOriginPage(1);
                                     init();
                                 }
-                            }}
-                            width="250px"
+                            }} width="250px"
                         />
                     </InputGroup>
                     <Button bg={"#E77A1F"} color={"white"} cursor={"pointer"} onClick={handleOpenOriginDialog}>{t.origin.create_button}</Button>
@@ -176,8 +174,7 @@ export default function SettingOrigin(){
 
             {showAlert && <AlertMessage title={titlePopup} description={messagePopup} isSuccess={isSuccess} />}
             
-            <OriginDialog 
-                isOpen={isOriginOpen} 
+            <OriginDialog isOpen={isOriginOpen} 
                 setIsOpen={(open) => {
                     setIsOriginOpen(open);
                 }}
@@ -263,25 +260,17 @@ export default function SettingOrigin(){
             </Table.Root>
             
             <Flex display={"flex"} justify="flex-end" alignItems={"end"} width={"100%"} mt={"3"}>
-                <Pagination.Root
-                    count={originPagination.total_pages}pageSize={1} 
-                    page={originPage} onPageChange={(details) => setOriginPage(details.page)}
-                >
+                <Pagination.Root count={originPagination.total_pages}pageSize={1} page={originPage} onPageChange={(details) => setOriginPage(details.page)}>
                     <ButtonGroup variant="ghost" size="sm" wrap="wrap">
                         <Pagination.PrevTrigger asChild>
                             <IconButton><LuChevronLeft /></IconButton>
                         </Pagination.PrevTrigger>
 
-                        <Pagination.Items
-                            render={(page) => (
-                                <IconButton
-                                    key={page.value}
-                                    variant={page.value === originPage ? "outline" : "ghost"} onClick={() => setOriginPage(page.value)}
-                                >
+                        <Pagination.Items render={(page) => (
+                                <IconButton key={page.value} variant={page.value === originPage ? "outline" : "ghost"} onClick={() => setOriginPage(page.value)}>
                                     {page.value}
                                 </IconButton>
-                            )}
-                        />
+                            )}/>
 
                         <Pagination.NextTrigger asChild>
                             <IconButton><LuChevronRight /></IconButton>
@@ -290,7 +279,5 @@ export default function SettingOrigin(){
                 </Pagination.Root>
             </Flex>                 
         </SidebarWithHeader>
-        // settings
-
     );
 }

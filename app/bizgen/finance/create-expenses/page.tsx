@@ -15,12 +15,14 @@ export default function CreateExpensePage() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
+  //language state 
+  const [lang, setLang] = useState<"en" | "id">("en");
+  const t = getLang(lang);
+
   const [accountCodeSelected, setAccountCodeSelected] = useState<string>();
   const [accountCodeOptions, setAccountCodeOptions] = useState<GetAccountCodeData[]>([]);
   const [currencySelected, setCurrencySelected] = useState<string>();
   const [currencyOptions, setCurrencyOptions] = useState<GetCurrencyData[]>([]);
-
-  const t = getLang("en"); 
 
   const accountcodeCollection = createListCollection({
     items: accountCodeOptions.map((acc) => ({
@@ -72,19 +74,19 @@ export default function CreateExpensePage() {
   const init = async () => {
     setLoading(true);
 
+    //check authentication redirect
     const valid = await checkAuthOrRedirect();
     if(!valid) return;
 
+    //get info from authentication
     const info = getAuthInfo();
     setAuth(info);
 
-    try {
+    //set language from token authentication
+    const language = info?.language === "id" ? "id" : "en";
+    setLang(language);
 
-    } catch (error: any){
-
-    } finally {
-      setLoading(false);
-    }
+    setLoading(false);
   }
     
   if (loading) return <Loading/>;

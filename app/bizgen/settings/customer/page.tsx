@@ -13,16 +13,19 @@ import { AlertMessage } from "@/components/ui/alert";
 import { getLang } from "@/lib/i18n";
 
 export default function SettingCustomer(){
+    //authentication & loading variable
     const [loading, setLoading] = useState(false);
     const [auth, setAuth] = useState<DecodedAuthToken | null>(null);
-    const [isCustomerOpen, setIsCustomerOpen] = useState(false);
 
+    //customer related variable
+    const [isCustomerOpen, setIsCustomerOpen] = useState(false);
     const [editingCustomer, setEditingCustomer] = useState<GetCustomerData | null>(null);
     const [customerPage, setCustomerPage] = useState(1);
     const [customerPagination, setCustomerPagination] = useState({ total_pages: 1, page: 1 });
     const [findCustomer, setFindCustomer] = useState('');
     const [customerData, setCustomerData] = useState<GetCustomerData[]>([]);
     
+    //alert & success variable
     const [showAlert, setShowAlert] = useState(false);
     const [titlePopup, setTitlePopup] = useState('');
     const [messagePopup, setMessagePopup] = useState('');
@@ -169,8 +172,7 @@ export default function SettingCustomer(){
                                         setCustomerPage(1);
                                         init();
                                     }
-                                }}
-                                width="250px"
+                                }} width="250px"
                             />
                         </InputGroup>
                     
@@ -182,8 +184,7 @@ export default function SettingCustomer(){
 
             {showAlert && <AlertMessage title={titlePopup} description={messagePopup} isSuccess={isSuccess} />}
             
-            <CustomerDialog 
-                isOpen={isCustomerOpen} 
+            <CustomerDialog isOpen={isCustomerOpen} 
                 setIsOpen={(open) => {
                     setIsCustomerOpen(open);
                     if (!open) setEditingCustomer(null);
@@ -288,13 +289,11 @@ export default function SettingCustomer(){
                             <IconButton><LuChevronLeft /></IconButton>
                         </Pagination.PrevTrigger>
 
-                        <Pagination.Items
-                            render={(page) => (
+                        <Pagination.Items render={(page) => (
                                 <IconButton key={page.value} variant={page.value === customerPage ? "outline" : "ghost"} onClick={() => setCustomerPage(page.value)}>
                                     {page.value}
                                 </IconButton>
-                            )}
-                        />
+                            )}/>
 
                         <Pagination.NextTrigger asChild>
                             <IconButton><LuChevronRight /></IconButton>

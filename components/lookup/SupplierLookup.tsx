@@ -1,10 +1,12 @@
 "use client";
 
 import { getAllSupplier, GetSupplierData } from "@/lib/master/supplier";
-import { Button, Dialog, Input, InputGroup, Portal, Table, Text } from "@chakra-ui/react";
+import { Button, CloseButton, Dialog, Input, InputGroup, Portal, Table, Text } from "@chakra-ui/react";
 import { useEffect, useState } from "react";
 import { LuSearch } from "react-icons/lu";
 import Loading from "../loading";
+import { getAuthInfo } from "@/lib/auth/auth";
+import { getLang } from "@/lib/i18n";
 
 type Props = {
   isOpen: boolean;
@@ -18,6 +20,19 @@ export default function SupplierLookup({
     const [supplier, setSupplier] = useState<GetSupplierData[]>([]);
     const [search, setSearch] = useState("");
     const [loading, setLoading] = useState(false);
+
+    //language state 
+    const [lang, setLang] = useState<"en" | "id">("en");
+    const t = getLang(lang);
+
+    const init = async () => {
+        //get info from authentication
+        const info = getAuthInfo();
+
+        //set language from token authentication
+        const language = info?.language === "id" ? "id" : "en";
+        setLang(language);
+    }
 
     const fetchSupplier = async (search?: string) => {
         try {
@@ -33,6 +48,8 @@ export default function SupplierLookup({
     }
 
     useEffect(() => {
+        init();
+
         if (isOpen) {
             fetchSupplier();
         }
@@ -71,8 +88,8 @@ export default function SupplierLookup({
                                 <Table.Root>
                                     <Table.Header>
                                         <Table.Row bg="bg.panel">
-                                            <Table.ColumnHeader textAlign={"center"}>t.customer.customer_name</Table.ColumnHeader>
-                                            <Table.ColumnHeader textAlign={"center"}>t.master.action</Table.ColumnHeader>
+                                            <Table.ColumnHeader textAlign={"center"}>Supplier name</Table.ColumnHeader>
+                                            <Table.ColumnHeader textAlign={"center"}>Action</Table.ColumnHeader>
                                         </Table.Row>
                                     </Table.Header>
                                     <Table.Body>
@@ -80,7 +97,7 @@ export default function SupplierLookup({
                                             <Table.Row key={supplier.supplier_id} cursor="pointer" _hover={{ bg: "gray.50" }} onClick={() => { onChoose(supplier); onClose();}}>
                                                 <Table.Cell textAlign={"center"}>{supplier.supplier_name}</Table.Cell>
                                                 <Table.Cell textAlign={"center"}>
-                                                    <Button size="sm" color="blue"
+                                                    <Button size="sm" bg={"#E77A1F"} color={"white"} cursor={"pointer"} 
                                                         onClick={() => {
                                                             onChoose(supplier);
                                                             onClose();
@@ -93,6 +110,16 @@ export default function SupplierLookup({
                                 </Table.Root>
                             )}
                         </Dialog.Body>
+
+                        <Dialog.Footer>
+                            <Dialog.ActionTrigger asChild>
+                                <Button variant="outline">Cancel</Button>
+                            </Dialog.ActionTrigger>
+                        </Dialog.Footer>
+                        
+                        <Dialog.CloseTrigger asChild>
+                            <CloseButton size="sm" />
+                        </Dialog.CloseTrigger>
                     </Dialog.Content>
                 </Dialog.Positioner>
             </Portal>

@@ -16,9 +16,11 @@ import { AlertMessage } from "@/components/ui/alert";
 import { getLang } from "@/lib/i18n";
 
 export default function SettingFinance(){
+    //authentication & loading variable
     const [loading, setLoading] = useState(false);
     const [auth, setAuth] = useState<DecodedAuthToken | null>(null);
 
+    //related to account code variable
     const [isAccountDialogOpen, setIsAccountDialogOpen] = useState(false);
     const [accountCodePagination, setAccountCodePagination] = useState({ total_pages: 1, page: 1 });
     const [accountCodePage, setAccountCodePage] = useState(1);
@@ -26,6 +28,7 @@ export default function SettingFinance(){
     const [accountCodeData, setAccountCodeData] = useState<GetAccountCodeData[]>([]);
     const [editingAccountCode, setEditingAccountCode] = useState<GetAccountCodeData | null>(null);
 
+    //related to bank account varible
     const [isBankDialogOpen, setIsBankDialogOpen] = useState(false);
     const [bankAccountPage, setBankAccountPage] = useState(1);
     const [bankAccountPagination, setBankAccountPagination] = useState({ total_pages: 1, page: 1 });
@@ -39,11 +42,13 @@ export default function SettingFinance(){
 
     const [showUpgradeDialog, setShowUpgradeDialog] = useState(false);
     
+    //alert & success variable
     const [showAlert, setShowAlert] = useState(false);
     const [titlePopup, setTitlePopup] = useState('');
     const [messagePopup, setMessagePopup] = useState('');
     const [isSuccess, setIsSuccess] = useState(false);
 
+    //active tab variable
     const [activeTab, setActiveTab] = useState<"bank-account" | "account-code">("bank-account");
 
     useEffect(() => {

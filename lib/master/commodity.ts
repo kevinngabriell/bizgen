@@ -18,6 +18,14 @@ export interface CreateCommodityData{
     is_active?: boolean;
 }
 
+export interface updateCommodityData{
+    commodity_id: string;
+    commodity_code?: string;
+    commodity_name?: string;
+    is_dangerous_goods?: boolean;
+    requires_special_handling?: boolean;
+    is_active?: boolean;
+}
 
 export async function getAllCommodity(page: number = 1, limit = 10, search: string = '') : Promise<{data: GetCommodityData[]; pagination: any}>{
     const baseUrl = process.env.NEXT_PUBLIC_API_URL;
@@ -70,23 +78,19 @@ export async function createCommodity(input: CreateCommodityData) : Promise<any>
     const baseUrl = process.env.NEXT_PUBLIC_API_URL;
     const token = localStorage.getItem("token");
 
-    const formData = new FormData();
-
-    formData.append('commodity_code', String(input.commodity_code));
-    formData.append('commodity_name', String(input.commodity_name));
-    formData.append('is_dangerous_goods', String(input.is_dangerous_goods));
-    formData.append('requires_special_handling', String(input.requires_special_handling));
-
-    if (typeof input.is_active === 'boolean') {
-        formData.append('is_active', input.is_active ? '1' : '0');
-    }
-
     const res = await fetch(`${baseUrl}master/commodity.php`, {
         method: 'POST',
         headers: {
-                Authorization: `Bearer ${token}`,
-            },
-        body: formData,
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            commodity_code: input.commodity_code,
+            commodity_name: input.commodity_name,
+            is_dangerous_goods: input.is_dangerous_goods,
+            requires_special_handling: input.requires_special_handling,
+            is_active: input.is_active ? 1 : 0
+        }),
     });
 
     const json = await res.json();
@@ -99,8 +103,34 @@ export async function createCommodity(input: CreateCommodityData) : Promise<any>
     return json;
 }
 
-export async function updateCommodity(){
+export async function updateCommodity(input: updateCommodityData) : Promise<any>{
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL;
+    const token = localStorage.getItem("token");
 
+    const res = await fetch(`${baseUrl}master/commodity.php`, {
+       method: 'PUT',
+       headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            commodity_id : input.commodity_id,
+            commodity_code : input.commodity_code,
+            commodity_name : input.commodity_name,
+            is_dangerous_goods : input.is_dangerous_goods,
+            requires_special_handling : input.requires_special_handling,
+            is_active : input.is_active
+        }),
+    });
+
+    const json = await res.json();
+
+    //Jika statusnya bukan 201 atau 200 maka error 
+    if (json.status_code !== 201 && json.status_code !== 200) {
+        throw new Error(json.status_message || 'Failed to update bank account');
+    }
+
+    return json;
 }
 
 export async function deleteCommodity(commodity_id: string) : Promise<any>{

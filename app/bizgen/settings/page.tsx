@@ -82,6 +82,7 @@ export default function Settings (){
                 <SettingCard title={t.settings_menu.ship} description={t.settings_menu.ship_description} link={"/bizgen/settings/shipvia"} _package={"Starter"} imageSrc="/assets/ship.svg"/>
                 <SettingCard title={t.settings_menu.uom} description={t.settings_menu.uom_description} link={"/bizgen/settings/uom"} _package={"Starter"} imageSrc="/assets/weight.svg"/>
                 <SettingCard title={t.settings_menu.port} description={t.settings_menu.port_description} link={"/bizgen/settings/port"} _package={"Starter"} imageSrc="/assets/ship.svg"/>
+                <SettingCard title="Commodity" description="Commodity Desc" link={"/bizgen/settings/commodity"} _package={"Starter"} imageSrc="/assets/ship.svg"/>
             </SimpleGrid>
         </SidebarWithHeader>
     );

@@ -21,7 +21,12 @@ interface LineItem {
 export default function CreateVendorBillPage() {
   const [auth, setAuth] = useState<DecodedAuthToken | null>(null);
   const [loading, setLoading] = useState(false);
-  
+  const router = useRouter();
+
+  //language state 
+  const [lang, setLang] = useState<"en" | "id">("en");
+  const t = getLang(lang);
+
   const [vendor, setVendor] = useState("");
   const [billNo, setBillNo] = useState("");
   const [billDate, setBillDate] = useState("");
@@ -33,9 +38,6 @@ export default function CreateVendorBillPage() {
   const [exchangeRate, setExchangeRate] = useState(1);
   const [reference, setReference] = useState("");
   const [notes, setNotes] = useState("");
-  const router = useRouter();
-
-   const t = getLang("en"); 
 
   const currencyCollection = createListCollection({
     items: currencyOptions.map((currency) => ({
@@ -65,19 +67,19 @@ export default function CreateVendorBillPage() {
   const init = async () => {
     setLoading(true);
 
+    //check authentication redirect
     const valid = await checkAuthOrRedirect();
     if(!valid) return;
 
+    //get info from authentication
     const info = getAuthInfo();
     setAuth(info);
 
-    try {
+    //set language from token authentication
+    const language = info?.language === "id" ? "id" : "en";
+    setLang(language);
 
-    } catch (error: any){
-
-    } finally {
-      setLoading(false);
-    }
+    setLoading(false);
   }
     
   if (loading) return <Loading/>;

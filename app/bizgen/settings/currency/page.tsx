@@ -13,16 +13,19 @@ import { AlertMessage } from "@/components/ui/alert";
 import { getLang } from "@/lib/i18n";
 
 export default function SettingCurrency(){
+    //authentication & loading variable
     const [auth, setAuth] = useState<DecodedAuthToken | null>(null);
     const [loading, setLoading] = useState(false);
+
+    //currency related variable
     const [isCurrencyOpen, setIsCurrencyOpen] = useState(false);
-    
     const [findCurrency, setFindCurrency] = useState('');
     const [currencyData, setCurrencyData] = useState<GetCurrencyData[]>([]);
     const [currencyPagination, setCurrencyPagination] = useState({ total_pages: 1, page: 1 });
     const [currencyPage, setCurrencyPage] = useState(1);
     const [editingCurrency, setEditingCurrency] = useState<GetCurrencyData | null>(null);
 
+    //alert success or failed
     const [showAlert, setShowAlert] = useState(false);
     const [titlePopup, setTitlePopup] = useState('');
     const [messagePopup, setMessagePopup] = useState('');
@@ -151,7 +154,11 @@ export default function SettingCurrency(){
         <SidebarWithHeader username={auth?.username ?? "Unknown"} daysToExpire={auth?.days_remaining ?? 0}>
             <Flex gap={2} display={"flex"} mb={"2"} mt={"2"}>
                 <Heading mb={6} width={"100%"}>{t.currency.title}</Heading>
-                <Button onClick={handleOpenCurrencyDialog} bg={"#E77A1F"} color={"white"} cursor={"pointer"}>{t.currency.create_button}</Button>
+                {/* check role if role are superadmin  */}
+                {/* only superadmin can create a new currency */}
+                {auth?.app_role_id === process.env.NEXT_ADMIN_ROLE_ID ? (
+                    <Button onClick={handleOpenCurrencyDialog} bg={"#E77A1F"} color={"white"} cursor={"pointer"}>{t.currency.create_button}</Button>
+                ) : null}
             </Flex>
 
             {showAlert && <AlertMessage title={titlePopup} description={messagePopup} isSuccess={isSuccess} />}
@@ -195,7 +202,10 @@ export default function SettingCurrency(){
                         <Table.Cell textAlign={"center"}>{currency.currency_name}</Table.Cell>
                         <Table.Cell textAlign={"center"}>{currency.currency_symbol}</Table.Cell>
                         <Table.Cell textAlign="center">
-                            <Flex justify="center" gap={4} fontSize={"2xl"}>
+                            {/* check role if role are superadmin  */}
+                            {/* only superadmin can create a update or delete currency */}
+                            {auth?.app_role_id === process.env.NEXT_ADMIN_ROLE_ID ? (
+                                <Flex justify="center" gap={4} fontSize={"2xl"}>
                                 <FiEdit
                                     style={{ cursor: "pointer" }}
                                     onClick={() => {
@@ -234,6 +244,8 @@ export default function SettingCurrency(){
                                     </Portal>
                                 </Dialog.Root>    
                             </Flex>
+                            ) : null}
+                            
                         </Table.Cell>
                     </Table.Row>
                 ))}
@@ -247,16 +259,11 @@ export default function SettingCurrency(){
                             <IconButton><LuChevronLeft /></IconButton>
                         </Pagination.PrevTrigger>
 
-                        <Pagination.Items
-                            render={(page) => (
-                                <IconButton
-                                    key={page.value}
-                                    variant={page.value === currencyPage ? "outline" : "ghost"} onClick={() => setCurrencyPage(page.value)}
-                                >
-                                    {page.value}
-                                </IconButton>
-                            )}
-                        />
+                        <Pagination.Items render={(page) => (
+                            <IconButton key={page.value} variant={page.value === currencyPage ? "outline" : "ghost"} onClick={() => setCurrencyPage(page.value)}>
+                                {page.value}
+                            </IconButton>
+                        )}/>
 
                         <Pagination.NextTrigger asChild>
                             <IconButton><LuChevronRight /></IconButton>

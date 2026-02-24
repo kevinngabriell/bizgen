@@ -40,7 +40,7 @@ export default function AccountCodeDialog({title, isOpen, setIsOpen, placeholder
 
   //language state 
   const [lang, setLang] = useState<"en" | "id">("en");
-   const t = getLang(lang);
+  const t = getLang(lang);
 
   const init = async () => {
     //get info from authentication
@@ -104,8 +104,7 @@ export default function AccountCodeDialog({title, isOpen, setIsOpen, placeholder
 
                 <Field.Root required>
                   <Field.Label>{t.account_code.account_type}<Field.RequiredIndicator /></Field.Label>
-                  <Select.Root collection={accountTypeCollection} value={accountType ? [accountType] : []}
-                    onValueChange={(details) => setAccountType(details.value[0])} size="sm" width="100%">
+                  <Select.Root collection={accountTypeCollection} value={accountType ? [accountType] : []} onValueChange={(details) => setAccountType(details.value[0])} size="sm" width="100%">
                     <Select.HiddenSelect />
                     <Select.Control>
                       <Select.Trigger>

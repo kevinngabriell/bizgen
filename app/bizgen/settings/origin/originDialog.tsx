@@ -23,12 +23,7 @@ interface OriginDialogProps {
     }) => void;
 }
 
-export default function OriginDialog({
-    isOpen, setIsOpen,
-    title,
-    placeholders,
-    onSubmit}: 
-OriginDialogProps) {
+export default function OriginDialog({isOpen, setIsOpen, title, placeholders, onSubmit} : OriginDialogProps) {
     const [originID, setOriginID] = useState("");
     const [originName, setOriginName] = useState("");
     const [regionSelected, setRegionSelected] = useState<string>();

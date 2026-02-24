@@ -6,13 +6,21 @@ import SidebarWithHeader from "@/components/ui/SidebarWithHeader";
 import Loading from "@/components/loading";
 import { DecodedAuthToken, checkAuthOrRedirect, getAuthInfo } from "@/lib/auth/auth";
 import { useRouter } from "next/navigation";
+import { getLang } from "@/lib/i18n";
 
 
 export default function CreateStockOutPage() {
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [auth, setAuth] = useState<DecodedAuthToken | null>(null);
   const [loading, setLoading] = useState(false);
+
+  //router authentication
   const router = useRouter();
+
+  //language state 
+  const [lang, setLang] = useState<"en" | "id">("en");
+  const t = getLang(lang);
+
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     init();
@@ -21,24 +29,21 @@ export default function CreateStockOutPage() {
   const init = async () => {
     setLoading(true);
 
+    //check authentication redirect
     const valid = await checkAuthOrRedirect();
     if(!valid) return;
 
+    //get info from authentication
     const info = getAuthInfo();
     setAuth(info);
 
-    try {
+    //set language from token authentication
+    const language = info?.language === "id" ? "id" : "en";
+    setLang(language);
 
-    } catch (error: any){
-
-    } finally {
-      setLoading(false);
-    }
+    setLoading(false);
   }
     
-  if (loading) return <Loading/>;
-
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -48,6 +53,8 @@ export default function CreateStockOutPage() {
       setIsSubmitting(false);
     }, 800);
   };
+
+  if (loading) return <Loading/>;
 
   return (
     <SidebarWithHeader username={auth?.username ?? "Unknown"} daysToExpire={auth?.days_remaining ?? 0}>

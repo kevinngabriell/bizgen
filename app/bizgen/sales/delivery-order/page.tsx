@@ -3,7 +3,9 @@
 import Loading from '@/components/loading';
 import SidebarWithHeader from '@/components/ui/SidebarWithHeader';
 import { DecodedAuthToken, checkAuthOrRedirect, getAuthInfo } from '@/lib/auth/auth';
-import {Button, Card, Flex, Heading, Input, Text, Textarea, Field, Separator, NumberInput} from '@chakra-ui/react';
+import { getLang } from '@/lib/i18n';
+import { getAllCurrency, GetCurrencyData } from '@/lib/master/currency';
+import {Button, Card, Flex, Heading, Input, Text, Textarea, Field, Separator, NumberInput, SimpleGrid, createListCollection, Select, Portal} from '@chakra-ui/react';
 import { useRouter } from 'next/navigation';
 
 import { useEffect, useState } from 'react';
@@ -17,33 +19,65 @@ type LineItem = {
 export default function CreateDeliveryOrderPage() {
   const [auth, setAuth] = useState<DecodedAuthToken | null>(null);
   const [loading, setLoading] = useState(false);
+
+  //router authentication
   const router = useRouter();
+
+  //language state 
+  const [lang, setLang] = useState<"en" | "id">("en");
+  const t = getLang(lang);
+
+  //currency option
+  const [currencySelected, setSelected] = useState<string>();
+  const [currencyOptions, setCurrencyOptions] = useState<GetCurrencyData[]>([]);
+
+  const currencyCollection = createListCollection({
+    items: currencyOptions.map((cur) => ({
+      label: `${cur.currency_name} (${cur.currency_symbol})`,
+      value: cur.currency_id,
+    })),
+  });
 
   useEffect(() => {
     init();
+
+    const fetchCurrency = async () => {
+      try {
+        setLoading(true);
+        const currencyRes = await getAllCurrency(1, 1000);
+        setCurrencyOptions(currencyRes?.data ?? []);
+      } catch (error) {
+        console.error(error);
+        setCurrencyOptions([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCurrency();
+
   }, []);
 
   const init = async () => {
     setLoading(true);
 
+    //check authentication redirect
     const valid = await checkAuthOrRedirect();
     if(!valid) return;
 
+    //get info from authentication
     const info = getAuthInfo();
     setAuth(info);
 
-    try {
+    //set language from token authentication
+    const language = info?.language === "id" ? "id" : "en";
+    setLang(language);
 
-    } catch (error: any){
-
-    } finally {
-      setLoading(false);
-    }
+    setLoading(false);
   }
     
-  
-  const [currency, setCurrency] = useState<'USD' | 'EUR' | 'IDR'>('USD');
   const [exchangeRate, setExchangeRate] = useState<number>(15500); // editable currency rate
+  
   const [lineItems, setLineItems] = useState<LineItem[]>([
     { description: '', qty: 1, unitPriceForeign: 0 },
   ]);
@@ -69,7 +103,6 @@ export default function CreateDeliveryOrderPage() {
   const handleSubmit = () => {
     const payload = {
       docType: 'SPPB/Delivery Order',
-      currency,
       exchangeRate,
       items: lineItems,
       amounts: {
@@ -78,109 +111,136 @@ export default function CreateDeliveryOrderPage() {
       },
     };
   };
-if (loading) return <Loading/>;
+
+  if (loading) return <Loading/>;
 
   return (
     <SidebarWithHeader username={auth?.username ?? "Unknown"} daysToExpire={auth?.days_remaining ?? 0}>
-      <Heading size="lg" mb={4}>Create SPPB / Delivery Order</Heading>
+      <Heading size="lg" mb={4}>{t.sales_delivery_order.title_create}</Heading>
 
       <Card.Root>
         <Card.Header>
-          <Heading size="sm">Document Information</Heading>
+          <Heading size="sm">{t.sales_delivery_order.document_information}</Heading>
         </Card.Header>
         <Card.Body>
-          <Field.Root>
-            <Field.Label>DO / SPPB Number</Field.Label>
-            <Input placeholder="e.g. DO-2026-0001" />
-          </Field.Root>
-          <Field.Root mt={4}>
-            <Field.Label>Issue Date</Field.Label>
-            <Input type="date" />
-          </Field.Root>
-          <Field.Root mt={4}>
-            <Field.Label>Reference (SO / Job)</Field.Label>
-            <Input placeholder="Link to Sales / Job Order" />
-          </Field.Root>
+          <SimpleGrid columns={{base: 1, md: 2, lg: 3}} gap={5}>
+            <Field.Root>
+              <Field.Label>{t.sales_delivery_order.do_number}</Field.Label>
+              <Input placeholder={t.sales_delivery_order.do_number_placeholder} />
+            </Field.Root>
+            <Field.Root>
+              <Field.Label>{t.sales_delivery_order.issue_date}</Field.Label>
+              <Input type="date" />
+            </Field.Root>
+            <Field.Root>
+              <Field.Label>{t.sales_delivery_order.reference}</Field.Label>
+              <Input placeholder={t.sales_delivery_order.reference_placeholder} />
+            </Field.Root>
+          </SimpleGrid>
+          
 
           <Separator mt={4} mb={4}/>
 
-          <Heading size="sm" mb={3}>Currency &amp; Exchange Rate</Heading>
+          <Heading size="sm" mb={3}>{t.sales_delivery_order.currency_exchange}</Heading>
 
-          <Field.Root maxW="200px">
-            <Field.Label>Currency</Field.Label>
-          </Field.Root>
+          <SimpleGrid columns={{base: 1, md: 2}} gap={5}>
+            <Field.Root>
+              <Field.Label>{t.sales_delivery_order.currency}</Field.Label>
+              <Select.Root w={"100%"} collection={currencyCollection} value={currencySelected ? [currencySelected] : []} onValueChange={(details) => setSelected(details.value[0])} size="sm" width="100%">
+                <Select.HiddenSelect />    
+                  <Select.Control>    
+                    <Select.Trigger>
+                      <Select.ValueText placeholder={t.sales_delivery_order.currency_placeholder} />
+                        </Select.Trigger>        
+                        <Select.IndicatorGroup>
+                          <Select.Indicator />
+                        </Select.IndicatorGroup>
+                      </Select.Control>
+                      <Portal>
+                        <Select.Positioner>
+                          <Select.Content>
+                            {currencyCollection.items.map((currency) => (
+                              <Select.Item item={currency} key={currency.value}>{currency.label}<Select.ItemIndicator /></Select.Item>
+                            ))}
+                          </Select.Content>
+                        </Select.Positioner>
+                      </Portal>
+                    </Select.Root>     
+            </Field.Root>
 
-          <Field.Root>
-            <Field.Label>Exchange Rate (to IDR)</Field.Label>
-            <NumberInput.Root>
-              <NumberInput.Control/>
-              <NumberInput.Input/>
-            </NumberInput.Root>
-            <Text fontSize="sm" color="gray.500">You can manually adjust this rate when customs / bank rate differs.</Text>
-          </Field.Root>
+            <Field.Root>
+              <Field.Label>{t.sales_delivery_order.exchange_rate}</Field.Label>
+              <NumberInput.Root w={"100%"}>
+                <NumberInput.Control/>
+                <NumberInput.Input/>
+              </NumberInput.Root>
+              <Text fontSize="sm" color="gray.500">{t.sales_delivery_order.exchange_rate_helper}</Text>
+            </Field.Root>
+          </SimpleGrid>
+          
 
           <Separator mt={5} mb={5}/>
 
-          <Heading size="sm" mb={4}>Items / Charges</Heading>
+          <Heading size="sm" mb={4}>{t.sales_delivery_order.charges_items}</Heading>
 
           {lineItems.map((li, i) => (
             <Card.Root key={i} variant="subtle" mb={2}>
               <Card.Body gap={3}>
                 <Field.Root>
-                  <Field.Label>Description</Field.Label>
-                  <Input value={li.description} onChange={(e) => handleLineChange(i, 'description', e.target.value)} placeholder="Cargo / Charge description"/>
+                  <Field.Label>{t.sales_delivery_order.description_label}</Field.Label>
+                  <Input value={li.description} onChange={(e) => handleLineChange(i, 'description', e.target.value)} placeholder={t.sales_delivery_order.description_placeholder}/>
                 </Field.Root>
-                <Field.Root maxW="140px">
-                  <Field.Label>Qty</Field.Label>
-                  <NumberInput.Root>
+                <Field.Root w={"100%"}>
+                  <Field.Label>{t.sales_delivery_order.quantity}</Field.Label>
+                  <NumberInput.Root w={"100%"}>
                     <NumberInput.Control/>
                     <NumberInput.Input/>
                   </NumberInput.Root>
                 </Field.Root>
                 <Field.Root>
-                  <Field.Label>Unit Price ({currency})</Field.Label>
-                  <NumberInput.Root>
+                  <Field.Label>{t.sales_delivery_order.unit_price}</Field.Label>
+                  <NumberInput.Root w={"100%"}>
                     <NumberInput.Control/>
                     <NumberInput.Input/>
                   </NumberInput.Root>
                 </Field.Root>
 
                 <Field.Root>
-                  <Field.Label>Line Total ({currency})</Field.Label>
+                  <Field.Label>{t.sales_delivery_order.line_total}</Field.Label>
                   <Input value={(li.qty * li.unitPriceForeign).toFixed(2)}/>
                 </Field.Root>
 
-                <Button color="red" variant="ghost" onClick={() => removeRow(i)}>Remove</Button>
+                <Button borderColor={"red"} color="red" variant="ghost" onClick={() => removeRow(i)}>{t.sales_delivery_order.remove}</Button>
               </Card.Body>
             </Card.Root>
           ))}
 
-          <Button mt={4} mb={4} onClick={addRow} variant="outline">Add Item / Charge</Button>
+          <Button mt={4} mb={4} onClick={addRow} variant="outline">{t.sales_delivery_order.add_item}</Button>
 
           <Separator mt={4} mb={4} />
           
-          <Heading size="sm" mb={6}>Totals</Heading>
+          <Heading size="sm" mb={6}>{t.sales_delivery_order.totals}</Heading>
 
           <Flex flexDirection={"column"}>
             <>
-              <Text fontWeight="md">Subtotal ({currency}): {subtotalForeign.toFixed(2)}</Text>
-              <Text color="gray.600" fontSize="sm">Converted to IDR using editable exchange rate</Text>
+              <Text fontWeight="md">Subtotal ({}): {subtotalForeign.toFixed(2)}</Text>
+              <Text color="gray.600" fontSize="sm">{t.sales_delivery_order.subtotal_foreign}</Text>
             </>
             <>
-              <Text fontWeight="medium" mt={4} mb={5}>Subtotal (IDR): {subtotalIDR.toLocaleString('id-ID')}</Text>
+              <Text fontWeight="medium" mt={4} mb={5}>{t.sales_delivery_order.subtotal_idr}: {subtotalIDR.toLocaleString('id-ID')}</Text>
             </>
           </Flex>
 
           <Separator mb={4} />
 
           <Field.Root>
-            <Field.Label>Remarks</Field.Label>
-            <Textarea placeholder="Additional notes / delivery instructions" />
+            <Field.Label>{t.sales_delivery_order.remarks}</Field.Label>
+            <Textarea placeholder={t.sales_delivery_order.remarks_placeholder} />
           </Field.Root>
 
           <Flex justify="flex-end" gap={3} mt={4}>
-            <Button variant="ghost">Cancel</Button>
-            <Button colorScheme="blue" onClick={handleSubmit}>Save Delivery Order</Button>
+            <Button variant="ghost">{t.sales_delivery_order.cancel}</Button>
+            <Button bg={"#E77A1F"} color={"white"} cursor={"pointer"} onClick={handleSubmit}>{t.sales_delivery_order.save}</Button>
           </Flex>
         </Card.Body>
       </Card.Root>

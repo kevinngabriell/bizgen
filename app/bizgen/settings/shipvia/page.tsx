@@ -13,16 +13,19 @@ import { FiEdit, FiTrash } from "react-icons/fi";
 import { getLang } from "@/lib/i18n";
 
 export default function SettingShipVia(){
+    //authentication & loading variable
     const [auth, setAuth] = useState<DecodedAuthToken | null>(null);
     const [loading, setLoading] = useState(false);
+
+    //related to ship via variable
     const [isShipViaOpen, setIsShipViaOpen] = useState(false);
-    
     const [shipViaPage, SetShipViaPage] = useState(1);
     const [shipViaPagination, setShipViaPagination] = useState({ total_pages: 1, page: 1 });
     const [findShipVia, setFindShipVia] = useState('');
     const [shipViaData, setShipViaData] = useState<GetShipViaData[]>([]);
     const [editingShipVia, setEditingShipVia] = useState<GetShipViaData | null>(null);
 
+    //alert & success variable
     const [showAlert, setShowAlert] = useState(false);
     const [titlePopup, setTitlePopup] = useState('');
     const [messagePopup, setMessagePopup] = useState('');

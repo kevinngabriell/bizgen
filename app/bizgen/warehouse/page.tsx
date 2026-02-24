@@ -35,6 +35,18 @@ export default function Warehouse() {
       setLoading(false);
     }
   }
+
+  const handleDirectToStockIn = () => {
+    router.push('/bizgen/warehouse/stock-in');
+  }
+
+  const handleDirectToStockOut = () => {
+    router.push('/bizgen/warehouse/stock-out');
+  }
+
+  const handleDirectToStockSample = () => {
+    router.push('/bizgen/warehouse/sample');
+  }
     
   if (loading) return <Loading/>;
 
@@ -84,9 +96,9 @@ export default function Warehouse() {
             <Flex justify={"space-between"}>
               <Heading size="md">Stock Movements</Heading>
               <Flex gap={2}>
-                <Button size="sm" variant="outline" bg={"transparent"} borderColor={"#E77A1F"} color={"#E77A1F"} cursor={"pointer"}>Stock In</Button>
-                <Button size="sm" variant="outline" bg={"transparent"} borderColor={"#E77A1F"} color={"#E77A1F"} cursor={"pointer"}>Stock Out</Button>
-                <Button size="sm" variant="outline" bg={"transparent"} borderColor={"#E77A1F"} color={"#E77A1F"} cursor={"pointer"}>Sample Out</Button>
+                <Button size="sm" variant="outline" bg={"transparent"} borderColor={"#E77A1F"} color={"#E77A1F"} cursor={"pointer"} onClick={handleDirectToStockIn}>Stock In</Button>
+                <Button size="sm" variant="outline" bg={"transparent"} borderColor={"#E77A1F"} color={"#E77A1F"} cursor={"pointer"} onClick={handleDirectToStockOut}>Stock Out</Button>
+                <Button size="sm" variant="outline" bg={"transparent"} borderColor={"#E77A1F"} color={"#E77A1F"} cursor={"pointer"} onClick={handleDirectToStockSample}>Sample Out</Button>
               </Flex>
             </Flex>
 

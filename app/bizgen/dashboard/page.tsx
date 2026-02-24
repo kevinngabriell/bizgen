@@ -6,19 +6,32 @@ import SidebarWithHeader from "@/components/ui/SidebarWithHeader";
 import { checkAuthOrRedirect, DecodedAuthToken, getAuthInfo } from "@/lib/auth/auth";
 import {Card, Heading, SimpleGrid, Stat, Table} from "@chakra-ui/react";
 import Loading from "@/components/loading";
+import { useRouter } from "next/navigation";
+import { getLang } from "@/lib/i18n";
 
 export default function Dashboard (){
     const [auth, setAuth] = useState<DecodedAuthToken | null>(null);
     const [loading, setLoading] = useState(false);
+    const router = useRouter();
+
+    //language state 
+    const [lang, setLang] = useState<"en" | "id">("en");
+    const t = getLang(lang);
 
     const init = async () => {
         setLoading(true);
 
+        //check authentication redirect
         const valid = await checkAuthOrRedirect();
         if(!valid) return;
-        
+
+        //get info from authentication
         const info = getAuthInfo();
         setAuth(info);
+
+        //set language from token authentication
+        const language = info?.language === "id" ? "id" : "en";
+        setLang(language);
 
         setLoading(false);
     }

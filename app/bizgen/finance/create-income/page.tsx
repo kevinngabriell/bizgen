@@ -14,12 +14,15 @@ export default function CreateIncomePage() {
   const [auth, setAuth] = useState<DecodedAuthToken | null>(null);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+
+  //language state 
+  const [lang, setLang] = useState<"en" | "id">("en");
+  const t = getLang(lang);
+
   const [accountCodeSelected, setAccountCodeSelected] = useState<string>();
   const [accountCodeOptions, setAccountCodeOptions] = useState<GetAccountCodeData[]>([]);
   const [currencySelected, setCurrencySelected] = useState<string>();
   const [currencyOptions, setCurrencyOptions] = useState<GetCurrencyData[]>([]);
-
-  const t = getLang("en"); 
 
   const accountcodeCollection = createListCollection({
     items: accountCodeOptions.map((acc) => ({
@@ -72,24 +75,21 @@ export default function CreateIncomePage() {
   const init = async () => {
     setLoading(true);
 
+    //check authentication redirect
     const valid = await checkAuthOrRedirect();
     if(!valid) return;
 
+    //get info from authentication
     const info = getAuthInfo();
     setAuth(info);
 
-    try {
+    //set language from token authentication
+    const language = info?.language === "id" ? "id" : "en";
+    setLang(language);
 
-    } catch (error: any){
-
-    } finally {
-      setLoading(false);
-    }
-  }
-    
-  if (loading) return <Loading/>;
-
-
+    setLoading(false);
+  };
+  
   const [form, setForm] = useState({
     accountCode: '',
     incomeDate: '',
@@ -113,6 +113,8 @@ export default function CreateIncomePage() {
 
     router.back();
   };
+
+if (loading) return <Loading/>
 
   return (
     <SidebarWithHeader username={auth?.username ?? "Unknown"} daysToExpire={auth?.days_remaining ?? 0}>

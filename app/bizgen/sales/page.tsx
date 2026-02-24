@@ -4,6 +4,7 @@ import Loading from "@/components/loading";
 import SidebarWithHeader from "@/components/ui/SidebarWithHeader";
 import { DecodedAuthToken, checkAuthOrRedirect, getAuthInfo } from "@/lib/auth/auth";
 import { getLang } from "@/lib/i18n";
+import { GetRfq, getSalesRfq } from "@/lib/sales/rfq";
 import { Button, Card, Flex, Heading, Text, SimpleGrid, Badge, Icon } from "@chakra-ui/react";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
@@ -17,6 +18,8 @@ export default function Sales (){
   //language state 
   const [lang, setLang] = useState<"en" | "id">("en");
   const t = getLang(lang);
+
+  const [salesRfqData, setSalesRfqData] = useState<GetRfq[]>([]);
 
   useEffect(() => {
     init();
@@ -37,7 +40,14 @@ export default function Sales (){
     const language = info?.language === "id" ? "id" : "en";
     setLang(language);
 
-    setLoading(false);
+    try {
+      const salesRfqRes = await getSalesRfq(1, 3, "");
+      setSalesRfqData(salesRfqRes.data);
+    }catch (error: any){
+      setSalesRfqData([]);
+    } finally {
+      setLoading(false);
+    }
   }
     
   if (loading) return <Loading/>;
@@ -78,55 +88,56 @@ export default function Sales (){
     router.push('/bizgen/sales/invoice');
   }
 
-    return (
-      <SidebarWithHeader username={auth?.username ?? "Unknown"} daysToExpire={auth?.days_remaining ?? 0}>
-          {/* title, subtitle, and create new button */}
-          <Flex gap={2} mb={2} mt="2" alignContent="center" justifyContent="space-between">
-            <Flex flexDir={"column"}>
-              <Heading>{t.sales_module.title}</Heading>
-              <Text fontSize="sm" color="gray.500" mb="8">{t.sales_module.subtitle}</Text>
-            </Flex>
-            <Button bg={"#E77A1F"} color={"white"} cursor={"pointer"}>{t.sales_module.create_new}</Button>
-          </Flex>
-          {/* Grid for all menus */}
-          <SimpleGrid columns={{ base: 1, md: 1, lg: 2 }} gap={8}>
-            {/* Inquiry card */}
-            <Card.Root>
-              <Card.Body>
-                {/* Inquiry title and badge */}
-                <Flex align="center" mb="3" gap={2}>
-                  <Icon as={FiFolder} />
-                  <Heading size="md" flex="1">{t.sales_module.inquiry.title}</Heading>
-                  <Badge color="purple">{t.sales_module.inquiry.badge}</Badge>
-                </Flex>
-                <Text fontSize="sm" color="gray.600" mb="4">{t.sales_module.inquiry.description}</Text>
-                
-                <Flex direction="column" gap={2} mb="3">
-                  <Text fontSize="xs" fontWeight="semibold" color="gray.500">{t.sales_module.inquiry.last_records}</Text>
-                  {/* Sample data for inquiry */}
-                  <Flex direction="column" gap={1}>
-                    <Flex justify="space-between">
-                      <Text fontSize="xs" color="gray.600" maxLines={1}>Sample item #1</Text>
-                      <Badge colorScheme="gray" variant="subtle">Today</Badge>
-                    </Flex>
-                    <Flex justify="space-between">
-                      <Text fontSize="xs" color="gray.600" maxLines={1}>Sample item #2</Text>
-                      <Badge colorScheme="gray" variant="subtle">Yesterday</Badge>
-                    </Flex>
-                    <Flex justify="space-between">
-                      <Text fontSize="xs" color="gray.600" maxLines={1}>Sample item #3</Text>
-                      <Badge colorScheme="gray" variant="subtle">2d ago</Badge>
-                    </Flex>
-                  </Flex>
-                  {/* Sample data for inquiry */}
-                </Flex>
+  const handleDirectToSalesRfqDetail = (rfq_id: string) => {
+    router.push(`/bizgen/sales/inquiry?rfq_id=${rfq_id}`);
+  }
 
-                <Flex justify="space-between">
-                  <Button size="sm" bg={"transparent"} borderColor={"#E77A1F"} color={"#E77A1F"} cursor={"pointer"}>{t.sales_module.inquiry.see_all}</Button>
-                  <Button size="sm" bg={"#E77A1F"} color={"white"} cursor={"pointer"} onClick={handleDirectToDetailInquiry} >{t.sales_module.inquiry.create}</Button>
-                </Flex>
-              </Card.Body>
-            </Card.Root>
+  return (
+    <SidebarWithHeader username={auth?.username ?? "Unknown"} daysToExpire={auth?.days_remaining ?? 0}>
+      
+      {/* title, subtitle, and create new button */}
+      <Flex gap={2} mb={2} mt="2" alignContent="center" justifyContent="space-between">
+        <Flex flexDir={"column"}>
+          <Heading>{t.sales_module.title}</Heading>
+          <Text fontSize="sm" color="gray.500" mb="8">{t.sales_module.subtitle}</Text>
+        </Flex>
+        <Button bg={"#E77A1F"} color={"white"} cursor={"pointer"}>{t.sales_module.create_new}</Button>
+      </Flex>
+          
+      {/* Grid for all menus */}
+      <SimpleGrid columns={{ base: 1, md: 1, lg: 2 }} gap={8}>
+        {/* Inquiry card */}
+        <Card.Root>
+          <Card.Body>
+            {/* Inquiry title and badge */}
+            <Flex align="center" mb="3" gap={2}>
+              <Icon as={FiFolder} />
+              <Heading size="md" flex="1">{t.sales_module.inquiry.title}</Heading>
+              <Badge color="purple">{t.sales_module.inquiry.badge}</Badge>
+            </Flex>
+            <Text fontSize="sm" color="gray.600" mb="4">{t.sales_module.inquiry.description}</Text>
+                
+            <Flex direction="column" gap={2} mb="3">
+              <Text fontSize="xs" fontWeight="semibold" color="gray.500">{t.sales_module.inquiry.last_records}</Text>
+              {/* Sample data for inquiry */}
+              <Flex direction="column" gap={1}>
+                {salesRfqData?.map((rfq) => (
+                  <Flex justify="space-between">
+                    <Text fontSize="xs" color="gray.600" maxLines={1} onClick={() => handleDirectToSalesRfqDetail(rfq.sales_rfq_id)}>{rfq.sales_rfq_number}</Text>
+                    <Badge colorScheme="gray" variant="subtle">{rfq.created_at}</Badge>
+                  </Flex>
+                ))}
+              </Flex>
+              {/* Sample data for inquiry */}
+            </Flex>
+
+            <Flex justify="space-between">
+              <Button size="sm" bg={"transparent"} borderColor={"#E77A1F"} color={"#E77A1F"} cursor={"pointer"}>{t.sales_module.inquiry.see_all}</Button>
+              <Button size="sm" bg={"#E77A1F"} color={"white"} cursor={"pointer"} onClick={handleDirectToDetailInquiry} >{t.sales_module.inquiry.create}</Button>
+            </Flex>
+          </Card.Body>
+        </Card.Root>
+        
             {/* Quotation card */}
             <Card.Root>
               <Card.Body>

@@ -13,16 +13,19 @@ import { AlertMessage } from "@/components/ui/alert";
 import { getLang } from "@/lib/i18n";
 
 export default function SettingProduct(){
+    //authentication & loading variable
     const [auth, setAuth] = useState<DecodedAuthToken | null>(null);
     const [loading, setLoading] = useState(false);
+
+    //related to product variable
     const [isProductOpen, setIsProductOpen] = useState(false);
-    
     const [productPage, setProductPage] = useState(1);
     const [productPagination, setProductPagination] = useState({ total_pages: 1, page: 1 });
     const [findProduct, setFindProduct] = useState('');
     const [productData, setProductData] = useState<GetProductData[]>([]);
     const [editingProduct, setEditingProduct] = useState<GetProductData | null>(null);
 
+    //alert & success variable
     const [showAlert, setShowAlert] = useState(false);
     const [titlePopup, setTitlePopup] = useState('');
     const [messagePopup, setMessagePopup] = useState('');
@@ -156,16 +159,14 @@ export default function SettingProduct(){
                 
                 <Flex gap={2} alignItems={"center"}>
                     <InputGroup startElement={<LuSearch />}>
-                        <Input placeholder={t.products.search} bg={"white"}
-                            value={findProduct}
+                        <Input placeholder={t.products.search} bg={"white"} value={findProduct}
                             onChange={(e) => setFindProduct(e.target.value)}
                             onKeyDown={(e) => {
                                 if (e.key === "Enter") {
                                     setProductPage(1);
                                     init();
                                 }
-                            }}
-                            width="250px"
+                            }} width="250px"
                         />
                     </InputGroup>
                 
@@ -276,11 +277,9 @@ export default function SettingProduct(){
                         </IconButton>
                     </Pagination.PrevTrigger>
 
-                    <Pagination.Items
-                        render={(page) => (
+                    <Pagination.Items render={(page) => (
                             <IconButton key={page.value} variant={page.value === productPage ? "outline" : "ghost"} onClick={() => setProductPage(page.value)}>{page.value} </IconButton>
-                        )}
-                    />
+                    )}/>
 
                     <Pagination.NextTrigger asChild>
                         <IconButton>

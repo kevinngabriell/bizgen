@@ -3,6 +3,7 @@
 import Loading from "@/components/loading";
 import SidebarWithHeader from "@/components/ui/SidebarWithHeader";
 import { DecodedAuthToken, checkAuthOrRedirect, getAuthInfo } from "@/lib/auth/auth";
+import { getLang } from "@/lib/i18n";
 import { Box, Flex, Heading, SimpleGrid, Stat, Card, Text, HStack, Button, Badge, Separator } from "@chakra-ui/react";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
@@ -12,6 +13,10 @@ export default function HR() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
+  //language state 
+  const [lang, setLang] = useState<"en" | "id">("en");
+  const t = getLang(lang);
+  
   useEffect(() => {
     init();
   }, []);
@@ -19,19 +24,19 @@ export default function HR() {
   const init = async () => {
     setLoading(true);
 
+    //check authentication redirect
     const valid = await checkAuthOrRedirect();
     if(!valid) return;
 
+    //get info from authentication
     const info = getAuthInfo();
     setAuth(info);
 
-    try {
+    //set language from token authentication
+    const language = info?.language === "id" ? "id" : "en";
+    setLang(language);
 
-    } catch (error: any){
-
-    } finally {
-      setLoading(false);
-    }
+    setLoading(false);
   }
     
   if (loading) return <Loading/>;

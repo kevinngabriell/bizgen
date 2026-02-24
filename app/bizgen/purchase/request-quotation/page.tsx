@@ -1,10 +1,15 @@
 "use client";
 
 import Loading from "@/components/loading";
+import CustomerLookup from "@/components/lookup/CustomerLookup";
 import SidebarWithHeader from "@/components/ui/SidebarWithHeader";
 import { DecodedAuthToken, checkAuthOrRedirect, getAuthInfo } from "@/lib/auth/auth";
+import { getLang } from "@/lib/i18n";
+import { GetCurrencyData } from "@/lib/master/currency";
 import { GetCustomerData } from "@/lib/master/customer";
-import { Button, Card, Flex, Field, IconButton, Input, Text, Textarea, Heading, SimpleGrid } from "@chakra-ui/react";
+import { GetPortData } from "@/lib/master/port";
+import { getAllShipVia, GetShipViaData } from "@/lib/master/ship-via";
+import { Button, Card, Flex, Field, IconButton, Input, Text, Textarea, Heading, SimpleGrid, createListCollection } from "@chakra-ui/react";
 import { useRouter } from "next/navigation";
 
 // import { AddIcon, DeleteIcon } from "@chakra-ui/icons";
@@ -26,35 +31,86 @@ export default function CreateRequestQuotationPage() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
+  //language state 
+  const [lang, setLang] = useState<"en" | "id">("en");
+  const t = getLang(lang);
+
   const [customerSelected, setCustomerSelected] = useState<string>();
   const [customerOptions, setCustomerOptions] = useState<GetCustomerData[]>([]);
 
+  //to open customer popup
+  const [customerModalOpen, setCustomerModalOpen] = useState(false);
+
+  //shipment type option
   const [shipmentTypeSelected, setShipmentTypeSelected] = useState<string>();
-  const [shipmentTypeOptions, setShipmentTypeOptions] = useState<GetCustomerData[]>([]);
+  const [shipmentTypeOptions, setShipmentTypeOptions] = useState<GetShipViaData[]>([]);
+
+  const shipmentTypeCollection = createListCollection({
+    items: shipmentTypeOptions.map((shipment) => ({
+      label: `${shipment.ship_via_name}`,
+      value: shipment.ship_via_id,
+    })),
+  });
+  
+  //set origin and destination origin selection
+  const [originSelected, setOriginSelected] = useState<string>();
+  const [destinationSelected, setDestinationSelected] = useState<string>();
+  const [portOptions, setPortOptions] = useState<GetPortData[]>([]);
+  
+  const portCollection = createListCollection({
+    items: portOptions.map((port) => ({
+      label: `${port.port_name} -  ${port.origin_name}`,
+      value: port.port_id,
+    })),
+  });
+
+  //currency option
+  const [currencySelected, setSelected] = useState<string>();
+  const [currencyOptions, setCurrencyOptions] = useState<GetCurrencyData[]>([]);
+
+  const currencyCollection = createListCollection({
+    items: currencyOptions.map((cur) => ({
+      label: `${cur.currency_name} (${cur.currency_symbol})`,
+      value: cur.currency_id,
+    })),
+  });
 
   useEffect(() => {
     init();
+
+    const fetchShipVia = async () => {
+      try {
+        setLoading(true);
+        const shipViaRes = await getAllShipVia(1, 1000);
+        setShipmentTypeOptions(shipViaRes?.data ?? []);
+      } catch (error) {
+        console.error(error);
+        setShipmentTypeOptions([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+        
+  fetchShipVia();
   }, []);
 
   const init = async () => {
     setLoading(true);
 
+    //check authentication redirect
     const valid = await checkAuthOrRedirect();
     if(!valid) return;
 
+    //get info from authentication
     const info = getAuthInfo();
     setAuth(info);
 
-    try {
+    //set language from token authentication
+    const language = info?.language === "id" ? "id" : "en";
+    setLang(language);
 
-    } catch (error: any){
-
-    } finally {
-      setLoading(false);
-    }
+    setLoading(false);
   }
-    
- 
 
   const [items, setItems] = useState<ItemRow[]>([
     {
@@ -96,11 +152,27 @@ export default function CreateRequestQuotationPage() {
   const handleSubmit = () => {
 
   };
+
+  const handleChooseCustomer = (customer: GetCustomerData) => {
+    // setForm(prev => ({
+    //   ...prev,
+    //   customerName: customer.customer_name,
+    //   contactPerson: customer.customer_pic_name,
+    //   customerPhone: customer.customer_pic_contact
+    // }));
+    
+    setCustomerModalOpen(false);
+  };
+
  if (loading) return <Loading/>;
+
   return (
     <SidebarWithHeader username={auth?.username ?? "Unknown"} daysToExpire={auth?.days_remaining ?? 0}>
         <Flex justify="space-between" align="center" mb={4}>
           <Heading>Create Request Quotation</Heading>
+
+          <CustomerLookup isOpen={customerModalOpen} onClose={() => setCustomerModalOpen(false)} onChoose={handleChooseCustomer} />
+            
           <Flex gap={6}>
             <Button variant="outline" onClick={handleSubmit}>Save as Draft</Button>
             <Button colorScheme="blue" onClick={handleSubmit}>Submit Request</Button>

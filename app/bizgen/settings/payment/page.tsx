@@ -13,16 +13,19 @@ import { getLang } from "@/lib/i18n";
 import { AlertMessage } from "@/components/ui/alert";
 
 export default function SettingPayment(){
+    //authentication & loading variable
     const [auth, setAuth] = useState<DecodedAuthToken | null>(null);
     const [loading, setLoading] = useState(false);
+
+    //related to payment variable
     const [isPaymentOpen, setIsPaymentOpen] = useState(false);
-    
     const [paymentPage, setPaymentPage] = useState(1);
     const [paymentPagination, setPaymentPagination] = useState({ total_pages: 1, page: 1 });
     const [findPayment, setFindPayment] = useState('');
     const [paymentData, setPaymentData] = useState<GetPaymentMethodData[]>([]);
     const [editingPayment, setEditingPayment] = useState<GetPaymentMethodData | null>(null);
     
+    //alert & success variable
     const [showAlert, setShowAlert] = useState(false);
     const [titlePopup, setTitlePopup] = useState('');
     const [messagePopup, setMessagePopup] = useState('');
@@ -166,12 +169,11 @@ export default function SettingPayment(){
 
             {showAlert && <AlertMessage title={titlePopup} description={messagePopup} isSuccess={isSuccess} />}
 
-            <PaymentMethodDialog isOpen={isPaymentOpen} 
+            <PaymentMethodDialog isOpen={isPaymentOpen} title={editingPayment ? t.payment_method.update_button : t.payment_method.create_button}
                 setIsOpen={(open) => {
                     setIsPaymentOpen(open);
                     if (!open) setEditingPayment(null);
                 }}
-                title={editingPayment ? t.payment_method.update_button : t.payment_method.create_button}
                 placeholders={editingPayment ? { payment_id: editingPayment.payment_id, payment_name: editingPayment.payment_name } : undefined}
                 onSubmit={(data) => {
                     if (editingPayment) {
@@ -244,35 +246,25 @@ export default function SettingPayment(){
             </Table.Root>
             
             <Flex display={"flex"} justify="flex-end" alignItems={"end"} width={"100%"} mt={"3"}>
-                <Pagination.Root
-                    count={paymentPagination.total_pages}pageSize={1} 
-                    page={paymentPage} onPageChange={(details) => setPaymentPage(details.page)}
-                >
-                <ButtonGroup variant="ghost" size="sm" wrap="wrap">
-                    <Pagination.PrevTrigger asChild>
-                        <IconButton><LuChevronLeft /></IconButton>
-                    </Pagination.PrevTrigger>
+                <Pagination.Root count={paymentPagination.total_pages}pageSize={1} page={paymentPage} onPageChange={(details) => setPaymentPage(details.page)}>
+                    <ButtonGroup variant="ghost" size="sm" wrap="wrap">
+                        <Pagination.PrevTrigger asChild>
+                            <IconButton><LuChevronLeft /></IconButton>
+                        </Pagination.PrevTrigger>
             
-                    <Pagination.Items
-                        render={(page) => (
-                            <IconButton
-                                key={page.value}
-                                variant={page.value === paymentPage ? "outline" : "ghost"} onClick={() => setPaymentPage(page.value)}
-                            >
-                            {page.value}
-                            </IconButton>
-                        )}
-                    />
+                        <Pagination.Items render={(page) => (
+                                <IconButton key={page.value} variant={page.value === paymentPage ? "outline" : "ghost"} onClick={() => setPaymentPage(page.value)}>
+                                {page.value}
+                                </IconButton>
+                            )}/>
             
-                    <Pagination.NextTrigger asChild>
-                        <IconButton><LuChevronRight /></IconButton>
-                    </Pagination.NextTrigger>
-                </ButtonGroup>
-            </Pagination.Root>
-        </Flex>       
+                        <Pagination.NextTrigger asChild>
+                            <IconButton><LuChevronRight /></IconButton>
+                        </Pagination.NextTrigger>
+                    </ButtonGroup>
+                </Pagination.Root>
+            </Flex>       
         </SidebarWithHeader>
-        // settings
-
     );
 }
 

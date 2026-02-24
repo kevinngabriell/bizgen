@@ -14,16 +14,19 @@ import PortDialog from "./portDialog";
 import { FiEdit, FiTrash } from "react-icons/fi";
 
 export default function SettingPort(){
+    //authentication & loading variable
     const [auth, setAuth] = useState<DecodedAuthToken | null>(null);
     const [loading, setLoading] = useState(false);
+    
+    //related to port variable 
     const [isPortOpen, setIsPortOpen] = useState(false);
-
     const [portPage, setPortPage] = useState(1);
     const [portPagination, setPortPagination] = useState({ total_pages: 1, page: 1 });
     const [findPort, setFindPort] = useState('');
     const [portData, setPortData] = useState<GetPortData[]>([]);
     const [editingPort, setEditingPort] = useState<GetPortData | null>(null);
 
+    //alert & sucess variable   
     const [showAlert, setShowAlert] = useState(false);
     const [titlePopup, setTitlePopup] = useState('');
     const [messagePopup, setMessagePopup] = useState('');
@@ -157,8 +160,7 @@ export default function SettingPort(){
                                     setPortPage(1);
                                     init();
                                 }
-                            }}
-                            width="250px"
+                            }} width="250px"
                         />
                     </InputGroup>
                     <Button bg={"#E77A1F"} color={"white"} cursor={"pointer"} onClick={handleOpenPortDialog}>{t.port.create_button}</Button>
@@ -167,8 +169,7 @@ export default function SettingPort(){
 
             {showAlert && <AlertMessage title={titlePopup} description={messagePopup} isSuccess={isSuccess} />}
             
-            <PortDialog 
-                isOpen={isPortOpen}
+            <PortDialog isOpen={isPortOpen}
                 setIsOpen={(open) => {
                     setIsPortOpen(open);
                     if (!open) setEditingPort(null);
@@ -266,11 +267,9 @@ export default function SettingPort(){
                         </IconButton>
                     </Pagination.PrevTrigger>
 
-                    <Pagination.Items
-                        render={(page) => (
+                    <Pagination.Items render={(page) => (
                             <IconButton key={page.value} variant={page.value === portPage ? "outline" : "ghost"} onClick={() => setPortPage(page.value)}>{page.value} </IconButton>
-                        )}
-                    />
+                    )}/>
 
                     <Pagination.NextTrigger asChild>
                         <IconButton>

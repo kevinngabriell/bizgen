@@ -13,17 +13,20 @@ import { AlertMessage } from "@/components/ui/alert";
 import { getLang } from "@/lib/i18n";
 
 export default function SettingShipment(){
+    //authentication & loading variable
     const [auth, setAuth] = useState<DecodedAuthToken | null>(null);
     const [loading, setLoading] = useState(false);
+
+    //related to shipment variable
     const [isShipmentOpen, setIsShipmentOpen] = useState(false);
-    
     const [shipmentPage, setShipmentPage] = useState(1);
     const [shipmentPagination, setShipmentPagination] = useState({ total_pages: 1, page: 1 });
     const [findShipment, setFindShipment] = useState('');
     const [shipmentData, setShipmentData] = useState<GetShipmentPeriodData[]>([]);
     const [editingShipment, setEditingShipment] = useState<GetShipmentPeriodData | null>(null);
 
-    const [showAlert, setShowAlert] = useState(false);
+    //alert & success variable
+    const [showAlert, setShowAlert] = useState(false);  
     const [titlePopup, setTitlePopup] = useState('');
     const [messagePopup, setMessagePopup] = useState('');
     const [isSuccess, setIsSuccess] = useState(false);
@@ -161,8 +164,7 @@ export default function SettingShipment(){
                                     setShipmentPage(1);
                                     init();
                                 }
-                            }}
-                            width="250px"
+                            }} width="250px"
                         />
                     </InputGroup>
                     <Button bg={"#E77A1F"} color={"white"} cursor={"pointer"} onClick={handleOpenShipmentPeriodDialog}>{t.shipment_period.create_button}</Button>
@@ -171,15 +173,12 @@ export default function SettingShipment(){
 
             {showAlert && <AlertMessage title={titlePopup} description={messagePopup} isSuccess={isSuccess} />}
 
-            <ShipmentDialog 
-                isOpen={isShipmentOpen} 
+            <ShipmentDialog isOpen={isShipmentOpen} title={editingShipment ? t.shipment_period.update_button : t.shipment_period.create_button}
                 setIsOpen={(open) => {
                     setIsShipmentOpen(open);
                     if (!open) setEditingShipment(null);
                 }}
-                title={editingShipment ? t.shipment_period.update_button : t.shipment_period.create_button}
-                placeholders={editingShipment ? {shipment_period_id: editingShipment.shipment_period_id, shipment_period_name: editingShipment.shipment_period_name, shipment_date_range_start: editingShipment.shipment_date_range_start,
-                            shipment_date_range_end: editingShipment.shipment_date_range_end} : undefined}
+                placeholders={editingShipment ? {shipment_period_id: editingShipment.shipment_period_id, shipment_period_name: editingShipment.shipment_period_name, shipment_date_range_start: editingShipment.shipment_date_range_start, shipment_date_range_end: editingShipment.shipment_date_range_end} : undefined}
                 onSubmit={(data) =>{
                     if (editingShipment) {
                         handleUpdateShipmentPeriod({
@@ -255,21 +254,14 @@ export default function SettingShipment(){
             </Table.Root>          
 
             <Flex display={"flex"} justify="flex-end" alignItems={"end"} width={"100%"} mt={"3"}>
-                <Pagination.Root
-                    count={shipmentPagination.total_pages}pageSize={1} 
-                    page={shipmentPage} onPageChange={(details) => setShipmentPage(details.page)}
-                >
+                <Pagination.Root count={shipmentPagination.total_pages}pageSize={1} page={shipmentPage} onPageChange={(details) => setShipmentPage(details.page)}>
                     <ButtonGroup variant="ghost" size="sm" wrap="wrap">
                         <Pagination.PrevTrigger asChild>
                             <IconButton><LuChevronLeft /></IconButton>
                         </Pagination.PrevTrigger>
 
-                        <Pagination.Items
-                            render={(page) => (
-                                <IconButton
-                                    key={page.value}
-                                    variant={page.value === shipmentPage ? "outline" : "ghost"} onClick={() => setShipmentPage(page.value)}
-                                >
+                        <Pagination.Items render={(page) => (
+                                <IconButton key={page.value} variant={page.value === shipmentPage ? "outline" : "ghost"} onClick={() => setShipmentPage(page.value)}>
                                     {page.value}
                                 </IconButton>
                             )}
