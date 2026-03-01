@@ -124,18 +124,16 @@ export default function BookingConfirmationPage() {
 
   return (
     <SidebarWithHeader username={auth?.username ?? "Unknown"} daysToExpire={auth?.days_remaining ?? 0}>
-      
-      <Box p={{ base: 4, md: 6 }} maxW="1280px" mx="auto">
-      {/* Header */}
-      <Flex justify="space-between" align="center" mb={4}>
-        <Heading size="lg">{t.booking_confirmation.title}</Heading>
-
-        <SimpleGrid gap={3}>
-          <Badge fontSize="sm">{t.booking_confirmation.draft}</Badge>
+      <Flex justify="space-between">
+        <Heading size="lg" w={"100%"}>{t.booking_confirmation.title}</Heading>
+        
+        <Flex gap={3}>
           <Button variant="outline" color={"#E77A1F"} borderColor={"#E77A1F"} onClick={() => setIsEdit(false)}>{t.booking_confirmation.save_draft}</Button>
           <Button bg="#E77A1F" color="white">{t.booking_confirmation.confirm_create_job}</Button>
-        </SimpleGrid>
+        </Flex>
       </Flex>
+
+      <Box p={{ base: 4, md: 6 }} maxW="1280px" mx="auto">
 
       <Stack gap={6}>
         {/* Job Meta */}

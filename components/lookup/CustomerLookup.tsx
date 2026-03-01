@@ -72,18 +72,18 @@ export default function CustomerLookup({
                 <Dialog.Positioner>
                     <Dialog.Content minW={"60vw"}>
                         <Dialog.Header>
-                            <Dialog.Title>Choose Customer</Dialog.Title>
+                            <Dialog.Title>{t.customer.choose_customer}</Dialog.Title>
                         </Dialog.Header>
 
                         <Dialog.Body>
                             <InputGroup startElement={<LuSearch/>} mb={5}>
-                                <Input placeholder="Enter customer name....." value={search} onChange={(e) => setSearch(e.target.value)}/>
+                                <Input placeholder={t.customer.customer_name_placeholder} value={search} onChange={(e) => setSearch(e.target.value)}/>
                             </InputGroup>
 
                             {loading ? (
                                 <Loading/>
                             ) : customers.length === 0 ? (
-                                <Text>No customer found</Text>
+                                <Text>{t.customer.no_customer_found}</Text>
                             ) : (
                                 <Table.Root>
                                     <Table.Header>
@@ -106,7 +106,7 @@ export default function CustomerLookup({
                                                             onChoose(customer);
                                                             onClose();
                                                         }}
-                                                    > Choose</Button>
+                                                    > {t.master.choose}</Button>
                                                 </Table.Cell>
                                             </Table.Row>
                                         ))}

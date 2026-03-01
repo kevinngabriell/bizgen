@@ -12,7 +12,7 @@ import { getAllShipVia, GetShipViaData } from "@/lib/master/ship-via";
 import { getAllOrigin, GetOriginData } from "@/lib/master/origin";
 import { getAllTerm, GetTermData } from "@/lib/master/term";
 import { getAllUOM, UOMData } from "@/lib/master/uom";
-import { createSalesRfq, generateRfqNumber, getDetailSalesRfq } from "@/lib/sales/rfq";
+import { createSalesRfq, generateRfqNumber, GetDetailRfqHistory, getDetailSalesRfq } from "@/lib/sales/rfq";
 import { AlertMessage } from "@/components/ui/alert";
 import { InfoTip } from "@/components/ui/toggle-tip";
 import { getAllCommodity, GetCommodityData } from "@/lib/master/commodity";
@@ -104,6 +104,8 @@ function InquiryContent() {
   const [messagePopup, setMessagePopup] = useState('');
   const [isSuccess, setIsSuccess] = useState(false);
 
+  const [historyData, setHistoryData] = useState<GetDetailRfqHistory[]>([]);
+
   //set commodity type selection
   const [commoditySelected, setCommoditySelected] = useState<string>();
   const [commodityOptions, setCommodityOptions] = useState<GetCommodityData[]>([]);
@@ -187,6 +189,15 @@ function InquiryContent() {
           weight: item.weight_kg ? String(item.weight_kg) : "",
           cbm: item.cbm ? String(item.cbm) : "",
           packaging: item.packaging || "",
+        }))
+      );
+
+      setHistoryData(
+        res.history.map((history: any) => ({
+          action: history.action,
+          action_by: history.action_by,
+          action_at: history.action_at,
+          notes: history.notes
         }))
       );
 
@@ -373,7 +384,7 @@ function InquiryContent() {
         )}
       </Flex>
 
-      {showAlert && <AlertMessage title={titlePopup} description={messagePopup} isSuccess={isSuccess} />}
+      {showAlert && <AlertMessage title={titlePopup} description={messagePopup} isSuccess={isSuccess}/>}
 
       <Card.Root mt={5}>
         <Card.Body>
@@ -662,16 +673,16 @@ function InquiryContent() {
     <Card.Body>
       <Heading size="xl" mb={3}>History Log</Heading>
 
-      {/* {historyLogs.map((log, index) => (
+      {historyData.map((log, index) => (
         <Flex key={index} justify="space-between" mb={2}>
           <Text fontSize="sm">
-            {log.action} by <b>{log.user}</b>
+            {log.notes} by <b>{log.action_by}</b>
           </Text>
           <Text fontSize="xs" color="gray.500">
-            {log.timestamp}
+            {log.action_at}
           </Text>
         </Flex>
-      ))} */}
+      ))}
     </Card.Body>
   </Card.Root>
 )}

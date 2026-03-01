@@ -8,6 +8,7 @@ import {Button, Card, Flex, Field, Heading, Input, NumberInput, Textarea, Simple
 import { useRouter } from "next/navigation";
 
 import { useEffect, useState } from "react";
+import { FaTrash } from "react-icons/fa";
 
 export default function CreateSampleStockOutPage() {
   const [auth, setAuth] = useState<DecodedAuthToken | null>(null);
@@ -45,17 +46,53 @@ export default function CreateSampleStockOutPage() {
   
   const [form, setForm] = useState({
     referenceNo: "",
-    lotNo: "",
     productName: "",
-    qty: 1,
-    unit: "PCS",
     requestedBy: "",
     purpose: "",
     notes: "",
+    lots: [
+      {
+        lotNo: "",
+        qty: 0,
+        unit: "",
+      },
+    ],
   });
 
   const handleChange = (field: string, value: any) => {
     setForm((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleLotChange = (index: number, field: string, value: any) => {
+    setForm((prev) => {
+      const updatedLots = [...prev.lots];
+      updatedLots[index] = {
+        ...updatedLots[index],
+        [field]: value,
+      };
+      return { ...prev, lots: updatedLots };
+    });
+  };
+
+  const addLotRow = () => {
+    setForm((prev) => ({
+      ...prev,
+      lots: [
+        ...prev.lots,
+        {
+          lotNo: "",
+          qty: 0,
+          unit: "",
+        },
+      ],
+    }));
+  };
+
+  const removeLotRow = (index: number) => {
+    setForm((prev) => {
+      const updatedLots = prev.lots.filter((_, i) => i !== index);
+      return { ...prev, lots: updatedLots.length ? updatedLots : prev.lots };
+    });
   };
 
   const handleSubmit = () => {
@@ -68,57 +105,65 @@ export default function CreateSampleStockOutPage() {
     <SidebarWithHeader username={auth?.username ?? "Unknown"} daysToExpire={auth?.days_remaining ?? 0}>
       <Card.Root>
         <Card.Header>
-          <Heading size="md">Create Stock Out — Sample</Heading>
+          <Heading size="md">{t.warehouse.stock_sample.createSampleStockOut}</Heading>
         </Card.Header>
 
         <Card.Body>
-          <SimpleGrid columns={{base: 1, md: 2}} gap={5}>
+          <SimpleGrid columns={{base: 1, md: 2, lg: 3}} gap={5}>
             <Field.Root>
-              <Field.Label>Reference No</Field.Label>
-              <Input placeholder="Auto / Optional" value={form.referenceNo} onChange={(e) => handleChange("referenceNo", e.target.value)}/>
+              <Field.Label>{t.warehouse.stock_sample.referenceNo}</Field.Label>
+              <Input placeholder={t.warehouse.stock_sample.autoOptional} value={form.referenceNo} onChange={(e) => handleChange("referenceNo", e.target.value)}/>
             </Field.Root>
-
-            <Field.Root >
-              <Field.Label>LOT / Batch No</Field.Label>
-              <Input placeholder="LOT-2026-001" value={form.lotNo} onChange={(e) => handleChange("lotNo", e.target.value)}/>
-            </Field.Root>
-          </SimpleGrid>
-
-          <Field.Root mt={4}>
-            <Field.Label>Product Name</Field.Label>
-            <Input placeholder="Type / select product" value={form.productName} onChange={(e) => handleChange("productName", e.target.value)}/>
-          </Field.Root>
-
-          <SimpleGrid columns={{base: 1, md: 2}} gap={5} mt={4}>
-            <Field.Root>
-              <Field.Label>Quantity</Field.Label>
-              <NumberInput.Root>
-                <NumberInput.Control/>
-                <NumberInput.Input/>
-              </NumberInput.Root>
-            </Field.Root>
-            <Field.Root>
-              <Field.Label>Unit</Field.Label>
-              {/* Select */}
-            </Field.Root>
-            <Field.Root>
-              <Field.Label>Requested By</Field.Label>
-              <Input placeholder="Staff / Department" value={form.requestedBy} onChange={(e) => handleChange("requestedBy", e.target.value)}/>
-            </Field.Root>
-            <Field.Root >
-              <Field.Label>Purpose of Sample</Field.Label>
+            <Field.Root required>
+              <Field.Label>{t.warehouse.stock_sample.productName} <Field.RequiredIndicator/></Field.Label>
+              <Input placeholder={t.warehouse.stock_sample.typeOrSelectProduct} value={form.productName} onChange={(e) => handleChange("productName", e.target.value)}/>
+            </Field.Root>     
+            <Field.Root required>
+              <Field.Label>{t.warehouse.stock_sample.purposeOfSample} <Field.RequiredIndicator/></Field.Label>
               {/* select */}
             </Field.Root>
           </SimpleGrid>
-
+          
           <Field.Root mt={4}>
-            <Field.Label>Notes</Field.Label>
-            <Textarea placeholder="Additional remarks (optional)" value={form.notes} onChange={(e) => handleChange("notes", e.target.value)}/>
+            <Field.Label>{t.warehouse.stock_sample.notes}</Field.Label>
+            <Textarea placeholder={t.warehouse.stock_sample.additionalRemarksOptional} value={form.notes} onChange={(e) => handleChange("notes", e.target.value)}/>
           </Field.Root>
 
+          <Heading size="sm" mt={6} mb={3}>{t.warehouse.stock_sample.lotDetails}</Heading>
+
+          {form.lots.map((lot, index) => (
+            <Card.Root key={index} mb={4} p={4}>
+              <SimpleGrid columns={{ base: 1, md: 4 }} gap={4} alignItems={"center"}>
+                <Field.Root required>
+                  <Field.Label>{t.warehouse.stock_sample.lotBatchNo} <Field.RequiredIndicator/></Field.Label>
+                  <Input placeholder={t.warehouse.stock_out.lotPlaceholder} value={lot.lotNo} onChange={(e) => handleLotChange(index, "lotNo", e.target.value)}/>
+                </Field.Root>
+
+                <Field.Root required>
+                  <Field.Label>{t.warehouse.stock_sample.quantity} <Field.RequiredIndicator/></Field.Label>
+                  <NumberInput.Root w={"100%"} onValueChange={(details) => handleLotChange(index, "qty", details.value)}>
+                    <NumberInput.Control />
+                    <NumberInput.Input />
+                  </NumberInput.Root>
+                </Field.Root>
+
+                <Field.Root>
+                  <Field.Label>{t.warehouse.stock_sample.unit}</Field.Label>
+                  <Input placeholder={t.warehouse.stock_out.uomPlaceholder} value={lot.unit} onChange={(e) => handleLotChange(index, "unit", e.target.value)}/>
+                </Field.Root>
+
+                <Button color="red" borderColor={"red"} variant="outline" onClick={() => removeLotRow(index)} disabled={form.lots.length === 1}>
+                  <FaTrash/> {t.master.remove} 
+                </Button>
+              </SimpleGrid>
+            </Card.Root>
+          ))}
+
+          <Button mt={2}  variant="outline" bg={"transparent"} borderColor={"#E77A1F"} color={"#E77A1F"} cursor={"pointer"}  onClick={addLotRow}>{t.warehouse.stock_sample.addLot}</Button>
+
           <Flex justify="flex-end" gap={3} mt={5}>
-            <Button variant="outline">Cancel</Button>
-            <Button colorScheme="teal" onClick={handleSubmit}>Save Sample Stock Out</Button>
+            <Button variant="outline" bg={"transparent"} borderColor={"#E77A1F"} color={"#E77A1F"} cursor={"pointer"}>{t.master.cancel}</Button>
+            <Button bg={"#E77A1F"} color={"white"} cursor={"pointer"} onClick={handleSubmit}>{t.warehouse.stock_sample.saveSampleStockOut}</Button>
           </Flex>
         </Card.Body>
       </Card.Root>

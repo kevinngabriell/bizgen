@@ -88,8 +88,8 @@ export default function SupplierLookup({
                                 <Table.Root>
                                     <Table.Header>
                                         <Table.Row bg="bg.panel">
-                                            <Table.ColumnHeader textAlign={"center"}>Supplier name</Table.ColumnHeader>
-                                            <Table.ColumnHeader textAlign={"center"}>Action</Table.ColumnHeader>
+                                            <Table.ColumnHeader textAlign={"center"}>{t.supplier.supplier_name}</Table.ColumnHeader>
+                                            <Table.ColumnHeader textAlign={"center"}>{t.master.action}</Table.ColumnHeader>
                                         </Table.Row>
                                     </Table.Header>
                                     <Table.Body>
@@ -102,7 +102,7 @@ export default function SupplierLookup({
                                                             onChoose(supplier);
                                                             onClose();
                                                         }}
-                                                    > Choose</Button>
+                                                    > {t.master.choose}</Button>
                                                 </Table.Cell>
                                             </Table.Row>
                                         ))}

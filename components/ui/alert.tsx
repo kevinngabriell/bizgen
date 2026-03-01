@@ -5,7 +5,7 @@ import { useState } from "react";
 
 export function AlertMessage({ title, description, isSuccess }: { title: string; description: string; isSuccess: boolean; }) {
   return (
-    <AlertRoot status={isSuccess ? "success" : "error"} marginBottom={8}>
+    <AlertRoot status={isSuccess ? "success" : "error"} marginBottom={3} marginTop={3}>
       <AlertIndicator />
       <AlertContent>
         <AlertTitle>{title}</AlertTitle>

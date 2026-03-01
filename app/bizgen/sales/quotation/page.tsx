@@ -2,11 +2,13 @@
 
 import Loading from "@/components/loading";
 import CustomerLookup from "@/components/lookup/CustomerLookup";
+import InquiryLookup from "@/components/lookup/InquiryLookup";
 import SidebarWithHeader from "@/components/ui/SidebarWithHeader";
 import { DecodedAuthToken, checkAuthOrRedirect, getAuthInfo } from "@/lib/auth/auth";
 import { getLang } from "@/lib/i18n";
 import { getAllCurrency, GetCurrencyData } from "@/lib/master/currency";
 import { GetCustomerData } from "@/lib/master/customer";
+import { GetRfq, getDetailSalesRfq } from "@/lib/sales/rfq";
 import {Button, Flex, Heading, HStack, Input, Select, SimpleGrid, Stack, Text, Textarea, Badge, IconButton, Separator, Card, Field, createListCollection, Portal,} from "@chakra-ui/react";
 import { useRouter } from "next/navigation";
 
@@ -34,6 +36,10 @@ export default function CreateQuotation() {
 
   //to open customer popup
   const [customerModalOpen, setCustomerModalOpen] = useState(false);
+  const [selectedCustomer, setSelectedCustomer] = useState<GetCustomerData | null>(null);
+
+  const [inquiryModalOpen, setInquiryModalOpen] = useState(false);
+  const [selectedInquiry, setSelectedInquiry] = useState<GetRfq | null>(null);
 
   //currency option
   const [currencySelected, setSelected] = useState<string>();
@@ -45,6 +51,11 @@ export default function CreateQuotation() {
       value: cur.currency_id,
     })),
   });
+
+    // quotation header state
+  const [quotationNo, setQuotationNo] = useState("");
+  const [quotationDate, setQuotationDate] = useState("");
+  const [linkedInquiry, setLinkedInquiry] = useState("");
 
   useEffect(() => {
     init();
@@ -83,6 +94,14 @@ export default function CreateQuotation() {
 
     setLoading(false);
   }
+
+  const loadGenerateNumber = async () => {
+    try {
+
+    } catch (err) {
+      console.error("Failed to generate quotation number", err);
+    }
+  }
     
   const [items, setItems] = useState<QuotationItem[]>([
     { id: crypto.randomUUID(), product: "", description: "", qty: 1, unitPrice: 0 },
@@ -99,16 +118,64 @@ export default function CreateQuotation() {
     setItems(items.filter((i) => i.id !== id));
   };
 
+  const handleItemChange = (
+    id: string,
+    field: keyof QuotationItem,
+    value: string | number
+  ) => {
+    setItems((prev) =>
+      prev.map((item) =>
+        item.id === id
+          ? {
+              ...item,
+              [field]:
+                field === "qty" || field === "unitPrice"
+                  ? Number(value)
+                  : value,
+            }
+          : item
+      )
+    );
+  };
+
   const handleChooseCustomer = (customer: GetCustomerData) => {
-    // setForm(prev => ({
-    //   ...prev,
-    //   customerName: customer.customer_name,
-    //   contactPerson: customer.customer_pic_name,
-    //   customerPhone: customer.customer_pic_contact
-    // }));
-  
+    setSelectedCustomer(customer);
     setCustomerModalOpen(false);
   };
+
+  const handleChooseInquiry = async (rfq: GetRfq) => {
+    try {
+      setLoading(true);
+
+      setSelectedInquiry(rfq);
+      setLinkedInquiry(rfq.sales_rfq_number);
+
+      // fetch detail RFQ to get items
+      const detailRes = await getDetailSalesRfq(rfq.sales_rfq_id);
+
+      const detailItems = detailRes?.items ?? [];
+
+      if (Array.isArray(detailItems) && detailItems.length > 0) {
+        const mappedItems = detailItems.map((it: any) => ({
+          id: crypto.randomUUID(),
+          product: it.item_name ?? "",
+          description: it.hs_code ?? "",
+          qty: Number(it.quantity ?? 1),
+          unitPrice: Number(it.unit_price ?? 0),
+        }));
+
+        setItems(mappedItems);
+      }
+
+    } catch (error) {
+      console.error("Failed to bind inquiry items", error);
+    } finally {
+      setLoading(false);
+      setInquiryModalOpen(false);
+    }
+  };
+
+  const canGeneratePDF = !!selectedCustomer;
   
   if (loading) return <Loading/>;
 
@@ -117,6 +184,11 @@ export default function CreateQuotation() {
       <Heading size="lg" mb={4}>{t.sales_quotation.title_create}</Heading>
 
       <CustomerLookup isOpen={customerModalOpen} onClose={() => setCustomerModalOpen(false)} onChoose={handleChooseCustomer} />
+      <InquiryLookup
+        isOpen={inquiryModalOpen}
+        onClose={() => setInquiryModalOpen(false)}
+        onChoose={handleChooseInquiry}
+      />
 
       <Card.Root gap={6}>
         <Card.Body>
@@ -125,19 +197,21 @@ export default function CreateQuotation() {
               <Text fontWeight="semibold" mb={3}>{t.sales_quotation.customer_information}</Text>
               <Field.Root>
                 <Field.Label>{t.sales_quotation.customer_name}</Field.Label>
-                <Input placeholder={t.sales_quotation.customer_name_placeholder} readOnly cursor="pointer" onClick={() => setCustomerModalOpen(true)}/>
-              </Field.Root>
-              <Field.Root>
-                <Field.Label>{t.sales_quotation.contact_person}</Field.Label>
-                <Input placeholder={t.sales_quotation.contact_person_placeholder} />
+                <Input
+                  placeholder={t.sales_quotation.customer_name_placeholder}
+                  value={selectedCustomer?.customer_name ?? ""}
+                  readOnly
+                  cursor="pointer"
+                  onClick={() => setCustomerModalOpen(true)}
+                />
               </Field.Root>
               <Field.Root>
                 <Field.Label>{t.sales_quotation.phone_number}</Field.Label>
-                <Input placeholder={t.sales_quotation.phone_number_placeholder} />
-              </Field.Root>
-              <Field.Root>
-                <Field.Label>{t.sales_quotation.customer_address}</Field.Label>
-                <Textarea placeholder={t.sales_quotation.customer_address_placeholder} />
+                <Input
+                  placeholder={t.sales_quotation.phone_number_placeholder}
+                  value={selectedCustomer?.customer_phone ?? ""}
+                  readOnly
+                />
               </Field.Root>
             </Stack>
 
@@ -145,11 +219,19 @@ export default function CreateQuotation() {
               <Text fontWeight="semibold" mb={3}>{t.sales_quotation.quotation_details}</Text>
               <Field.Root>
                 <Field.Label>{t.sales_quotation.quotation_no}</Field.Label>
-                <Input placeholder={t.sales_quotation.quotation_no_placeholder} />
+                                <Input
+                  placeholder={t.sales_quotation.quotation_no_placeholder}
+                  value={quotationNo}
+                  onChange={(e) => setQuotationNo(e.target.value)}
+                />
               </Field.Root>
               <Field.Root>
                 <Field.Label>{t.sales_quotation.quotation_date}</Field.Label>
-                <Input type="date" />
+                                <Input
+                  type="date"
+                  value={quotationDate}
+                  onChange={(e) => setQuotationDate(e.target.value)}
+                />
               </Field.Root>
               <Field.Root>
                 <Field.Label>{t.sales_quotation.currency}</Field.Label>
@@ -176,6 +258,13 @@ export default function CreateQuotation() {
               </Field.Root>
               <Field.Root>
                 <Field.Label>{t.sales_quotation.linked_inquiry}</Field.Label>
+                                <Input
+                  placeholder={t.sales_quotation.linked_inquiry_placeholder}
+                  value={linkedInquiry}
+                  readOnly
+                  cursor="pointer"
+                  onClick={() => setInquiryModalOpen(true)}
+                />
               </Field.Root>
             </Stack>
           </SimpleGrid>
@@ -190,10 +279,36 @@ export default function CreateQuotation() {
           {items.map((item) => (
             <Card.Root key={item.id} p={4} mb={2}>
               <SimpleGrid columns={{ base: 1, md: 4 }} gap={3}>
-                <Input placeholder={t.sales_quotation.product_service} />
-                <Input placeholder={t.sales_quotation.description} />
-                <Input type="number" placeholder={t.sales_quotation.quantity} />
-                <Input type="number" placeholder={t.sales_quotation.unit_price} />
+                <Input
+                  placeholder={t.sales_quotation.product_service}
+                  value={item.product}
+                  onChange={(e) =>
+                    handleItemChange(item.id, "product", e.target.value)
+                  }
+                />
+                <Input
+                  placeholder={t.sales_quotation.description}
+                  value={item.description}
+                  onChange={(e) =>
+                    handleItemChange(item.id, "description", e.target.value)
+                  }
+                />
+                <Input
+                  type="number"
+                  placeholder={t.sales_quotation.quantity}
+                  value={item.qty}
+                  onChange={(e) =>
+                    handleItemChange(item.id, "qty", e.target.value)
+                  }
+                />
+                <Input
+                  type="number"
+                  placeholder={t.sales_quotation.unit_price}
+                  value={item.unitPrice}
+                  onChange={(e) =>
+                    handleItemChange(item.id, "unitPrice", e.target.value)
+                  }
+                />
               </SimpleGrid>
 
               <HStack justify="space-between" mt={3}>
@@ -209,9 +324,24 @@ export default function CreateQuotation() {
 
           <Flex justify="flex-end" gap={3}>
             <Button variant="outline">{t.sales_quotation.cancel}</Button>
-            <Button bg="#E77A1F" color="white" >{t.sales_quotation.save_draft}</Button>
-            <Button bg="#E77A1F" color="white" >{t.sales_quotation.save_generate_pdf}</Button>
+            <Button bg="#E77A1F" color="white">
+              {t.sales_quotation.save_draft}
+            </Button>
+
+            <Button
+              bg="#E77A1F"
+              color="white"
+              disabled={!canGeneratePDF}
+            >
+              {t.sales_quotation.save_generate_pdf}
+            </Button>
+
           </Flex>
+          {!canGeneratePDF && (
+            <Text fontSize="sm" color="red.500" mt={2}>
+              Customer not found in master data. You can only save as draft.
+            </Text>
+          )}
         </Card.Body>
       </Card.Root>
 

@@ -3,6 +3,7 @@
 import Loading from "@/components/loading";
 import SidebarWithHeader from "@/components/ui/SidebarWithHeader";
 import { DecodedAuthToken, checkAuthOrRedirect, getAuthInfo } from "@/lib/auth/auth";
+import { getLang } from "@/lib/i18n";
 import { Flex, Heading, Text, Badge, Button, Icon, Tabs, SimpleGrid, Card } from "@chakra-ui/react";
 import { useRouter } from "next/navigation";
 
@@ -12,6 +13,11 @@ import { FiArrowDownCircle, FiArrowUpCircle, FiPackage, FiActivity, FiPlus, FiTr
 export default function Warehouse() {
   const [auth, setAuth] = useState<DecodedAuthToken | null>(null);
   const [loading, setLoading] = useState(false);
+
+  //language state 
+  const [lang, setLang] = useState<"en" | "id">("en");
+  const t = getLang(lang);
+  
   const router = useRouter();
 
   useEffect(() => {
@@ -27,13 +33,11 @@ export default function Warehouse() {
     const info = getAuthInfo();
     setAuth(info);
 
-    try {
+    //set language from token authentication
+    const language = info?.language === "id" ? "id" : "en";
+    setLang(language);
 
-    } catch (error: any){
-
-    } finally {
-      setLoading(false);
-    }
+    setLoading(false);
   }
 
   const handleDirectToStockIn = () => {
@@ -47,19 +51,32 @@ export default function Warehouse() {
   const handleDirectToStockSample = () => {
     router.push('/bizgen/warehouse/sample');
   }
+
+  // ===== Reporting Navigation =====
+  const handleWeeklyStockReport = () => {
+    // router.push('/bizgen/warehouse/report/weekly-stock');
+  };
+
+  const handleStockReportByProduct = () => {
+    // router.push('/bizgen/warehouse/report/by-product');
+  };
+
+  const handleStockSearchPage = () => {
+    // router.push('/bizgen/warehouse/stock-search');
+  };
     
   if (loading) return <Loading/>;
 
   return (
     <SidebarWithHeader username={auth?.username ?? "Unknown"} daysToExpire={auth?.days_remaining ?? 0}>
-      <Heading>Warehouse</Heading>
+      <Heading>{t.warehouse.warehouse}</Heading>
 
-      <SimpleGrid templateColumns={{ base: "1fr", md: "repeat(3, 1fr)" }} gap={4} mt={3}>
+      <SimpleGrid columns={{base: 1, md: 3}} gap={4} mt={3}>
         <Card.Root>
           <Card.Body>
             <Flex justify={"space-between"} alignItems={"center"}>
               <Flex flexDir={"column"}>
-                <Text fontSize="sm" color="gray.500" mb={1}>Total SKUs</Text>
+                <Text fontSize="sm" color="gray.500" mb={1}>{t.warehouse.totalSkus}</Text>
                 <Heading size="md">128</Heading>
               </Flex>
               <Icon as={FiPackage} boxSize={6} />
@@ -70,7 +87,7 @@ export default function Warehouse() {
           <Card.Body>
             <Flex justify={"space-between"} alignItems={"center"}>
               <Flex flexDir={"column"}>
-                <Text fontSize="sm" color="gray.500" mb={1}>On‑Hand Stock</Text>
+                <Text fontSize="sm" color="gray.500" mb={1}>{t.warehouse.onHandStock}</Text>
                 <Heading size="md">4,912 pcs</Heading>
               </Flex>
               <Icon as={FiTruck} boxSize={6} />
@@ -81,7 +98,7 @@ export default function Warehouse() {
           <Card.Body>
             <Flex justify={"space-between"} alignItems={"center"}>
               <Flex flexDir={"column"}>
-                <Text fontSize="sm" color="gray.500" mb={1}>Pending Movements</Text>
+                <Text fontSize="sm" color="gray.500" mb={1}>{t.warehouse.pendingMovements}</Text>
                 <Heading size="md">7</Heading>
               </Flex>
               <Icon as={FiActivity} boxSize={6} />
@@ -94,19 +111,19 @@ export default function Warehouse() {
         <Card.Root>
           <Card.Body>
             <Flex justify={"space-between"}>
-              <Heading size="md">Stock Movements</Heading>
+              <Heading size="md">{t.warehouse.stockMovements}</Heading>
               <Flex gap={2}>
-                <Button size="sm" variant="outline" bg={"transparent"} borderColor={"#E77A1F"} color={"#E77A1F"} cursor={"pointer"} onClick={handleDirectToStockIn}>Stock In</Button>
-                <Button size="sm" variant="outline" bg={"transparent"} borderColor={"#E77A1F"} color={"#E77A1F"} cursor={"pointer"} onClick={handleDirectToStockOut}>Stock Out</Button>
-                <Button size="sm" variant="outline" bg={"transparent"} borderColor={"#E77A1F"} color={"#E77A1F"} cursor={"pointer"} onClick={handleDirectToStockSample}>Sample Out</Button>
+                <Button size="sm" variant="outline" bg={"transparent"} borderColor={"#E77A1F"} color={"#E77A1F"} cursor={"pointer"} onClick={handleDirectToStockIn}>{t.warehouse.stockIn}</Button>
+                <Button size="sm" variant="outline" bg={"transparent"} borderColor={"#E77A1F"} color={"#E77A1F"} cursor={"pointer"} onClick={handleDirectToStockOut}>{t.warehouse.stockOut}</Button>
+                <Button size="sm" variant="outline" bg={"transparent"} borderColor={"#E77A1F"} color={"#E77A1F"} cursor={"pointer"} onClick={handleDirectToStockSample}>{t.warehouse.sampleOut}</Button>
               </Flex>
             </Flex>
 
             <Tabs.Root size="sm" colorScheme="blue" defaultValue="inbound">
               <Tabs.List>
-                <Tabs.Trigger value="inbound">Inbound</Tabs.Trigger>
-                <Tabs.Trigger value="outbound">Outbound</Tabs.Trigger>
-                <Tabs.Trigger value="sample">Sample</Tabs.Trigger>
+                <Tabs.Trigger value="inbound">{t.warehouse.inbound}</Tabs.Trigger>
+                <Tabs.Trigger value="outbound">{t.warehouse.outbound}</Tabs.Trigger>
+                <Tabs.Trigger value="sample">{t.warehouse.sample}</Tabs.Trigger>
               </Tabs.List>
 
               <Tabs.Content value="inbound">
@@ -129,7 +146,7 @@ export default function Warehouse() {
 
         <Card.Root>
           <Card.Body>
-            <Heading size="md" mb={2}>Recent Warehouse Activity</Heading>
+            <Heading size="md" mb={2}>{t.warehouse.recentActivity}</Heading>
             <Flex flexDir={"column"} gap={4} mt={3}> 
               <ActivityItem label="Stock checked & reconciled" meta="By Kevin • 10:02"/>
               <ActivityItem label="Cycle count — Aisle B3" meta="Yesterday • 17:44"/>
@@ -138,6 +155,43 @@ export default function Warehouse() {
           </Card.Body>
         </Card.Root>
       </SimpleGrid>
+
+      {/* Area for Warehouse Report */}
+      <Heading size="md" mt={6}>{t.warehouse.reports}</Heading>
+      <SimpleGrid templateColumns={{ base: "1fr", md: "repeat(3, 1fr)" }} gap={4} mt={3}>
+        {/* Card for weekly report */}
+        <Card.Root>
+          <Card.Body>
+            <Flex flexDir="column" gap={3}>
+              <Heading size="sm">{t.warehouse.weeklyReport}</Heading>
+              <Text fontSize="sm" color="gray.500">{t.warehouse.weeklyReportDesc}</Text>
+              <Button size="sm" bg="#E77A1F" color="white" onClick={handleWeeklyStockReport}>{t.master.downloadExcel}</Button>
+            </Flex>
+          </Card.Body>
+        </Card.Root>
+        {/* Card for report by product */}
+        <Card.Root>
+          <Card.Body>
+            <Flex flexDir="column" gap={3}>
+              <Heading size="sm">{t.warehouse.reportByProduct}</Heading>
+              <Text fontSize="sm" color="gray.500">{t.warehouse.reportByProductDesc}</Text>
+              <Button size="sm" variant="outline" borderColor="#E77A1F" color="#E77A1F" onClick={handleStockReportByProduct}>{t.warehouse.viewReport}</Button>
+            </Flex>
+          </Card.Body>
+        </Card.Root>
+        {/* Card for stock search */}
+        <Card.Root>
+          <Card.Body>
+            <Flex flexDir="column" gap={3}>
+              <Heading size="sm">{t.warehouse.stockSearch}</Heading>
+              <Text fontSize="sm" color="gray.500">{t.warehouse.stockSearchDesc}</Text>
+              <Button size="sm" variant="outline" borderColor="#E77A1F" color="#E77A1F" onClick={handleStockSearchPage}>{t.warehouse.openSearch}</Button>
+            </Flex>
+          </Card.Body>
+        </Card.Root>
+      </SimpleGrid>
+      {/* Area for Warehouse Report */}
+
     </SidebarWithHeader>
   );
 }
@@ -179,3 +233,5 @@ function ActivityItem({label, meta}: {label: string; meta: string;}) {
     </Card.Root>
   );
 }
+      {/* ================= Warehouse Reports ================= */}
+      

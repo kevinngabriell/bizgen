@@ -71,9 +71,17 @@ export interface GetDetailRfqItem {
   packaging?: string;
 }
 
+export interface GetDetailRfqHistory {
+  action: string;
+  action_by: string;
+  action_at: string;
+  notes: string;
+}
+
 export interface GetDetailRfqResponse {
   header: GetDetailRfq;
   items: GetDetailRfqItem[];
+  history: GetDetailRfqHistory[];
 }
 
 export async function createSalesRfq(input: CreateRfq) : Promise<any> {
