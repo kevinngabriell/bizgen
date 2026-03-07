@@ -1242,7 +1242,7 @@ warehouse: {
     notesPlaceholder: "Jelaskan alasan stok keluar (opsional)"
   },
   stock_sample : {
-    createSampleStockOut: "Buat Sample Stock Out",
+    createSampleStockOut: "Buat Stock Sample",
     referenceNo: "No Referensi",
     autoOptional: "Otomatis / Opsional",
     productName: "Nama Produk",

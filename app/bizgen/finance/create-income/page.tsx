@@ -125,8 +125,8 @@ if (loading) return <Loading/>
         </Flex>
 
         <Flex gap={5}>
-          <Button variant="outline" onClick={() => router.back()}>{t.delete_popup.cancel}</Button>
-          <Button colorScheme="green" onClick={handleSubmit}>Save Income</Button>
+          <Button variant="outline" bg={"transparent"} borderColor={"#E77A1F"} color={"#E77A1F"} cursor={"pointer"} onClick={() => router.back()}>{t.delete_popup.cancel}</Button>
+          <Button bg="#E77A1F" color="white" onClick={handleSubmit}>Save Income</Button>
         </Flex>
       </Flex>
 

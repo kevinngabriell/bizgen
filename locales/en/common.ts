@@ -1240,7 +1240,7 @@ warehouse: {
     notesPlaceholder: "Describe reason for stock out (optional)"
   },
   stock_sample : {
-    createSampleStockOut: "Create Sample Stock Out",
+    createSampleStockOut: "Create Sample Stock",
     referenceNo: "Reference No",
     autoOptional: "Auto / Optional",
     productName: "Product Name",

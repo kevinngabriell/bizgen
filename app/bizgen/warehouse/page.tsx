@@ -4,9 +4,9 @@ import Loading from "@/components/loading";
 import SidebarWithHeader from "@/components/ui/SidebarWithHeader";
 import { DecodedAuthToken, checkAuthOrRedirect, getAuthInfo } from "@/lib/auth/auth";
 import { getLang } from "@/lib/i18n";
+import { getWarehouseStockSummary, WarehouseSummary } from "@/lib/warehouse/warehouse";
 import { Flex, Heading, Text, Badge, Button, Icon, Tabs, SimpleGrid, Card } from "@chakra-ui/react";
 import { useRouter } from "next/navigation";
-
 import { useState, useEffect } from "react";
 import { FiArrowDownCircle, FiArrowUpCircle, FiPackage, FiActivity, FiPlus, FiTruck,} from "react-icons/fi";
 
@@ -17,8 +17,17 @@ export default function Warehouse() {
   //language state 
   const [lang, setLang] = useState<"en" | "id">("en");
   const t = getLang(lang);
+    
+  const [warehouseSummary, setWarehouseSummary] = useState<WarehouseSummary | null>(null);
   
   const router = useRouter();
+
+  //alert success or failed
+  const [showAlert, setShowAlert] = useState(false);
+  const [titlePopup, setTitlePopup] = useState('');
+  const [messagePopup, setMessagePopup] = useState('');
+  const [isSuccess, setIsSuccess] = useState(false);
+
 
   useEffect(() => {
     init();
@@ -37,6 +46,9 @@ export default function Warehouse() {
     const language = info?.language === "id" ? "id" : "en";
     setLang(language);
 
+    const warehouseSummaryRes = await getWarehouseStockSummary();
+    setWarehouseSummary(warehouseSummaryRes.data || null);
+
     setLoading(false);
   }
 
@@ -54,16 +66,32 @@ export default function Warehouse() {
 
   // ===== Reporting Navigation =====
   const handleWeeklyStockReport = () => {
-    // router.push('/bizgen/warehouse/report/weekly-stock');
+    try {
+      setLoading(true);
+
+      setIsSuccess(true);
+      setTitlePopup("Success");
+      setMessagePopup("Weekly report successfully downloaded !!");
+      setShowAlert(true);
+    } catch (e: any){
+      setIsSuccess(false);
+      setTitlePopup("Error");
+      setMessagePopup(e.message || "Failed to download weekly report");
+      setShowAlert(true);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleStockReportByProduct = () => {
-    // router.push('/bizgen/warehouse/report/by-product');
+    router.push('/bizgen/warehouse/stock-report');
   };
 
   const handleStockSearchPage = () => {
-    // router.push('/bizgen/warehouse/stock-search');
+    router.push('/bizgen/warehouse/find-stock');
   };
+
+
     
   if (loading) return <Loading/>;
 
@@ -77,7 +105,7 @@ export default function Warehouse() {
             <Flex justify={"space-between"} alignItems={"center"}>
               <Flex flexDir={"column"}>
                 <Text fontSize="sm" color="gray.500" mb={1}>{t.warehouse.totalSkus}</Text>
-                <Heading size="md">128</Heading>
+                <Heading size="md">{warehouseSummary?.total_sku ?? 0}</Heading>
               </Flex>
               <Icon as={FiPackage} boxSize={6} />
             </Flex>
@@ -88,7 +116,7 @@ export default function Warehouse() {
             <Flex justify={"space-between"} alignItems={"center"}>
               <Flex flexDir={"column"}>
                 <Text fontSize="sm" color="gray.500" mb={1}>{t.warehouse.onHandStock}</Text>
-                <Heading size="md">4,912 pcs</Heading>
+                <Heading size="md">{warehouseSummary?.total_stock_qty ?? 0}</Heading>
               </Flex>
               <Icon as={FiTruck} boxSize={6} />
             </Flex>
@@ -99,7 +127,7 @@ export default function Warehouse() {
             <Flex justify={"space-between"} alignItems={"center"}>
               <Flex flexDir={"column"}>
                 <Text fontSize="sm" color="gray.500" mb={1}>{t.warehouse.pendingMovements}</Text>
-                <Heading size="md">7</Heading>
+                <Heading size="md">{warehouseSummary?.pending_movements ?? 0}</Heading>
               </Flex>
               <Icon as={FiActivity} boxSize={6} />
             </Flex>
@@ -233,5 +261,4 @@ function ActivityItem({label, meta}: {label: string; meta: string;}) {
     </Card.Root>
   );
 }
-      {/* ================= Warehouse Reports ================= */}
       

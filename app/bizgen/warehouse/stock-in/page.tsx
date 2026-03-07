@@ -10,22 +10,33 @@ import { getLang } from "@/lib/i18n";
 import { getAllProduct, GetProductData } from "@/lib/master/product";
 import { getAllUOM, UOMData } from "@/lib/master/uom";
 import { FaTrash } from "react-icons/fa";
+import { getAllListMyWarehouse, GetListMyWarehouseData } from "@/lib/master/warehouse";
+import { createStockIn } from "@/lib/warehouse/warehouse";
+import { AlertMessage } from "@/components/ui/alert";
 
 export default function CreateStockInPage() {
+  //authentication & loading
   const [auth, setAuth] = useState<DecodedAuthToken | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const [productOptions, setProductOptions] = useState<GetProductData[]>([]);
+  //product collection & selection
+  const [allProducts, setAllProducts] = useState<GetProductData[]>([]);
+  const [selectedProduct, setSelectedProduct] = useState("");
   const { contains } = useFilter({ sensitivity: "base"})
-  const list = useListCollection<GetProductData>({
-    initialItems: productOptions,
-    filter: contains,
+  const { collection, set } = useListCollection<GetProductData>({
+    initialItems: [],
     itemToString: (item) => item.product_name,
-  });
-  const { collection, filter } = list;
+    itemToValue: (item) => item.product_id,
+  })
 
   //router authentication
   const router = useRouter();
+
+  //alert success or failed
+  const [showAlert, setShowAlert] = useState(false);
+  const [titlePopup, setTitlePopup] = useState('');
+  const [messagePopup, setMessagePopup] = useState('');
+  const [isSuccess, setIsSuccess] = useState(false);
 
   //language state 
   const [lang, setLang] = useState<"en" | "id">("en");
@@ -42,8 +53,19 @@ export default function CreateStockInPage() {
     })),
   });
 
-  useEffect(() => {
+  //set warehouse selection
+  const [warehouseOptions, setWarehouseOptions] = useState<GetListMyWarehouseData[]>([]);
+  const [warehouseSelected, setWarehouseSelected] = useState<string>();
 
+  const warehouseCollection = createListCollection({
+    items: warehouseOptions.map((warehouse) => ({
+      label: `${warehouse.warehouse_name}`,
+      value:  warehouse.warehouse_id,
+    })),
+  });
+
+  useEffect(() => {
+    //retrieve uom
     const fetchUOM = async () => {
       try {
         const uomRes = await getAllUOM(1, 1000);
@@ -53,8 +75,20 @@ export default function CreateStockInPage() {
         setUOMOptions([]);
       }
     };
+
+    //retrieve warehouse
+    const fetchWarehouse = async () => {
+      try {
+        const warehouseRes = await getAllListMyWarehouse(1, 1000);
+        setWarehouseOptions(warehouseRes?.data ?? []);
+      } catch (error) {
+        console.error(error);
+        setWarehouseOptions([]);
+      }
+    }
     
     fetchUOM();
+    fetchWarehouse();
     init();
   }, []);
 
@@ -73,18 +107,22 @@ export default function CreateStockInPage() {
     const language = info?.language === "id" ? "id" : "en";
     setLang(language);
 
+    //set product data option
     const productRes = await getAllProduct(1, 1000);
-    setProductOptions(productRes?.data ?? []);
+    const products = productRes?.data ?? [];
+    setAllProducts(products);
+    set(products);
 
     setLoading(false);
   }
 
   const [form, setForm] = useState({
-    productName: "",
-    warehouse: "",
-    receivedDate: "",
-    supplier: "",
-    referenceNo: "",
+    product_id: "",
+    warehouse_id: "",
+    uom_id: "",
+    received_date: "",
+    supplier_name: "",
+    reference_no: "",
     notes: "",
   });
 
@@ -129,7 +167,44 @@ export default function CreateStockInPage() {
   };
 
   const handleSubmit = async () => {
-    if (!form.productName || !form.warehouse || lots.length === 0) {
+
+    if (!form.product_id) {
+      setShowAlert(true);
+      setIsSuccess(false);
+      setTitlePopup(t.master.error);
+      setMessagePopup(t.products.product_name + " is required");
+      return;
+    }
+
+    if (!form.uom_id) {
+      setShowAlert(true);
+      setIsSuccess(false);
+      setTitlePopup(t.master.error);
+      setMessagePopup(t.uom.title + " is required");
+      return;
+    }
+
+    if (!form.warehouse_id) {
+      setShowAlert(true);
+      setIsSuccess(false);
+      setTitlePopup(t.master.error);
+      setMessagePopup(t.warehouse.warehouse + " is required");
+      return;
+    }
+
+    if (!form.received_date) {
+      setShowAlert(true);
+      setIsSuccess(false);
+      setTitlePopup(t.master.error);
+      setMessagePopup(t.warehouse.stock_in.receivedDate + " is required");
+      return;
+    }
+
+    if (lots.length === 0) {
+      setShowAlert(true);
+      setIsSuccess(false);
+      setTitlePopup(t.master.error);
+      setMessagePopup(t.warehouse.stock_in.lotEntries + " is required");
       return;
     }
 
@@ -137,19 +212,43 @@ export default function CreateStockInPage() {
       (lot) => !lot.lotNo || !lot.quantity
     );
 
-    if (invalidLot) return;
+    if (invalidLot) {
+      setShowAlert(true);
+      setIsSuccess(false);
+      setTitlePopup(t.master.error);
+      setMessagePopup("Lot number and quantity must be filled");
+      return;
+    }
 
     try {
+      setLoading(true);
       const payload = {
-        header: form,
-        details: lots,
+        action: "IN",
+        warehouse_id: form.warehouse_id,
+        product_id: form.product_id,
+        date: form.received_date,
+        reference_no: form.reference_no,
+        notes: form.notes,
+        items: lots.map((lot) => ({
+          inventory_stock_id: "",
+          lot: lot.lotNo,
+          quantity: lot.quantity,
+          expired_date: lot.expiryDate,
+        }))
       };
-
-      console.log("Submitting stock-in payload:", payload);
-
+      await createStockIn(payload);
+      setShowAlert(true);
+      setIsSuccess(true);
+      setTitlePopup(t.master.success);
+      setMessagePopup(t.origin.success_origin_create);
       router.back();
-    } catch (e) {
-      console.error(e);
+    } catch (err: any) {
+      setShowAlert(true);
+      setIsSuccess(false);
+      setTitlePopup(t.master.error);
+      setMessagePopup(err.message || t.master.error_msg);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -159,12 +258,28 @@ export default function CreateStockInPage() {
     <SidebarWithHeader username={auth?.username ?? "Unknown"} daysToExpire={auth?.days_remaining ?? 0}>
       <Heading>{t.warehouse.stock_in.title}</Heading>
 
+      {showAlert && <AlertMessage title={titlePopup} description={messagePopup} isSuccess={isSuccess} />}
+      
       <Card.Root mt={5}>
         <Card.Body>
           <SimpleGrid columns={{ base: 1, md: 2 }} gap={6}>
             <Field.Root required>
               <Field.Label>{t.products.product_name} <Field.RequiredIndicator/></Field.Label>
-              <Combobox.Root collection={collection} value={form.productName ? [form.productName] : []} onValueChange={(details) => { const selected = details.value?.[0]; handleChange("productName", selected); }} onInputValueChange={(e) => filter(e.inputValue)}>
+              <Combobox.Root 
+                collection={collection} 
+                value={form.product_id ? [form.product_id] : []} 
+                onValueChange={(details) => { 
+                  const selected = details.value?.[0]; 
+                  handleChange("product_id", selected); 
+                }} 
+                onInputValueChange={(e) => {
+                  const input = e.inputValue ?? "";
+                  setSelectedProduct(input);
+                  const filtered = allProducts.filter((item) =>
+                    contains(item.product_name, input)
+                  );
+                set(filtered);
+                }}>
                 <Combobox.Control>
                   <Combobox.Input placeholder={t.warehouse.stock_in.typeSearch} />
                   <Combobox.IndicatorGroup>
@@ -186,7 +301,15 @@ export default function CreateStockInPage() {
             </Field.Root>
             <Field.Root required>
               <Field.Label>{t.uom.title}<Field.RequiredIndicator/></Field.Label>
-              <Select.Root collection={uomCollection} value={uomSelected ? [uomSelected] : []} onValueChange={(details) => setUOMSelected(details.value[0])} size="sm" width="100%">
+              <Select.Root 
+                collection={uomCollection} 
+                value={uomSelected ? [uomSelected] : []} 
+                onValueChange={(details) => {
+                  const value = details.value[0];
+                  setUOMSelected(value);
+                  handleChange("uom_id", value);
+                }} 
+                width="100%">
                 <Select.HiddenSelect />
                 <Select.Control>
                   <Select.Trigger>
@@ -210,22 +333,45 @@ export default function CreateStockInPage() {
 
             <Field.Root >
               <Field.Label>{t.warehouse.warehouse}</Field.Label>
-              <Input placeholder={t.warehouse.stock_in.warehousePlaceholder} value={form.warehouse} onChange={(e) => handleChange("warehouse", e.target.value)}/>
+              <Select.Root collection={warehouseCollection} value={warehouseSelected ? [warehouseSelected] : []} onValueChange={(details) => {
+                const value = details.value[0];
+                setWarehouseSelected(value);
+                handleChange("warehouse_id", value);
+              }} size="sm" width="100%">
+                <Select.HiddenSelect />
+                <Select.Control>
+                  <Select.Trigger>
+                    <Select.ValueText placeholder={t.warehouse.stock_in.warehousePlaceholder} />
+                  </Select.Trigger>
+                  <Select.IndicatorGroup>
+                    <Select.Indicator />
+                  </Select.IndicatorGroup>
+                </Select.Control>
+                <Portal>
+                  <Select.Positioner>
+                    <Select.Content>
+                      {warehouseCollection.items.map((wr) => (
+                        <Select.Item item={wr} key={wr.value}>{wr.label}<Select.ItemIndicator /></Select.Item>
+                      ))}
+                    </Select.Content>
+                  </Select.Positioner>
+                </Portal>
+              </Select.Root>
             </Field.Root>
 
             <Field.Root required>
               <Field.Label>{t.warehouse.stock_in.receivedDate} <Field.RequiredIndicator/></Field.Label>
-              <Input type="date" value={form.receivedDate} onChange={(e) => handleChange("receivedDate", e.target.value)}/>
+              <Input type="date" value={form.received_date} onChange={(e) => handleChange("received_date", e.target.value)}/>
             </Field.Root>
 
             <Field.Root>
               <Field.Label>{t.supplier.title}</Field.Label>
-              <Input placeholder={t.supplier.supplier_name_placeholder} value={form.supplier} onChange={(e) => handleChange("supplier", e.target.value)}/>
+              <Input placeholder={t.supplier.supplier_name_placeholder} value={form.supplier_name} onChange={(e) => handleChange("supplier_name", e.target.value)}/>
             </Field.Root>
 
             <Field.Root>
               <Field.Label>{t.warehouse.stock_in.referenceNo}</Field.Label>
-              <Input placeholder={t.warehouse.stock_in.referencePlaceholder} value={form.referenceNo} onChange={(e) => handleChange("referenceNo", e.target.value)}/>
+              <Input placeholder={t.warehouse.stock_in.referencePlaceholder} value={form.reference_no} onChange={(e) => handleChange("reference_no", e.target.value)}/>
             </Field.Root>
           </SimpleGrid>
 
