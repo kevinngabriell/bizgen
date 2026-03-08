@@ -384,7 +384,7 @@ export default function CreateSampleStockOutPage() {
 
           {lots.map((lot, index) => (
             <Card.Root key={index} mb={4} p={4}>
-              <SimpleGrid columns={{ base: 1, md: 4 }} gap={4} alignItems={"center"}>
+              <SimpleGrid columns={{ base: 1, md: 4 }} gap={4}>
                 <Field.Root required>
                   <Field.Label>{t.warehouse.stock_sample.lotBatchNo} <Field.RequiredIndicator/></Field.Label>
                     <Combobox.Root
@@ -489,7 +489,7 @@ export default function CreateSampleStockOutPage() {
                   <Input placeholder={t.warehouse.stock_out.uomPlaceholder} value={lot.uom} onChange={(e) => handleLotChange(index, "unit", e.target.value)}/>
                 </Field.Root>
 
-                <Flex justify="flex-end">
+                <Flex justify="flex-end" mt={4} gap={2}>
                   <Button size="sm" w={"100%"} variant="outline" color={"red"} borderColor={"red"} onClick={() => removeLotRow(index)}>
                     Remove <FaTrash/>
                   </Button>

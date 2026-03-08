@@ -43,6 +43,43 @@ export interface ProductLotSearchData {
     qty: number;
 }
 
+export interface TransactionnProductIDReportData {
+    inventory_transaction_id: string;
+    transaction_type: string;
+    qty: string;
+    total_qty: string;
+}
+
+export interface LotInformationProductIDReportData {
+    lot_no: string;
+    transactions: TransactionnProductIDReportData[];
+}
+
+export interface WarehouseProductIDReportData {
+    product_name: string;
+    warehouse_name: string;
+    created_at: string;
+    created_by: string;
+    product_code: string;
+    lots: LotInformationProductIDReportData[];
+}
+
+export interface LotInformationLotReportData {
+    inventory_transaction_id: string;
+    transaction_type: string;
+    qty: string;
+    total_qty: string;
+}
+
+export interface WarehouseLotReportData {
+    product_name: string;
+    warehouse_name: string;
+    created_at: string;
+    created_by: string;
+    lot_no: string;
+    lots: LotInformationLotReportData[];
+}
+
 export async function createStockIn(input: createStockTransaction) : Promise<any> {
     const baseUrl = process.env.NEXT_PUBLIC_API_URL;
     const token = localStorage.getItem("token");
@@ -163,6 +200,51 @@ export async function getSearchProductLot(): Promise<{data: ProductLotSearchData
 
     if (json.status_code !== 200) {
         throw new Error(json.status_message || 'Failed to fetch warehouse lot product data');
+    }
+
+    return {
+        data: json.data || []
+    };
+}
+
+export async function getWarehouseReportProductID(product_id: string = ''): Promise<{data: WarehouseProductIDReportData}>{
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL;
+    const token = localStorage.getItem("token");
+
+    const res = await fetch(`${baseUrl}warehouse/report.php?product_lot&product_id=${product_id}`, {
+        method: 'GET',
+        headers: {
+            'Authorization': `Bearer ${token}`,
+        },
+    });
+
+    const json = await res.json();
+
+    if (json.status_code !== 200) {
+        throw new Error(json.status_message || 'Failed to fetch warehouse report product ID');
+    }
+
+    return {
+        data: json.data || []
+    };
+}
+
+
+export async function getWarehouseReportLot(lot_no: string = ''): Promise<{data: WarehouseLotReportData}>{
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL;
+    const token = localStorage.getItem("token");
+
+    const res = await fetch(`${baseUrl}warehouse/report.php?product_lot&lot=${lot_no}`, {
+        method: 'GET',
+        headers: {
+            'Authorization': `Bearer ${token}`,
+        },
+    });
+
+    const json = await res.json();
+
+    if (json.status_code !== 200) {
+        throw new Error(json.status_message || 'Failed to fetch warehouse report lot no');
     }
 
     return {
