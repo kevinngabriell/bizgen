@@ -88,29 +88,6 @@ export default function Warehouse() {
     router.push('/bizgen/warehouse/sample');
   }
 
-  // ===== Reporting Navigation =====
-  const handleWeeklyStockReport = () => {
-    try {
-      setLoading(true);
-
-      setIsSuccess(true);
-      setTitlePopup("Success");
-      setMessagePopup("Weekly report successfully downloaded !!");
-      setShowAlert(true);
-    } catch (e: any){
-      setIsSuccess(false);
-      setTitlePopup("Error");
-      setMessagePopup(e.message || "Failed to download weekly report");
-      setShowAlert(true);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleStockReportByProduct = () => {
-    router.push('/bizgen/warehouse/stock-report');
-  };
-
   const handleStockSearchPage = () => {
     router.push('/bizgen/warehouse/find-stock');
   };
@@ -242,18 +219,18 @@ const handleDownloadWeeklyReport = (warehouse_id: string) => {
               <Text fontSize="sm" color="gray.500">{t.warehouse.weeklyReportDesc}</Text>
               <Dialog.Root>
                 <Dialog.Trigger asChild>
-                  <Button size="sm" bg="#E77A1F" color="white" onClick={handleWeeklyStockReport}>{t.master.downloadExcel}</Button>
+                  <Button size="sm" bg="#E77A1F" color="white" >{t.master.downloadExcel}</Button>
                 </Dialog.Trigger>
                 <Portal>
                   <Dialog.Backdrop />
                   <Dialog.Positioner>
                     <Dialog.Content>
                       <Dialog.Header>
-                        <Dialog.Title>Download Laporan Mingguan</Dialog.Title>
+                        <Dialog.Title>{t.warehouse.donwloadWeeklyReport}</Dialog.Title>
                       </Dialog.Header>
                       <Dialog.Body>
                         <Field.Root>
-                          <Field.Label>Pilih Gudang</Field.Label>
+                          <Field.Label>{t.warehouse.chooseWarehouse}</Field.Label>
                           <Select.Root collection={warehouseCollection} value={warehouseSelected ? [warehouseSelected] : []} onValueChange={(details) => {
                             const value = details.value[0];
                             setWarehouseSelected(value);
@@ -281,11 +258,11 @@ const handleDownloadWeeklyReport = (warehouse_id: string) => {
                       </Dialog.Body>
                       <Dialog.Footer>
                         <Dialog.ActionTrigger asChild>
-                          <Button variant="outline">Cancel</Button>
+                          <Button variant="outline">{t.delete_popup.cancel}</Button>
                         </Dialog.ActionTrigger>
                         <Button bg={"#E77A1F"} color={"white"} cursor={"pointer"} onClick={() => {if (warehouseSelected) {
-      handleDownloadWeeklyReport(warehouseSelected)
-    }}}>Download</Button>
+                          handleDownloadWeeklyReport(warehouseSelected)
+                        }}}>{t.master.downloadExcel}</Button>
                       </Dialog.Footer>
                       <Dialog.CloseTrigger asChild>
                         <CloseButton size="sm" />

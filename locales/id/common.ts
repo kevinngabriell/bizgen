@@ -131,17 +131,18 @@ export const id = {
     noItems: "Data tidak ditemukan",
     remove: "Hapus",
     downloadExcel: "Unduh Excel",
+    downloadPDF: "Unduh PDF"
   },
-    customer: {
-        title: "Data Master Customer",
-        create_button: "Tambah Customer",
-        update_button: "Perbarui Customer",
-        customer_name: "Nama Customer",
-        customer_name_placeholder: "Masukkan nama customer",
-        customer_phone: "Nomor Telepon Customer",
-        customer_phone_placeholder: "Masukkan nomor telepon customer",
-        customer_address: "Alamat Customer",
-        customer_address_placeholder: "Masukkan alamat customer",
+  customer: {
+    title: "Data Master Customer",
+    create_button: "Tambah Customer",
+    update_button: "Perbarui Customer",
+    customer_name: "Nama Customer",
+    customer_name_placeholder: "Masukkan nama customer",
+    customer_phone: "Nomor Telepon Customer",
+    customer_phone_placeholder: "Masukkan nomor telepon customer",
+    customer_address: "Alamat Customer",
+    customer_address_placeholder: "Masukkan alamat customer",
         customer_pic : "Nama PIC",
         customer_pic_placeholder : "Masukkan nama PIC",
         customer_pic_contact : "Kontak PIC",
@@ -591,7 +592,7 @@ sales_module : {
   inquiry_no_placeholder: "Otomatis atau isi manual",
 
   customer_name: "Customer",
-  customer_placeholder: "Pilih customer",
+  customer_placeholder: "Masukkan nama customer",
 
   contact_person: "PIC / Kontak",
   contact_person_placeholder: "Masukkan nama PIC",
@@ -1192,6 +1193,8 @@ warehouse: {
   reports: "Laporan Gudang",
   weeklyReport: "Laporan Stok Mingguan",
   weeklyReportDesc: "Unduh ringkasan laporan stok mingguan dalam format Excel.",
+  donwloadWeeklyReport: "Download Laporan Mingguan",
+  chooseWarehouse: "Pilih Gudang",
   reportByProduct: "Laporan Stok per Produk",
   reportByProductDesc: "Lihat laporan stok berdasarkan kode atau nama produk.",
   viewReport: "Lihat Laporan",
@@ -1258,6 +1261,20 @@ warehouse: {
     addLot: "+ Tambah Lot",
     cancel: "Batal",
     saveSampleStockOut: "Simpan Sample Stock Out",
+  },
+  find_stock: {
+    find_stock: "Cari Stock Produk",
+    find_stock_desc: "Masukkan nama product, kode product, atau nomor lot / batch untuk melihat stock yang tersedia.",
+    no_found: "Belum ada yang dicari nih",
+    no_found_2: `Coba cari berdasarkan nama product atau nomor lot / batch dulu,`,
+    no_found_3: "Kalau kosong terus… sistemnya juga bingung mau nampilin apa 😅",
+    product: "Produk",
+    warehouse: "Gudang",
+    transaction_type: "Tipe Transaksi",
+    transaction_date: "Tanggal Transaksi",
+    Qty: "Qty",
+    total_qty: "Total Qty",
+    button: "Cari Stock"
   }
 },
 };

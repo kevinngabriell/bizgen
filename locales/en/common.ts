@@ -131,6 +131,7 @@ export const en = {
     noItems: "No items found",
     remove: "Remove",
     downloadExcel: "Download Excel",
+    downloadPDF: "Download PDF"
   },
   customer: {
     title: "Customer Master Data",
@@ -591,7 +592,7 @@ sales_inquiry: {
   inquiry_no_placeholder: "Auto-generated or enter manually",
 
   customer_name: "Customer",
-  customer_placeholder: "Select customer",
+  customer_placeholder: "Enter customer name",
 
   contact_person: "Contact Person",
   contact_person_placeholder: "Enter contact person",
@@ -1190,6 +1191,8 @@ warehouse: {
   sample: "Sample",
   recentActivity: "Recent Warehouse Activity",
   reports: "Warehouse Reports",
+  donwloadWeeklyReport: "Download Weekly Report",
+  chooseWarehouse: "Choose Warehouse",
   weeklyReport: "Weekly Stock Report",
   weeklyReportDesc: "Download weekly stock summary report in Excel format.",
   reportByProduct: "Stock Report by Product",
@@ -1256,6 +1259,20 @@ warehouse: {
     addLot: "+ Add LOT",
     cancel: "Cancel",
     saveSampleStockOut: "Save Sample Stock Out",
+  },
+  find_stock: {
+    find_stock: "Find Product Stock",
+    find_stock_desc: "Enter the product name, product code, or lot / batch number to view the available stock.",
+    no_found: "Nothing has been searched yet",
+    no_found_2: "Try searching by product name or lot / batch number first.",
+    no_found_3: "If it's still empty… the system doesn’t know what to show either 😅",
+    product: "Product",
+    warehouse: "Warehouse",
+    transaction_type: "Transaction Type",
+    transaction_date: "Transaction Date",
+    Qty: "Qty",
+    total_qty: "Total Qty",
+    button: "Find Stock"
   }
 },
 warehouse_stock_in: {

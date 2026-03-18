@@ -2,29 +2,48 @@
 
 import { Box, Button, Card, createListCollection, Field, Flex, Grid, GridItem, Heading, HStack, Icon, Input, Portal, Select, Separator, SimpleGrid, Stack, Tag, Text, Textarea,} from "@chakra-ui/react";
 import { FiFileText, FiPackage, FiTruck } from "react-icons/fi";
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import SidebarWithHeader from "@/components/ui/SidebarWithHeader";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Loading from "@/components/loading";
 import { DecodedAuthToken, checkAuthOrRedirect, getAuthInfo } from "@/lib/auth/auth";
 import { getLang } from "@/lib/i18n";
 import { getAllShipVia, GetShipViaData } from "@/lib/master/ship-via";
 import { getAllTerm, GetTermData } from "@/lib/master/term";
 import { getAllPort, GetPortData } from "@/lib/master/port";
+import { createSalesDocument, generateSalesDocumentNumber } from "@/lib/sales/document";
+import { AlertMessage } from "@/components/ui/alert";
+
+type ShipmentMode = "create" | "view" | "edit";
 
 export default function ShipmentProcessPage() {
+  return (
+    <Suspense fallback={<Loading />}>
+      <ShipmentProcessContent />
+    </Suspense>
+  );
+}
+
+function ShipmentProcessContent() {
   const [auth, setAuth] = useState<DecodedAuthToken | null>(null);
   const [loading, setLoading] = useState(false); 
-  
-  const [mode, setMode] = useState<"create" | "view" | "edit">("create");
-
-  //router authentication
-  const router = useRouter();
 
   //language state 
   const [lang, setLang] = useState<"en" | "id">("en");
   const t = getLang(lang);
 
+  //retrieve rfq ID
+  const searchParams = useSearchParams();
+  const shipmentID = searchParams.get("shipment_id");
+
+  const [shipmentStatus, setShipmentStatus] = useState<string>();
+  const [lastUpdatedBy, setLastUpdatedBy] = useState<string>();
+  const [lastUpdatedAt, setLastUpdatedAt] = useState<string>();
+  
+  //set mode for create/update/view
+  const [mode, setMode] = useState<ShipmentMode>("create");
+  const isReadOnly = mode === "view" && shipmentStatus !== "draft" && shipmentStatus !== "rejected";
+    
   //shipment type option
   const [shipmentTypeSelected, setShipmentTypeSelected] = useState<string>();
   const [shipmentTypeOptions, setShipmentTypeOptions] = useState<GetShipViaData[]>([]);
@@ -51,6 +70,34 @@ export default function ShipmentProcessPage() {
   const [originSelected, setOriginSelected] = useState<string>();
   const [destinationSelected, setDestinationSelected] = useState<string>();
   const [portOptions, setPortOptions] = useState<GetPortData[]>([]);
+
+  //alert & success variable
+  const [showAlert, setShowAlert] = useState(false);
+  const [titlePopup, setTitlePopup] = useState('');
+  const [messagePopup, setMessagePopup] = useState('');
+  const [isSuccess, setIsSuccess] = useState(false);
+  
+  // form state for input values
+  const [form, setForm] = useState({
+    shipment_no: "",
+    booking_no: "",
+    status: "",
+    eta: "",
+    etd: "",
+    container_info: "",
+    remarks: ""
+  });
+
+  // milestones state for each step
+  const [milestones, setMilestones] = useState([
+    { id: "cargo_pickup", label: "Cargo Pickup", note: "", time: "" },
+    { id: "stuffing", label: "Stuffing / Warehouse In", note: "", time: "" },
+    { id: "customs_declaration", label: "Customs Declaration", note: "", time: "" },
+    { id: "port_in", label: "Port In", note: "", time: "" },
+    { id: "on_board", label: "On Board Vessel / Flight", note: "", time: "" },
+    { id: "arrival_port", label: "Arrival Port", note: "", time: "" },
+    { id: "delivery_to_consignee", label: "Delivery to Consignee", note: "", time: "" },
+  ]);
     
   const portCollection = createListCollection({
     items: portOptions.map((port) => ({
@@ -59,51 +106,65 @@ export default function ShipmentProcessPage() {
     })),
   });
   
-
   useEffect(() => {
-    init();
-
-    const fetchShipVia = async () => {
+    const loadMaster = async () => {
       try {
         setLoading(true);
-        const shipViaRes = await getAllShipVia(1, 1000);
+
+        await init();
+
+        const [
+          shipViaRes,
+          portRes,
+          termRes
+        ] = await Promise.all([
+          getAllShipVia(1, 1000),
+          getAllPort(1, 1000),
+          getAllTerm(1, 1000)
+        ]);
+
         setShipmentTypeOptions(shipViaRes?.data ?? []);
-      } catch (error) {
-        console.error(error);
-        setShipmentTypeOptions([]);
+        setPortOptions(portRes?.data ?? []);
+        setTermOptions(termRes?.data ?? []);
+
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    const loadDetail = async () => {
+      if (!shipmentID) return;
+    }
+
+    const loadGeneratedNumber = async () => {
+      if (shipmentID) return; 
+
+      try {
+        const res = await generateSalesDocumentNumber();
+        setForm(prev => ({
+          ...prev,
+          shipment_no: res.number,
+        }));
+      } catch (err) {
+        console.error("Failed to generate shipment no number", err);
+      }
+    }
+
+    const loadAll = async () => {
+      try {
+        setLoading(true);
+        await loadMaster();
+        await loadDetail();
+        await loadGeneratedNumber();
       } finally {
         setLoading(false);
       }
-    };
+    }
 
-    const fetchPort = async () => {
-      try {
-        const portRes = await getAllPort(1, 1000);
-        setPortOptions(portRes?.data ?? []);
-      } catch (error) {
-        console.error(error);
-        setPortOptions([]);
-      }
-    };
-
-    const fetchTerm = async () => {
-      try {
-        const termRes = await getAllTerm(1, 1000);
-        setTermOptions(termRes?.data ?? []);
-      } catch (error) {
-        console.error(error);
-        setTermOptions([]);
-      }
-    };
-
-    fetchShipVia();
-    fetchPort();
-    fetchTerm();
-  }, []);
+    loadAll();
+  }, [shipmentID]);
 
   const init = async () => {
-    setLoading(true);
-
     //check authentication redirect
     const valid = await checkAuthOrRedirect();
     if(!valid) return;
@@ -115,8 +176,122 @@ export default function ShipmentProcessPage() {
     //set language from token authentication
     const language = info?.language === "id" ? "id" : "en";
     setLang(language);
+  }
 
-    setLoading(false);
+  const handleSave = async () => {
+    try {
+      setLoading(true);
+
+      if (!form.shipment_no.trim())
+        throw new Error("Shipment number is required");
+
+      // if (!form.booking_no.trim())
+      //   throw new Error("Job order / booking number is required");
+
+      if (!shipmentTypeSelected)
+        throw new Error("Shipment type is required");
+
+      if (!termSelected)
+        throw new Error("Incoterm is required");
+
+      if (!form.status)
+        throw new Error("Shipment status is required");
+
+      if (!originSelected)
+        throw new Error("Origin port is required");
+
+      if (!destinationSelected)
+        throw new Error("Destination port is required");
+
+      if (originSelected === destinationSelected)
+        throw new Error("Origin and destination port cannot be the same");
+
+      if (!form.etd)
+        throw new Error("ETD is required");
+
+      if (!form.eta)
+        throw new Error("ETA is required");
+
+      if (new Date(form.eta) < new Date(form.etd))
+        throw new Error("ETA cannot be earlier than ETD");
+
+      // Validate milestones (optional but if time exists, must be valid)
+      for (const milestone of milestones) {
+        if (milestone.time) {
+          const date = new Date(milestone.time);
+          if (isNaN(date.getTime())) {
+            throw new Error(`Invalid milestone time for ${milestone.label}`);
+          }
+        }
+      }
+
+      setLoading(true);
+
+      const payload = {
+        shipment_no: form.shipment_no,
+        job_order_id: "sjob69b962a4859b6",
+        ship_via_id: shipmentTypeSelected,
+        term_id: termSelected,
+        origin_port: originSelected,
+        destination_port: destinationSelected,
+        etd: form.etd,
+        eta: form.eta,
+        container_information: form.container_info,
+        operational_notes: form.remarks,
+        milestones: milestones.map((row) => ({
+          type: row.id,
+          date: row.time,
+          note: row.note,
+        }))
+      }
+      
+      const res = await createSalesDocument(payload);
+
+      // If validation passed
+      setShowAlert(true);
+      setIsSuccess(true);
+      setTitlePopup("Success");
+      setMessagePopup("Shipment saved successfully");
+
+      // reset form values
+      setForm({
+        shipment_no: "",
+        booking_no: "",
+        status: "",
+        eta: "",
+        etd: "",
+        container_info: "",
+        remarks: "",
+      });
+
+      // reset selections
+      setShipmentTypeSelected(undefined);
+      setTermSelected(undefined);
+      setOriginSelected(undefined);
+      setDestinationSelected(undefined);
+
+      // reset milestones
+      setMilestones([
+        { id: "cargo_pickup", label: "Cargo Pickup", note: "", time: "" },
+        { id: "stuffing", label: "Stuffing / Warehouse In", note: "", time: "" },
+        { id: "customs_declaration", label: "Customs Declaration", note: "", time: "" },
+        { id: "port_in", label: "Port In", note: "", time: "" },
+        { id: "on_board", label: "On Board Vessel / Flight", note: "", time: "" },
+        { id: "arrival_port", label: "Arrival Port", note: "", time: "" },
+        { id: "delivery_to_consignee", label: "Delivery to Consignee", note: "", time: "" },
+      ]);
+
+      setTimeout(() => setShowAlert(false), 6000);
+
+    } catch (err: any) {
+      setShowAlert(true);
+      setIsSuccess(false);
+      setTitlePopup("Error");
+      setMessagePopup(err.message || "Failed to create sales document");
+    } finally {
+      setLoading(false);
+      setTimeout(() => setShowAlert(false), 6000);
+    }
   }
     
   if (loading) return <Loading/>;
@@ -135,13 +310,15 @@ export default function ShipmentProcessPage() {
           )}
           {(mode === "create" || mode === "edit") && (
             <>
-              <Button variant="outline" bg={"transparent"} borderColor={"#E77A1F"} color={"#E77A1F"} cursor={"pointer"}>{t.sales_shipment_process.save_draft}</Button>
-              <Button bg="#E77A1F" color="white">{t.sales_shipment_process.save_continue}</Button>
+              <Button variant="outline" bg={"transparent"} borderColor={"#E77A1F"} color={"#E77A1F"} cursor={"pointer"} onClick={handleSave}>{t.sales_shipment_process.save_draft}</Button>
+              <Button bg="#E77A1F" color="white" onClick={handleSave}>{t.sales_shipment_process.save_continue}</Button>
             </>
           )}
         </Flex>
       </Flex>
 
+          {showAlert && <AlertMessage title={titlePopup} description={messagePopup} isSuccess={isSuccess}/>}
+          
       <Card.Root>
         <Card.Header>
           <Flex gap={4} alignItems={"center"}>
@@ -151,13 +328,24 @@ export default function ShipmentProcessPage() {
         </Card.Header>
         <Card.Body>
           <SimpleGrid templateColumns={{ base: "1fr", md: "1fr 1fr" }} gap={4}>
-            <Field.Root>
-              <Field.Label>{t.sales_shipment_process.job_booking_no}</Field.Label>
-              <Input placeholder={t.sales_shipment_process.job_booking_no_placeholder} />
+            <Field.Root required>
+              <Field.Label>Shipment Number<Field.RequiredIndicator/></Field.Label>
+              <Input
+                placeholder={t.sales_shipment_process.job_booking_no_placeholder}
+                value={form.shipment_no}
+                onChange={(e) => setForm({ ...form, shipment_no: e.target.value })}
+              />
             </Field.Root>
-            <Field.Root>
-              <Field.Label>{t.sales_shipment_process.shipment_type}</Field.Label>
-                <Select.Root collection={shipmentTypeCollection} size="sm">
+            <Field.Root required>
+              <Field.Label>Job Order<Field.RequiredIndicator/></Field.Label>
+            </Field.Root>
+            <Field.Root required>
+              <Field.Label>{t.sales_shipment_process.shipment_type}<Field.RequiredIndicator/></Field.Label>
+                <Select.Root
+                  collection={shipmentTypeCollection}
+                  value={shipmentTypeSelected ? [shipmentTypeSelected] : []}
+                  onValueChange={(details) => setShipmentTypeSelected(details.value[0])}
+                >
                   <Select.HiddenSelect />
                   <Select.Control>
                     <Select.Trigger>
@@ -181,8 +369,8 @@ export default function ShipmentProcessPage() {
                   </Portal>
                 </Select.Root>
             </Field.Root>
-            <Field.Root>
-              <Field.Label>{t.sales_shipment_process.incoterm}</Field.Label>
+            <Field.Root required>
+              <Field.Label>{t.sales_shipment_process.incoterm}<Field.RequiredIndicator/></Field.Label>
                 <Select.Root collection={termCollection} value={termSelected ? [termSelected] : []} onValueChange={(details) => setTermSelected(details.value[0])} size="sm" width="100%">
                   <Select.HiddenSelect />
                   <Select.Control>
@@ -204,9 +392,16 @@ export default function ShipmentProcessPage() {
                   </Portal>
                 </Select.Root>
             </Field.Root>
-            <Field.Root>
-              <Field.Label>{t.sales_shipment_process.shipment_status}</Field.Label>
-                <Select.Root collection={statusOptions} size="sm">
+            <Field.Root required>
+              <Field.Label>{t.sales_shipment_process.shipment_status} <Field.RequiredIndicator/></Field.Label>
+                <Select.Root
+                  collection={statusOptions}
+                  value={form.status ? [form.status] : []}
+                  onValueChange={(details) =>
+                    setForm({ ...form, status: details.value[0] })
+                  }
+                  size="sm"
+                >
                   <Select.HiddenSelect />
                   <Select.Control>
                     <Select.Trigger>
@@ -243,8 +438,8 @@ export default function ShipmentProcessPage() {
         </Card.Header>
         <Card.Body>
           <SimpleGrid templateColumns={{ base: "1fr", md: "1fr 1fr" }} gap={4}>
-            <Field.Root>
-              <Field.Label>{t.sales_shipment_process.port_loading}</Field.Label>
+            <Field.Root required>
+              <Field.Label>{t.sales_shipment_process.port_loading} <Field.RequiredIndicator/></Field.Label>
                 <Select.Root collection={portCollection} value={originSelected ? [originSelected] : []} onValueChange={(details) => setOriginSelected(details.value[0])} size="sm" width="100%">
                   <Select.HiddenSelect />
                     <Select.Control>
@@ -266,8 +461,8 @@ export default function ShipmentProcessPage() {
                   </Portal>
               </Select.Root>
             </Field.Root>
-            <Field.Root>
-              <Field.Label>{t.sales_shipment_process.port_discharge}</Field.Label>
+            <Field.Root required>
+              <Field.Label>{t.sales_shipment_process.port_discharge} <Field.RequiredIndicator/></Field.Label>
                 <Select.Root collection={portCollection} value={destinationSelected ? [destinationSelected] : []} onValueChange={(details) => setDestinationSelected(details.value[0])} size="sm" width="100%">
                   <Select.HiddenSelect />
                   <Select.Control>
@@ -289,21 +484,37 @@ export default function ShipmentProcessPage() {
                   </Portal>
                 </Select.Root>
             </Field.Root>
-            <Field.Root>
-              <Field.Label>{t.sales_shipment_process.eta}</Field.Label>
-              <Input type="date" />
+            <Field.Root required>
+              <Field.Label>{t.sales_shipment_process.eta} <Field.RequiredIndicator/></Field.Label>
+              <Input
+                type="date"
+                value={form.eta}
+                onChange={(e) => setForm({ ...form, eta: e.target.value })}
+              />
             </Field.Root>
-            <Field.Root>
-              <Field.Label>{t.sales_shipment_process.etd}</Field.Label>
-              <Input type="date" />
+            <Field.Root required>
+              <Field.Label>{t.sales_shipment_process.etd} <Field.RequiredIndicator/></Field.Label>
+              <Input
+                type="date"
+                value={form.etd}
+                onChange={(e) => setForm({ ...form, etd: e.target.value })}
+              />
             </Field.Root>
             <Field.Root>
               <Field.Label>{t.sales_shipment_process.container_info}</Field.Label>
-              <Textarea placeholder={t.sales_shipment_process.container_info_placeholder} />
+              <Textarea
+                placeholder={t.sales_shipment_process.container_info_placeholder}
+                value={form.container_info}
+                onChange={(e) => setForm({ ...form, container_info: e.target.value })}
+              />
             </Field.Root>
             <Field.Root>
               <Field.Label>{t.sales_shipment_process.remarks}</Field.Label>
-              <Textarea placeholder={t.sales_shipment_process.remarks_placeholder} />
+              <Textarea
+                placeholder={t.sales_shipment_process.remarks_placeholder}
+                value={form.remarks}
+                onChange={(e) => setForm({ ...form, remarks: e.target.value })}
+              />
             </Field.Root>
           </SimpleGrid>
         </Card.Body>
@@ -317,19 +528,35 @@ export default function ShipmentProcessPage() {
           </Flex>
         </Card.Header>
         <Card.Body>
-          {[
-            "Cargo Pickup",
-            "Stuffing / Warehouse In",
-            "Customs Declaration",
-            "Port In",
-            "On Board Vessel / Flight",
-            "Arrival Port",
-            "Delivery to Consignee",
-          ].map((label) => (
-            <SimpleGrid key={label} templateColumns={{ base: "1fr", md: "260px 1fr 200px" }} gap={3} alignItems="center" mb={4}>
-              <Text>{label}</Text>
-              <Textarea placeholder={t.sales_shipment_process.notes_optional} />
-              <Input type="datetime-local" />
+          {milestones.map((item, index) => (
+            <SimpleGrid
+              key={item.label}
+              templateColumns={{ base: "1fr", md: "260px 1fr 200px" }}
+              gap={3}
+              alignItems="center"
+              mb={4}
+            >
+              <Text>{item.label}</Text>
+
+              <Textarea
+                placeholder={t.sales_shipment_process.notes_optional}
+                value={item.note}
+                onChange={(e) => {
+                  const updated = [...milestones];
+                  updated[index].note = e.target.value;
+                  setMilestones(updated);
+                }}
+              />
+
+              <Input
+                type="datetime-local"
+                value={item.time}
+                onChange={(e) => {
+                  const updated = [...milestones];
+                  updated[index].time = e.target.value;
+                  setMilestones(updated);
+                }}
+              />
             </SimpleGrid>
           ))}
         </Card.Body>
@@ -390,9 +617,9 @@ export default function ShipmentProcessPage() {
 const statusOptions = createListCollection({
   items: [
     { label: "Pending", value: "pending" },
-    { label: "Ready for Pickup", value: "readyforpickup" },
-    { label: "Port In", value: "portin" },
-    { label: "On Board", value: "onboard" },
+    { label: "Ready for Pickup", value: "ready_for_pickup" },
+    { label: "Port In", value: "port_in" },
+    { label: "On Board", value: "on_board" },
     { label: "Arrived", value: "arrived" },
     { label: "Delivered", value: "delivered" }
   ],

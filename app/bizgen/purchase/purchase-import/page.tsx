@@ -38,8 +38,6 @@ export default function CreatePurchaseImportPage() {
   const t = getLang("en");  
   const router = useRouter();
 
-  
-
   const supplierCollection = createListCollection({
     items: supplierOptions.map((supplier) => ({
         label: `${supplier.supplier_name}`,
@@ -190,7 +188,9 @@ export default function CreatePurchaseImportPage() {
   const localCurrencyTotal = useMemo(
     () => landedCost * Number(exchangeRate || 1),
     [landedCost, exchangeRate]
-  );if (loading) return <Loading/>;
+  );
+  
+  if (loading) return <Loading/>;
 
   return (
     <SidebarWithHeader username={auth?.username ?? "Unknown"} daysToExpire={auth?.days_remaining ?? 0}>

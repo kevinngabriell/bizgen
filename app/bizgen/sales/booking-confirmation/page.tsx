@@ -1,34 +1,52 @@
 'use client';
 
 import Loading from '@/components/loading';
+import { AlertMessage } from '@/components/ui/alert';
 import SidebarWithHeader from '@/components/ui/SidebarWithHeader';
 import { DecodedAuthToken, checkAuthOrRedirect, getAuthInfo } from '@/lib/auth/auth';
 import { getLang } from '@/lib/i18n';
 import { getAllPort, GetPortData } from '@/lib/master/port';
 import { getAllShipVia, GetShipViaData } from '@/lib/master/ship-via';
 import { getAllTerm, GetTermData } from '@/lib/master/term';
-import { Box, Button, Card, Flex, Heading, Icon, Input, Stack, Text, Textarea, Badge, SimpleGrid, Separator, Field, createListCollection, Select, Portal } from '@chakra-ui/react';
-import { useRouter } from 'next/navigation';
-
-import { useEffect, useState } from 'react';
+import { createSalesJobOrder, generateSalesBookingNumber } from '@/lib/sales/booking-confirmation';
+import { Button, Card, Flex, Heading, Icon, Input, Stack, Text, Textarea, SimpleGrid, Separator, Field, createListCollection, Select, Portal } from '@chakra-ui/react';
+import { useSearchParams } from 'next/navigation';
+import { useEffect, useState, ChangeEvent, Suspense } from 'react';
 import { FiFileText } from 'react-icons/fi';
 
+type BookMode = "create" | "view" | "edit";
+
 export default function BookingConfirmationPage() {
+  return (
+    <Suspense fallback={<Loading />}>
+      <BookingConfirmationContent />
+    </Suspense>
+  );
+}
+
+function BookingConfirmationContent() {
   const [auth, setAuth] = useState<DecodedAuthToken | null>(null);
   const [loading, setLoading] = useState(false);
-
-  //router authentication
-  const router = useRouter();
 
   //language state 
   const [lang, setLang] = useState<"en" | "id">("en");
   const t = getLang(lang);
 
-  const [isEdit, setIsEdit] = useState(true);
+  //retrieve rfq ID
+  const searchParams = useSearchParams();
+  const bookingID = searchParams.get("booking_id");
 
+  const [bookingStatus, setBookingStatus] = useState<string>();
+  const [lastUpdatedBy, setLastUpdatedBy] = useState<string>();
+  const [lastUpdatedAt, setLastUpdatedAt] = useState<string>();
+
+  const [mode, setMode] = useState<BookMode>("create");
+  const isReadOnly = mode === "view" && bookingStatus !== "draft" && bookingStatus !== "rejected";
+  
   //shipment type option
-  const [shipmentTypeSelected, setShipmentTypeSelected] = useState<string>();
   const [shipmentTypeOptions, setShipmentTypeOptions] = useState<GetShipViaData[]>([]);
+  const [jobTypeSelected, setJobTypeSelected] = useState<string>();
+  const [shipmentTypeSelected, setShipmentTypeSelected] = useState<string>();
 
   const shipmentTypeCollection = createListCollection({
     items: shipmentTypeOptions.map((shipment) => ({
@@ -60,51 +78,69 @@ export default function BookingConfirmationPage() {
     })),
   });
 
-  useEffect(() => {
-    init();
+  //alert & success variable
+  const [showAlert, setShowAlert] = useState(false);
+  const [titlePopup, setTitlePopup] = useState('');
+  const [messagePopup, setMessagePopup] = useState('');
+  const [isSuccess, setIsSuccess] = useState(false);
 
-    const fetchShipVia = async () => {
+  useEffect(() => {
+    const loadMaster = async () => {
       try {
         setLoading(true);
-        const shipViaRes = await getAllShipVia(1, 1000);
+
+        await init();
+
+        const [
+          shipViaRes, portRes, termRes
+        ] = await Promise.all([
+          getAllShipVia(1, 1000),
+          getAllPort(1, 1000),
+          getAllTerm(1, 1000)
+        ]);
+
         setShipmentTypeOptions(shipViaRes?.data ?? []);
-      } catch (error) {
-        console.error(error);
-        setShipmentTypeOptions([]);
+        setPortOptions(portRes?.data ?? []);
+        setTermOptions(termRes?.data ?? []);
+      } catch (err){
+        console.error(err);
+      }
+    }
+
+    const loadDetail = async () => {
+      if (!bookingID) return;
+    }
+
+    const loadGeneratedNumber = async () => {
+      if (bookingID) return; // kalau ada rfqId, jangan generate (view/edit mode)
+    
+      try {
+        const res = await generateSalesBookingNumber();
+        setForm(prev => ({
+          ...prev,
+          booking_no: res.number,
+        }));
+      } catch (err) {
+        console.error("Failed to generate RFQ number", err);
+      }
+    };
+
+    const loadAll = async () => {
+      try {
+        setLoading(true);
+        await loadMaster();
+        await loadDetail();
+        await loadGeneratedNumber();
       } finally {
         setLoading(false);
       }
     };
 
-    const fetchPort = async () => {
-      try {
-        const portRes = await getAllPort(1, 1000);
-        setPortOptions(portRes?.data ?? []);
-      } catch (error) {
-        console.error(error);
-        setPortOptions([]);
-      }
-    };
+    loadAll();
 
-    const fetchTerm = async () => {
-      try {
-        const termRes = await getAllTerm(1, 1000);
-        setTermOptions(termRes?.data ?? []);
-      } catch (error) {
-        console.error(error);
-        setTermOptions([]);
-      }
-    };
-
-    fetchShipVia();
-    fetchPort();
-    fetchTerm();
-
-  }, []);
+  }, [bookingID]);
 
   const init = async () => {
-    setLoading(true);
-
     //check authentication redirect
     const valid = await checkAuthOrRedirect();
     if(!valid) return;
@@ -116,10 +152,141 @@ export default function BookingConfirmationPage() {
     //set language from token authentication
     const language = info?.language === "id" ? "id" : "en";
     setLang(language);
-
-    setLoading(false);
   }
-    
+
+  const [form, setForm] = useState({
+    booking_no: "",
+    estimated_departure: "",
+    estimated_arrival: "",
+    shipper_company: "",
+    shipper_contact: "",
+    shipper_address: "",
+    consignee_company: "",
+    consignee_contact: "",
+    consignee_address: "",
+    package_type: "",
+    total_packages: "",
+    gross_weight: "",
+    cbm: "",
+    freight_charge: "",
+    local_charge: "",
+    other_charge: "",
+    remarks: ""
+  });
+
+  const handleInputChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setForm((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  const handleSave = async () => {
+    try {
+      if (!form.booking_no) {
+        throw new Error("Booking number is required");
+      }
+      if (!jobTypeSelected) {
+        throw new Error("Job type is required");
+      }
+      if (!shipmentTypeSelected) {
+        throw new Error("Service / shipment type is required");
+      }
+      if (!originSelected) {
+        throw new Error("Origin port is required");
+      }
+      if (!destinationSelected) {
+        throw new Error("Destination port is required");
+      }
+      if (!termSelected) {
+        throw new Error("Term is required");
+      }
+      if (originSelected === destinationSelected) {
+        throw new Error("Origin and destination port cannot be the same");
+      }
+      const grossWeight = Number(form.gross_weight) || 0;
+      const cbm = Number(form.cbm) || 0;
+      if (grossWeight <= 0 && cbm <= 0) {
+        throw new Error("Either Gross Weight or CBM must be greater than 0");
+      }
+      if (Number(form.total_packages) < 0) {
+        throw new Error("Total packages cannot be negative");
+      }
+      if (Number(form.freight_charge) < 0 || Number(form.local_charge) < 0 || Number(form.other_charge) < 0) {
+        throw new Error("Charges cannot be negative");
+      }
+
+      setLoading(true);
+
+      const payload = {
+        job_order_number: form.booking_no,
+        job_type: jobTypeSelected,
+        ship_via_id: shipmentTypeSelected,
+        estimated_departure: form.estimated_departure,
+        estimated_arrival : form.estimated_arrival,
+        shipper_company: form.shipper_company,
+        shipper_contact: form.shipper_contact,
+        shipper_address: form.shipper_address,
+        consignee_company : form.consignee_company,
+        consignee_contact: form.consignee_contact,
+        consignee_address: form.consignee_address,
+        origin_port: originSelected,
+        destination_port : destinationSelected,
+        incoterm: termSelected ?? "",
+        package_type: form.package_type,
+        total_packages: form.total_packages,
+        gross_weight: form.gross_weight,
+        cbm: form.cbm,
+        freight_charge: form.freight_charge,
+        local_charge: form.local_charge,
+        other_charge: form.other_charge,
+        remarks: form.remarks,
+      }
+
+      const res = await createSalesJobOrder(payload);
+
+      setShowAlert(true);
+      setIsSuccess(true);
+      setTitlePopup("Success");
+      setMessagePopup("Sales job order created successfully");
+      setTimeout(() => setShowAlert(false), 6000);
+      setForm({
+        booking_no: "",
+        estimated_departure: "",
+        estimated_arrival: "",
+        shipper_company: "",
+        shipper_contact: "",
+        shipper_address: "",
+        consignee_company: "",
+        consignee_contact: "",
+        consignee_address: "",
+        package_type: "",
+        total_packages: "",
+        gross_weight: "",
+        cbm: "",
+        freight_charge: "",
+        local_charge: "",
+        other_charge: "",
+        remarks: ""
+      });
+      setJobTypeSelected(undefined);
+      setShipmentTypeSelected(undefined);
+      setOriginSelected(undefined);
+      setDestinationSelected(undefined);
+      setTermSelected(undefined);
+
+    } catch (err: any) {
+      setShowAlert(true);
+      setIsSuccess(false);
+      setTitlePopup("Error");
+      setMessagePopup(err.message || "Failed to create booking order");
+      setTimeout(() => setShowAlert(false), 6000);
+    } finally {
+      setLoading(false);
+    }
+  }
+
   if (loading) return <Loading/>;
 
   return (
@@ -128,14 +295,14 @@ export default function BookingConfirmationPage() {
         <Heading size="lg" w={"100%"}>{t.booking_confirmation.title}</Heading>
         
         <Flex gap={3}>
-          <Button variant="outline" color={"#E77A1F"} borderColor={"#E77A1F"} onClick={() => setIsEdit(false)}>{t.booking_confirmation.save_draft}</Button>
-          <Button bg="#E77A1F" color="white">{t.booking_confirmation.confirm_create_job}</Button>
+          <Button variant="outline" color={"#E77A1F"} borderColor={"#E77A1F"} onClick={handleSave}>{t.booking_confirmation.save_draft}</Button>
+          <Button bg="#E77A1F" color="white" onClick={handleSave}>{t.booking_confirmation.confirm_create_job}</Button>
         </Flex>
       </Flex>
 
-      <Box p={{ base: 4, md: 6 }} maxW="1280px" mx="auto">
+      {showAlert && <AlertMessage title={titlePopup} description={messagePopup} isSuccess={isSuccess}/>}
 
-      <Stack gap={6}>
+      <Stack gap={6} mt={4}>
         {/* Job Meta */}
         <Card.Root>
           <Card.Header>
@@ -143,14 +310,15 @@ export default function BookingConfirmationPage() {
           </Card.Header>
           <Card.Body>
             <SimpleGrid columns={{ base: 1, md: 3 }} gap={4}>
-              <Field.Root>
-                <Field.Label fontSize="sm" mb={1}> {t.booking_confirmation.booking_no}</Field.Label>
-                <Input placeholder={t.booking_confirmation.booking_no_placeholder}  />
+              <Field.Root required>
+                <Field.Label fontSize="sm">{t.booking_confirmation.booking_no}<Field.RequiredIndicator/></Field.Label>
+                <Input name="booking_no" value={form.booking_no} onChange={handleInputChange} placeholder={t.booking_confirmation.booking_no_placeholder}/>
               </Field.Root>
-
-              <Field.Root>
-                <Field.Label fontSize="sm" mb={1}>{t.booking_confirmation.job_type}</Field.Label>
-                <Select.Root collection={jobTypeOptions} size="sm">
+              <Field.Root required>
+                <Field.Label fontSize="sm">{t.booking_confirmation.job_type}<Field.RequiredIndicator/></Field.Label>
+                <Select.Root collection={jobTypeOptions} value={jobTypeSelected ? [jobTypeSelected] : []}
+                  onValueChange={(details) => setJobTypeSelected(details.value[0])}
+                >
                   <Select.HiddenSelect />
                   <Select.Control>
                     <Select.Trigger>
@@ -174,14 +342,17 @@ export default function BookingConfirmationPage() {
                   </Portal>
                 </Select.Root>
               </Field.Root>
-
-              <Field.Root>
-                <Field.Label fontSize="sm" mb={1}> {t.booking_confirmation.service} </Field.Label>
-                <Select.Root collection={shipmentTypeCollection} size="sm">
+              <Field.Root required>
+                <Field.Label fontSize="sm">{t.booking_confirmation.service}<Field.RequiredIndicator/></Field.Label>
+                <Select.Root
+                  collection={shipmentTypeCollection}
+                  value={shipmentTypeSelected ? [shipmentTypeSelected] : []}
+                  onValueChange={(details) => setShipmentTypeSelected(details.value[0])}
+                >
                   <Select.HiddenSelect />
                   <Select.Control>
                     <Select.Trigger>
-                      <Select.ValueText placeholder={t.booking_confirmation.service_placeholder} />
+                      <Select.ValueText placeholder={t.booking_confirmation.service_placeholder}/>
                     </Select.Trigger>
                     <Select.IndicatorGroup>
                       <Select.Indicator />
@@ -200,18 +371,17 @@ export default function BookingConfirmationPage() {
                     </Select.Positioner>
                   </Portal>
                 </Select.Root>
-              </Field.Root>
-            </SimpleGrid>
-
-            <SimpleGrid column={{ base: '1fr', md: '1fr 1fr' }} gap={4} mt={4}>
+              </Field.Root>              
               <Field.Root>
-                <Field.Label fontSize="sm" mb={1}> {t.booking_confirmation.estimated_departure} </Field.Label>
-                <Input type="date" />
-              </Field.Root>
-
+                <Field.Label fontSize="sm">{t.booking_confirmation.estimated_departure}</Field.Label>
+                <Input type="date" name="estimated_departure" value={form.estimated_departure} onChange={handleInputChange}/>
+              </Field.Root>              
               <Field.Root>
-                <Field.Label fontSize="sm" mb={1}> {t.booking_confirmation.estimated_arrival} </Field.Label>
-                <Input type="date" />
+                <Field.Label fontSize="sm">{t.booking_confirmation.estimated_arrival}</Field.Label>
+                <Input type="date" name="estimated_arrival" value={form.estimated_arrival} onChange={handleInputChange}/>
+              </Field.Root>
+              <Field.Root>
+                <Field.Label fontSize="sm">Inquiry No</Field.Label>
               </Field.Root>
             </SimpleGrid>
           </Card.Body>
@@ -224,23 +394,20 @@ export default function BookingConfirmationPage() {
           </Card.Header>
           <Card.Body>
             <SimpleGrid column={{ base: 1, md: 2 }} gap={6}>
-
-
               <Field.Root>
-                <Field.Label mb={2}>{t.booking_confirmation.shipper}</Field.Label>
+                <Field.Label>{t.booking_confirmation.shipper}</Field.Label>
                 <Stack gap={2} w={"100%"}>
-                  <Input placeholder={t.booking_confirmation.company_name_placeholder} />
-                  <Input placeholder={t.booking_confirmation.contact_person_placeholder} />
-                  <Textarea placeholder={t.booking_confirmation.address_placeholder} rows={3} />
+                  <Input name="shipper_company" value={form.shipper_company} onChange={handleInputChange} placeholder={t.booking_confirmation.company_name_placeholder}/>
+                  <Input name="shipper_contact" value={form.shipper_contact} onChange={handleInputChange} placeholder={t.booking_confirmation.contact_person_placeholder}/>
+                  <Textarea name="shipper_address" value={form.shipper_address} onChange={handleInputChange} rows={3} placeholder={t.booking_confirmation.address_placeholder}/>
                 </Stack>
               </Field.Root>
-
               <Field.Root>
-                <Field.Label mb={2}> {t.booking_confirmation.consignee} </Field.Label>
+                <Field.Label> {t.booking_confirmation.consignee} </Field.Label>
                 <Stack gap={2} w={"100%"}>
-                  <Input placeholder={t.booking_confirmation.company_name_placeholder} />
-                  <Input placeholder={t.booking_confirmation.contact_person_placeholder} />
-                  <Textarea placeholder={t.booking_confirmation.address_placeholder} rows={3} />
+                  <Input name="consignee_company" value={form.consignee_company} onChange={handleInputChange} placeholder={t.booking_confirmation.company_name_placeholder}/>
+                  <Input name="consignee_contact" value={form.consignee_contact} onChange={handleInputChange} placeholder={t.booking_confirmation.contact_person_placeholder}/>
+                  <Textarea name="consignee_address" value={form.consignee_address} onChange={handleInputChange} rows={3} placeholder={t.booking_confirmation.address_placeholder}/>
                 </Stack>
               </Field.Root>
             </SimpleGrid>
@@ -250,12 +417,12 @@ export default function BookingConfirmationPage() {
         {/* Routing & Cargo */}
         <Card.Root>
           <Card.Header pb={2}>
-            <Heading size="sm">{t.booking_confirmation.routing_cargo}</Heading>
+            <Heading size="md">{t.booking_confirmation.routing_cargo}</Heading>
           </Card.Header>
           <Card.Body>
             <SimpleGrid columns={{ base: 1, md: 3 }} gap={4}>
-              <Field.Root>
-                <Field.Label fontSize="sm" mb={1}>{t.booking_confirmation.origin_port}</Field.Label>
+              <Field.Root required>
+                <Field.Label fontSize="sm">{t.booking_confirmation.origin_port} <Field.RequiredIndicator/> </Field.Label>
                 <Select.Root collection={portCollection} value={originSelected ? [originSelected] : []} onValueChange={(details) => setOriginSelected(details.value[0])} size="sm" width="100%">
                   <Select.HiddenSelect />
                     <Select.Control>
@@ -277,9 +444,8 @@ export default function BookingConfirmationPage() {
                   </Portal>
               </Select.Root>
               </Field.Root>
-
-              <Field.Root>
-                <Field.Label fontSize="sm" mb={1}> {t.booking_confirmation.destination_port} </Field.Label>
+              <Field.Root required>
+                <Field.Label fontSize="sm"> {t.booking_confirmation.destination_port} <Field.RequiredIndicator/></Field.Label>
                 <Select.Root collection={portCollection} value={destinationSelected ? [destinationSelected] : []} onValueChange={(details) => setDestinationSelected(details.value[0])} size="sm" width="100%">
                   <Select.HiddenSelect />
                   <Select.Control>
@@ -301,9 +467,8 @@ export default function BookingConfirmationPage() {
                   </Portal>
                 </Select.Root>
               </Field.Root>
-
-              <Field.Root>
-                <Field.Label fontSize="sm" mb={1}> {t.booking_confirmation.incoterm} </Field.Label>
+              <Field.Root required>
+                <Field.Label fontSize="sm"> {t.booking_confirmation.incoterm}<Field.RequiredIndicator/> </Field.Label>
                 <Select.Root collection={termCollection} value={termSelected ? [termSelected] : []} onValueChange={(details) => setTermSelected(details.value[0])} size="sm" width="100%">
                   <Select.HiddenSelect />
                   <Select.Control>
@@ -331,20 +496,20 @@ export default function BookingConfirmationPage() {
 
             <SimpleGrid columns={{ base: 1, md: 4 }} gap={4}>
               <Field.Root>
-                <Field.Label fontSize="sm" mb={1}> {t.booking_confirmation.package_type} </Field.Label>
-                <Input placeholder={t.booking_confirmation.package_type_placeholder} />
+                <Field.Label fontSize="sm">{t.booking_confirmation.package_type}</Field.Label>
+                <Input name="package_type" value={form.package_type} onChange={handleInputChange} placeholder={t.booking_confirmation.package_type_placeholder}/>
               </Field.Root>
               <Field.Root>
-                <Field.Label fontSize="sm" mb={1}> {t.booking_confirmation.total_packages} </Field.Label>
-                <Input type="number" placeholder={t.booking_confirmation.total_packages_placeholder} />
+                <Field.Label fontSize="sm">{t.booking_confirmation.total_packages}</Field.Label>
+                <Input type="number" name="total_packages" value={form.total_packages} onChange={handleInputChange} placeholder={t.booking_confirmation.total_packages_placeholder}/>
               </Field.Root>
               <Field.Root>
-                <Field.Label fontSize="sm" mb={1}> {t.booking_confirmation.gross_weight} </Field.Label>
-                <Input type="number" placeholder={t.booking_confirmation.gross_weight_placeholder} />
+                <Field.Label fontSize="sm"> {t.booking_confirmation.gross_weight}</Field.Label>
+                <Input type="number" name="gross_weight" value={form.gross_weight} onChange={handleInputChange} placeholder={t.booking_confirmation.gross_weight_placeholder}/>
               </Field.Root>
               <Field.Root>
-                <Field.Label fontSize="sm" mb={1}> {t.booking_confirmation.cbm} </Field.Label>
-                <Input type="number" placeholder={t.booking_confirmation.cbm_placeholder} />
+                <Field.Label fontSize="sm"> {t.booking_confirmation.cbm}</Field.Label>
+                <Input type="number" name="cbm" value={form.cbm} onChange={handleInputChange} placeholder={t.booking_confirmation.cbm_placeholder}/>
               </Field.Root>
             </SimpleGrid>
           </Card.Body>
@@ -352,36 +517,28 @@ export default function BookingConfirmationPage() {
 
         {/* Charges Summary */}
         <Card.Root>
-          <Card.Header pb={2}>
-            <Heading size="sm">{t.booking_confirmation.charges_summary}</Heading>
+          <Card.Header>
+            <Heading size="md">{t.booking_confirmation.charges_summary}</Heading>
           </Card.Header>
           <Card.Body>
             <SimpleGrid columns={{ base: 1, md: 3 }} gap={4}>
               <Field.Root>
-                <Text fontSize="sm" mb={1}>
-                  {t.booking_confirmation.freight_charge}
-                </Text>
-                <Input type="number" placeholder="0" />
+                <Text fontSize="sm">{t.booking_confirmation.freight_charge}</Text>
+                <Input type="number" name="freight_charge" value={form.freight_charge} onChange={handleInputChange} placeholder="0"/>
               </Field.Root>
               <Field.Root>
-                <Text fontSize="sm" mb={1}>
-                  {t.booking_confirmation.local_charge}
-                </Text>
-                <Input type="number" placeholder="0" />
+                <Text fontSize="sm"> {t.booking_confirmation.local_charge}</Text>
+                <Input type="number" name="local_charge" value={form.local_charge} onChange={handleInputChange} placeholder="0"/>
               </Field.Root>
               <Field.Root>
-                <Text fontSize="sm" mb={1}>
-                  {t.booking_confirmation.other_charge}
-                </Text>
-                <Input type="number" placeholder="0" />
+                <Text fontSize="sm">{t.booking_confirmation.other_charge}</Text>
+                <Input type="number" name="other_charge" value={form.other_charge} onChange={handleInputChange} placeholder="0"/>
               </Field.Root>
             </SimpleGrid>
 
             <Field.Root mt={4}>
-              <Text fontSize="sm" mb={1}>
-                {t.booking_confirmation.remarks_placeholder}
-              </Text>
-              <Textarea rows={3} placeholder={t.booking_confirmation.remarks_placeholder} />
+              <Text fontSize="sm"> {t.booking_confirmation.remarks_placeholder}</Text>
+              <Textarea name="remarks" value={form.remarks} onChange={handleInputChange} rows={3} placeholder={t.booking_confirmation.remarks_placeholder}/>
             </Field.Root>
           </Card.Body>
         </Card.Root>
@@ -389,32 +546,17 @@ export default function BookingConfirmationPage() {
         {/* Attachments */}
         <Card.Root>
           <Card.Header pb={2}>
-            <Heading size="sm">{t.booking_confirmation.attachments}</Heading>
+            <Heading size="md">{t.booking_confirmation.attachments}</Heading>
           </Card.Header>
           <Card.Body>
-            <Flex
-              border="1px dashed"
-              borderColor="gray.300"
-              borderRadius="lg"
-              p={6}
-              align="center"
-              justify="center"
-              direction="column"
-              gap={2}
-              textAlign="center"
-            >
+            <Flex border="1px dashed" borderColor="gray.300" borderRadius="lg" p={6} align="center" justify="center" direction="column" gap={2} textAlign="center">
               <Icon as={FiFileText} boxSize={8} color="gray.500" />
-              <Text fontSize="sm" color="gray.600">
-                {t.booking_confirmation.upload_documents}
-              </Text>
-              <Button size="sm" variant="outline">
-                {t.booking_confirmation.choose_file}
-              </Button>
+              <Text fontSize="sm" color="gray.600">{t.booking_confirmation.upload_documents}</Text>
+              <Button size="sm" variant="outline">{t.booking_confirmation.choose_file}</Button>
             </Flex>
           </Card.Body>
         </Card.Root>
       </Stack>
-    </Box>
     </SidebarWithHeader>
     
   );

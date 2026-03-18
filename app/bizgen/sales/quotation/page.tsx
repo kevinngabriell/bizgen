@@ -3,36 +3,48 @@
 import Loading from "@/components/loading";
 import CustomerLookup from "@/components/lookup/CustomerLookup";
 import InquiryLookup from "@/components/lookup/InquiryLookup";
+import { AlertMessage } from "@/components/ui/alert";
 import SidebarWithHeader from "@/components/ui/SidebarWithHeader";
 import { DecodedAuthToken, checkAuthOrRedirect, getAuthInfo } from "@/lib/auth/auth";
 import { getLang } from "@/lib/i18n";
 import { getAllCurrency, GetCurrencyData } from "@/lib/master/currency";
 import { GetCustomerData } from "@/lib/master/customer";
+import { createSalesQuotation, generateQuotationNumber } from "@/lib/sales/quotation";
 import { GetRfq, getDetailSalesRfq } from "@/lib/sales/rfq";
-import {Button, Flex, Heading, HStack, Input, Select, SimpleGrid, Stack, Text, Textarea, Badge, IconButton, Separator, Card, Field, createListCollection, Portal,} from "@chakra-ui/react";
-import { useRouter } from "next/navigation";
-
-import { useEffect, useState } from "react";
+import {Button, Flex, Heading, HStack, Input, Select, SimpleGrid, Stack, Text, Badge, IconButton, Separator, Card, Field, createListCollection, Portal,} from "@chakra-ui/react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
 import { FaTrash } from "react-icons/fa";
 
-interface QuotationItem {
-  id: string;
-  product: string;
-  description: string;
-  qty: number;
-  unitPrice: number;
+type QuotationMode = "create" | "view" | "edit";
+
+export default function Quotation() {
+  return (
+    <Suspense fallback={<Loading />}>
+      <QuotationContent />
+    </Suspense>
+  );
 }
 
-export default function CreateQuotation() {
+function QuotationContent() {
   const [auth, setAuth] = useState<DecodedAuthToken | null>(null);
   const [loading, setLoading] = useState(false);
-
-  //router authentication
-  const router = useRouter();
 
   //language state 
   const [lang, setLang] = useState<"en" | "id">("en");
   const t = getLang(lang);
+
+  //retrieve rfq ID
+  const searchParams = useSearchParams();
+  const quotationID = searchParams.get("quotation_id");
+
+  const [quotationStatus, setQuotationStatus] = useState<string>();
+  const [lastUpdatedBy, setLastUpdatedBy] = useState<string>();
+  const [lastUpdatedAt, setLastUpdatedAt] = useState<string>();
+  
+  //set mode for create/update/view
+  const [mode, setMode] = useState<QuotationMode>("create");
+  const isReadOnly = mode === "view" && quotationStatus !== "draft" && quotationStatus !== "rejected";
 
   //to open customer popup
   const [customerModalOpen, setCustomerModalOpen] = useState(false);
@@ -52,30 +64,62 @@ export default function CreateQuotation() {
     })),
   });
 
-    // quotation header state
+  // quotation header state
   const [quotationNo, setQuotationNo] = useState("");
   const [quotationDate, setQuotationDate] = useState("");
+  const [validUntil, setValidUntil] = useState("");
   const [linkedInquiry, setLinkedInquiry] = useState("");
 
-  useEffect(() => {
-    init();
+  //alert & success variable
+  const [showAlert, setShowAlert] = useState(false);
+  const [titlePopup, setTitlePopup] = useState('');
+  const [messagePopup, setMessagePopup] = useState('');
+  const [isSuccess, setIsSuccess] = useState(false);
 
-    const fetchCurrency = async () => {
+  useEffect(() => {
+    const loadMaster = async () => {
       try {
         setLoading(true);
+
+        await init();
+
         const currencyRes = await getAllCurrency(1, 1000);
         setCurrencyOptions(currencyRes?.data ?? []);
-      } catch (error) {
-        console.error(error);
-        setCurrencyOptions([]);
+
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    const loadDetail = async () => {
+      if (!quotationID) return;
+    }
+
+    const loadGeneratedNumber = async () => {
+      if (quotationID) return; // kalau ada rfqId, jangan generate (view/edit mode)
+    
+      try {
+        const res = await generateQuotationNumber();
+        setQuotationNo(res.number);
+      } catch (err) {
+        console.error("Failed to generate RFQ number", err);
+      }
+    };
+
+    const loadAll = async () => {
+      try {
+        setLoading(true);
+        await loadMaster();
+        await loadDetail();
+        await loadGeneratedNumber();
       } finally {
         setLoading(false);
       }
     };
 
-    fetchCurrency();
+    loadAll();
 
-  }, []);
+  }, [quotationID]);
 
   const init = async () => {
     setLoading(true);
@@ -94,48 +138,39 @@ export default function CreateQuotation() {
 
     setLoading(false);
   }
-
-  const loadGenerateNumber = async () => {
-    try {
-
-    } catch (err) {
-      console.error("Failed to generate quotation number", err);
-    }
-  }
     
-  const [items, setItems] = useState<QuotationItem[]>([
-    { id: crypto.randomUUID(), product: "", description: "", qty: 1, unitPrice: 0 },
+  const [items, setItems] = useState([
+    { product: "", description: "", qty: 1, unitPrice: 0 }
   ]);
 
-  const addItem = () => {
+  const subtotal = items.reduce((sum, item) => sum + item.qty * item.unitPrice, 0);
+  const totalAmount = subtotal;
+  
+  const addItemRow = () => {
     setItems([
       ...items,
-      { id: crypto.randomUUID(), product: "", description: "", qty: 1, unitPrice: 0 },
+      { product: "", description: "", qty: 1, unitPrice: 0 }
     ]);
   };
-
-  const removeItem = (id: string) => {
-    setItems(items.filter((i) => i.id !== id));
+  
+  const removeItemRow = (index: number) => {
+    const next = [...items];
+    next.splice(index, 1);
+    setItems(next);
   };
+  
+  const updateItemField = (index: number, field: string, value: string) => {
+    const next = [...items];
 
-  const handleItemChange = (
-    id: string,
-    field: keyof QuotationItem,
-    value: string | number
-  ) => {
-    setItems((prev) =>
-      prev.map((item) =>
-        item.id === id
-          ? {
-              ...item,
-              [field]:
-                field === "qty" || field === "unitPrice"
-                  ? Number(value)
-                  : value,
-            }
-          : item
-      )
-    );
+    if (field === "qty" || field === "unitPrice") {
+      // @ts-ignore
+      next[index][field] = Number(value);
+    } else {
+      // @ts-ignore
+      next[index][field] = value;
+    }
+
+    setItems(next);
   };
 
   const handleChooseCustomer = (customer: GetCustomerData) => {
@@ -175,6 +210,66 @@ export default function CreateQuotation() {
     }
   };
 
+  const handleSave = async () => {
+    try {
+      if(!selectedCustomer)
+        throw new Error("Customer is required");
+      if(!quotationNo)
+        throw new Error("Quotation number is required");
+      if(!quotationDate)
+        throw new Error("Quotation date is required");
+      if(!validUntil)
+        throw new Error("Expired quotation date is required");
+      if(!currencySelected)
+        throw new Error("Currency is required");
+      if(items.length === 0)
+        throw new Error("At least one item is required");
+
+      setLoading(true);
+
+      const payload = {
+        quotation_number: quotationNo,
+        customer_id: selectedCustomer.customer_id,
+        quotation_date: quotationDate,
+        valid_until: validUntil,
+        currency: currencySelected,
+        subtotal: subtotal.toString(),
+        total_amount: totalAmount.toString(),
+        items: items.map((row) => ({
+          item_name: row.product,
+          description: row.description,
+          quantity: Number(row.qty),
+          unit_price: Number(row.unitPrice),
+          subtotal: Number(row.qty) * Number(row.unitPrice)
+        }))
+      }
+
+      const res = await createSalesQuotation(payload);
+
+      setShowAlert(true);
+      setIsSuccess(true);
+      setTitlePopup("Success");
+      setMessagePopup("Sales Quotation created successfully");
+      setTimeout(() => setShowAlert(false), 6000);
+
+      setSelectedCustomer(null);
+      setQuotationNo("");
+      setQuotationDate("");
+      setValidUntil("");
+      setSelected("");
+      setItems([{ product: "", description: "", qty: 1, unitPrice: 0 }]);
+    } catch (err: any) {
+      setShowAlert(true);
+      setIsSuccess(false);
+      setTitlePopup("Error");
+      setMessagePopup(err.message || "Failed to create RFQ");
+      setTimeout(() => setShowAlert(false), 6000);
+    } finally {
+      setLoading(false);
+    }
+    
+  } 
+
   const canGeneratePDF = !!selectedCustomer;
   
   if (loading) return <Loading/>;
@@ -183,58 +278,51 @@ export default function CreateQuotation() {
     <SidebarWithHeader username={auth?.username ?? "Unknown"} daysToExpire={auth?.days_remaining ?? 0}>
       <Heading size="lg" mb={4}>{t.sales_quotation.title_create}</Heading>
 
+      {/* Lookup for customer and inquiry */}
       <CustomerLookup isOpen={customerModalOpen} onClose={() => setCustomerModalOpen(false)} onChoose={handleChooseCustomer} />
-      <InquiryLookup
-        isOpen={inquiryModalOpen}
-        onClose={() => setInquiryModalOpen(false)}
-        onChoose={handleChooseInquiry}
-      />
+      <InquiryLookup isOpen={inquiryModalOpen} onClose={() => setInquiryModalOpen(false)} onChoose={handleChooseInquiry}/>
 
+      {showAlert && <AlertMessage title={titlePopup} description={messagePopup} isSuccess={isSuccess}/>}
+      
       <Card.Root gap={6}>
         <Card.Body>
+          {/* Customer area */}
           <SimpleGrid columns={{ base: 1, md: 2 }} gap={9}>
-            <Stack>
+            <Stack gap={4}>
               <Text fontWeight="semibold" mb={3}>{t.sales_quotation.customer_information}</Text>
-              <Field.Root>
-                <Field.Label>{t.sales_quotation.customer_name}</Field.Label>
-                <Input
-                  placeholder={t.sales_quotation.customer_name_placeholder}
-                  value={selectedCustomer?.customer_name ?? ""}
-                  readOnly
-                  cursor="pointer"
-                  onClick={() => setCustomerModalOpen(true)}
-                />
+              <Field.Root required>
+                <Field.Label>{t.sales_quotation.customer_name} <Field.RequiredIndicator/> </Field.Label>
+                <Input placeholder={t.sales_quotation.customer_name_placeholder} value={selectedCustomer?.customer_name ?? ""} readOnly cursor="pointer" onClick={() => setCustomerModalOpen(true)}/>
               </Field.Root>
               <Field.Root>
                 <Field.Label>{t.sales_quotation.phone_number}</Field.Label>
-                <Input
-                  placeholder={t.sales_quotation.phone_number_placeholder}
-                  value={selectedCustomer?.customer_phone ?? ""}
-                  readOnly
-                />
+                <Input placeholder={t.sales_quotation.phone_number_placeholder} value={selectedCustomer?.customer_phone ?? ""} readOnly/>
               </Field.Root>
             </Stack>
-
-            <Stack>
-              <Text fontWeight="semibold" mb={3}>{t.sales_quotation.quotation_details}</Text>
+            {/* Quotation area */}
+            <Stack gap={4}>
+              <Text fontWeight="semibold" mb={3}>{t.sales_quotation.quotation_details}</Text>              
               <Field.Root>
-                <Field.Label>{t.sales_quotation.quotation_no}</Field.Label>
-                                <Input
-                  placeholder={t.sales_quotation.quotation_no_placeholder}
-                  value={quotationNo}
-                  onChange={(e) => setQuotationNo(e.target.value)}
-                />
+                <Field.Label>{t.sales_quotation.linked_inquiry}</Field.Label>
+                <Input placeholder={t.sales_quotation.linked_inquiry_placeholder} value={linkedInquiry} readOnly cursor="pointer" onClick={() => setInquiryModalOpen(true)}/>
               </Field.Root>
-              <Field.Root>
-                <Field.Label>{t.sales_quotation.quotation_date}</Field.Label>
-                                <Input
-                  type="date"
-                  value={quotationDate}
-                  onChange={(e) => setQuotationDate(e.target.value)}
-                />
+              <Field.Root required>
+                <Field.Label>{t.sales_quotation.quotation_no}<Field.RequiredIndicator/> </Field.Label>
+                <Input placeholder={t.sales_quotation.quotation_no_placeholder} value={quotationNo} onChange={(e) => setQuotationNo(e.target.value)}/>
               </Field.Root>
-              <Field.Root>
-                <Field.Label>{t.sales_quotation.currency}</Field.Label>
+              <SimpleGrid columns={{base : 1, md: 2}} gap={6}>
+                <Field.Root required>
+                  <Field.Label>{t.sales_quotation.quotation_date}<Field.RequiredIndicator/></Field.Label>
+                  <Input type="date" value={quotationDate} onChange={(e) => setQuotationDate(e.target.value)}/>
+                </Field.Root>
+                <Field.Root required>
+                  <Field.Label>Tanggal Akhir Penawaran<Field.RequiredIndicator/></Field.Label>
+                  <Input type="date" value={validUntil} onChange={(e) => setValidUntil(e.target.value)}/>
+                </Field.Root>
+              </SimpleGrid>
+              
+              <Field.Root required>
+                <Field.Label>{t.sales_quotation.currency} <Field.RequiredIndicator/></Field.Label>
                 <Select.Root collection={currencyCollection} value={currencySelected ? [currencySelected] : []} onValueChange={(details) => setSelected(details.value[0])} size="sm" width="100%">
                   <Select.HiddenSelect />
                   <Select.Control>
@@ -256,16 +344,7 @@ export default function CreateQuotation() {
                   </Portal>
                 </Select.Root>
               </Field.Root>
-              <Field.Root>
-                <Field.Label>{t.sales_quotation.linked_inquiry}</Field.Label>
-                                <Input
-                  placeholder={t.sales_quotation.linked_inquiry_placeholder}
-                  value={linkedInquiry}
-                  readOnly
-                  cursor="pointer"
-                  onClick={() => setInquiryModalOpen(true)}
-                />
-              </Field.Root>
+
             </Stack>
           </SimpleGrid>
 
@@ -273,47 +352,37 @@ export default function CreateQuotation() {
 
           <Flex justify="space-between" align="center" mb={4}>
             <Text fontWeight="semibold">{t.sales_quotation.quotation_items}</Text>
-            <Button size="sm" bg="#E77A1F" color="white"  onClick={addItem}>{t.sales_quotation.add_item}</Button>
+            <Button size="sm" bg="#E77A1F" color="white"  onClick={addItemRow}>{t.sales_quotation.add_item}</Button>
           </Flex>
 
-          {items.map((item) => (
-            <Card.Root key={item.id} p={4} mb={2}>
+          {items.map((row, index) => (
+            <Card.Root key={index} p={4} mb={2}>
               <SimpleGrid columns={{ base: 1, md: 4 }} gap={3}>
-                <Input
-                  placeholder={t.sales_quotation.product_service}
-                  value={item.product}
-                  onChange={(e) =>
-                    handleItemChange(item.id, "product", e.target.value)
-                  }
-                />
-                <Input
-                  placeholder={t.sales_quotation.description}
-                  value={item.description}
-                  onChange={(e) =>
-                    handleItemChange(item.id, "description", e.target.value)
-                  }
-                />
-                <Input
-                  type="number"
-                  placeholder={t.sales_quotation.quantity}
-                  value={item.qty}
-                  onChange={(e) =>
-                    handleItemChange(item.id, "qty", e.target.value)
-                  }
-                />
-                <Input
-                  type="number"
-                  placeholder={t.sales_quotation.unit_price}
-                  value={item.unitPrice}
-                  onChange={(e) =>
-                    handleItemChange(item.id, "unitPrice", e.target.value)
-                  }
-                />
+                <Field.Root required>
+                  <Field.Label>Product Name<Field.RequiredIndicator/></Field.Label>
+                  <Input placeholder={t.sales_quotation.product_service} value={row.product} onChange={(e) => updateItemField(index, "product", e.target.value)}/>
+                </Field.Root>
+
+                <Field.Root>
+                  <Field.Label>Description</Field.Label>
+                  <Input placeholder={t.sales_quotation.description} value={row.description} onChange={(e) => updateItemField(index, "description", e.target.value)}/>
+                </Field.Root>
+                
+                <Field.Root required>
+                  <Field.Label>Quantity<Field.RequiredIndicator/></Field.Label>
+                  <Input type="number" placeholder={t.sales_quotation.quantity} value={row.qty} onChange={(e) => updateItemField(index, "qty", e.target.value)}/>
+                </Field.Root>
+                
+                <Field.Root required>
+                  <Field.Label>Unit Price<Field.RequiredIndicator/></Field.Label>
+                  <Input type="number" placeholder={t.sales_quotation.unit_price} value={row.unitPrice} onChange={(e) => updateItemField(index, "unitPrice", e.target.value)}/>
+                </Field.Root>
+                
               </SimpleGrid>
 
               <HStack justify="space-between" mt={3}>
                 <Badge colorScheme="purple">{t.sales_quotation.subtotal_auto}</Badge>
-                <IconButton aria-label="Remove item" size="sm" variant="ghost" onClick={() => removeItem(item.id)}>
+                <IconButton aria-label="Remove item" size="sm" variant="ghost" onClick={() => removeItemRow(index)}>
                   <FaTrash color="red"/>
                 </IconButton>
               </HStack>
@@ -322,25 +391,29 @@ export default function CreateQuotation() {
 
           <Separator mt={6} mb={6} />
 
+          <Flex justify="flex-end" mb={4}>
+            <Stack minW="220px">
+              <Flex justify="space-between">
+                <Text fontWeight="semibold">Subtotal</Text>
+                <Text>{subtotal.toLocaleString()}</Text>
+              </Flex>
+              <Flex justify="space-between">
+                <Text fontWeight="bold">Total</Text>
+                <Text fontWeight="bold">{totalAmount.toLocaleString()}</Text>
+              </Flex>
+            </Stack>
+          </Flex>
+
+          {/* button action area */}
           <Flex justify="flex-end" gap={3}>
             <Button variant="outline">{t.sales_quotation.cancel}</Button>
-            <Button bg="#E77A1F" color="white">
-              {t.sales_quotation.save_draft}
-            </Button>
-
-            <Button
-              bg="#E77A1F"
-              color="white"
-              disabled={!canGeneratePDF}
-            >
-              {t.sales_quotation.save_generate_pdf}
-            </Button>
-
+            <Button bg="#E77A1F" color="white" onClick={handleSave}>{t.sales_quotation.save_draft}</Button>
+            <Button bg="#E77A1F" color="white" disabled={!canGeneratePDF}>{t.sales_quotation.save_generate_pdf}</Button>
           </Flex>
+
+          {/* restircted if customer only draft */}
           {!canGeneratePDF && (
-            <Text fontSize="sm" color="red.500" mt={2}>
-              Customer not found in master data. You can only save as draft.
-            </Text>
+            <Text fontSize="sm" color="red.500" mt={2}>Customer not found in master data. You can only save as draft.</Text>
           )}
         </Card.Body>
       </Card.Root>

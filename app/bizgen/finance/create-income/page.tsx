@@ -1,6 +1,6 @@
 'use client';
 
-import {Button, Flex, Heading, Input, Text, Textarea, Separator, Card, SimpleGrid, Field, createListCollection, Select, Portal} from '@chakra-ui/react';
+import {Button, Flex, Heading, Input, Text, Textarea, Separator, Card, SimpleGrid, Field, createListCollection, Select, Portal, InputGroup, Combobox, useFilter, useListCollection} from '@chakra-ui/react';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import SidebarWithHeader from '@/components/ui/SidebarWithHeader';
@@ -8,7 +8,9 @@ import Loading from '@/components/loading';
 import { DecodedAuthToken, checkAuthOrRedirect, getAuthInfo } from '@/lib/auth/auth';
 import { getLang } from '@/lib/i18n';
 import { GetAccountCodeData, getAllAccountCode } from '@/lib/master/account-code';
-import { getAllCurrency, GetCurrencyData } from '@/lib/master/currency';
+import { getAllBankAccount, GetBankAccountData } from '@/lib/master/bank-account';
+import { createFinanceTransaction } from '@/lib/finance/finance';
+import { AlertMessage } from '@/components/ui/alert';
 
 export default function CreateIncomePage() {
   const [auth, setAuth] = useState<DecodedAuthToken | null>(null);
@@ -19,55 +21,120 @@ export default function CreateIncomePage() {
   const [lang, setLang] = useState<"en" | "id">("en");
   const t = getLang(lang);
 
-  const [accountCodeSelected, setAccountCodeSelected] = useState<string>();
-  const [accountCodeOptions, setAccountCodeOptions] = useState<GetAccountCodeData[]>([]);
-  const [currencySelected, setCurrencySelected] = useState<string>();
-  const [currencyOptions, setCurrencyOptions] = useState<GetCurrencyData[]>([]);
+  //alert & success variable
+  const [showAlert, setShowAlert] = useState(false);
+  const [titlePopup, setTitlePopup] = useState('');
+  const [messagePopup, setMessagePopup] = useState('');
+  const [isSuccess, setIsSuccess] = useState(false);
+  
+  const [bankAccountSelected, setBankAccount] = useState<string>();
+  const [bankAccountOptions, setBankAccountOptions] = useState<GetBankAccountData[]>([]);
 
-  const accountcodeCollection = createListCollection({
-    items: accountCodeOptions.map((acc) => ({
-      label: `${acc.account_code} - ${acc.account_code_name}`,
-      value: acc.account_code_id,
+  const [accountCodeCollections, setAccountCodeCollections] = useState<GetAccountCodeData[]>([]);
+  const { contains } = useFilter({ sensitivity: "base" })
+
+  const { collection: accountCollection, set: setAccountCollection } = useListCollection<GetAccountCodeData>({
+    initialItems: [],
+    itemToString: (item) => `${item.account_code} - ${item.account_code_name}`,
+    itemToValue: (item) => item.account_code_id,
+  })
+
+  const bankAccountCollection = createListCollection({
+    items: bankAccountOptions.map((bank) => ({
+      label: `${bank.bank_number} - ${bank.bank_name} (${bank.currency_symbol})`,
+      value: bank.bank_account_id,
     })),
   });
 
-  const currencyCollection = createListCollection({
-    items: currencyOptions.map((currency) => ({
-      label: `${currency.currency_name} (${currency.currency_symbol})`,
-      value: currency.currency_id,
-    })),
-  });
+  const selectedBank = bankAccountOptions.find(
+    (b) => b.bank_account_id === bankAccountSelected
+  );
+
+  const currencySymbol = selectedBank?.currency_symbol ?? '';
+
+  const formatNumber = (value: string) => {
+    if (!value) return '';
+
+    const cleaned = value.replace(/,/g, '');
+
+    if (cleaned === '' || cleaned === '.') return cleaned;
+
+    const parts = cleaned.split('.');
+    const integerPart = parts[0];
+    const decimalPart = parts[1];
+
+    const formattedInt = Number(integerPart || 0).toLocaleString('en-US');
+
+    return decimalPart !== undefined ? `${formattedInt}.${decimalPart}` : formattedInt;
+  };
+
+  const parseNumber = (value: string) => {
+    // remove commas
+    let cleaned = value.replace(/,/g, '');
+
+    // allow only numbers and decimal point
+    cleaned = cleaned.replace(/[^0-9.]/g, '');
+
+    // prevent multiple decimals
+    const parts = cleaned.split('.');
+    if (parts.length > 2) {
+      cleaned = parts[0] + '.' + parts.slice(1).join('');
+    }
+
+    // limit to 2 decimal digits
+    const [integerPart, decimalPart] = cleaned.split('.');
+    if (decimalPart !== undefined) {
+      cleaned = `${integerPart}.${decimalPart.slice(0, 2)}`;
+    }
+
+    return cleaned;
+  };
+
+  const handleAmountInput = (value: string) => {
+    const parsed = parseNumber(value);
+
+    // ensure valid numeric format with max 2 decimals
+    const validPattern = /^\d*(\.\d{0,2})?$/;
+
+    if (parsed === '' || validPattern.test(parsed)) {
+      return parsed;
+    }
+
+    return '';
+  };
 
   useEffect(() => {
-  const fetchAccountCode = async () => {
+    const fetchBankAccount = async () => {
       try {
         setLoading(true);
-        const accountRes = await getAllAccountCode(1, 1000);
-        setAccountCodeOptions(accountRes?.data ?? []);
+        const bankRes = await getAllBankAccount(1, 1000);
+        setBankAccountOptions(bankRes?.data ?? []);
       } catch (error) {
         console.error(error);
-        setAccountCodeOptions([]);
+        setBankAccountOptions([]);
       } finally {
         setLoading(false);
       }
     };
 
-    const fetchCurrency = async () => {
+    // Fetch account codes for combobox
+    const fetchAccountCodes = async () => {
       try {
         setLoading(true);
-        const currencyRes = await getAllCurrency(1, 1000);
-        setCurrencyOptions(currencyRes?.data ?? []);
+        const accRes = await getAllAccountCode(1, 1000);
+        const accData = accRes?.data ?? [];
+        setAccountCodeCollections(accData);
+        setAccountCollection(accData);
       } catch (error) {
         console.error(error);
-        setCurrencyOptions([]);
+        setAccountCodeCollections([]);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchAccountCode();
-    fetchCurrency();
-
+    fetchBankAccount();
+    fetchAccountCodes();
 
     init();
   }, []);
@@ -100,21 +167,105 @@ export default function CreateIncomePage() {
     customer: '',
   });
 
+  const [lines, setLines] = useState([
+    { id: crypto.randomUUID(), accountCodeId: '', accountCode: '', accountName: '', amount: '', memo: '' }
+  ]);
+
+  const addLine = () => {
+    setLines(prev => [
+      ...prev,
+      { id: crypto.randomUUID(), accountCodeId: '', accountCode: '', accountName: '', amount: '', memo: '' }
+    ]);
+  };
+
+  const removeLine = (index: number) => {
+    setLines(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const updateLine = (index: number, key: string, value: string) => {
+    setLines(prev =>
+      prev.map((line, i) =>
+        i === index ? { ...line, [key]: value } : line
+      )
+    );
+  };
+
+  const totalLineAmount = lines.reduce((sum, line) => {
+    const num = parseFloat(line.amount || '0');
+    return sum + (isNaN(num) ? 0 : num);
+  }, 0);
+
+  const isAmountMismatch = !!form.amount && Math.abs(totalLineAmount - parseFloat(form.amount || '0')) > 0.001;
+
   const onChange = (key: string, value: string) => {
     setForm(prev => ({ ...prev, [key]: value }));
   };
 
   const handleSubmit = async () => {
-    if (!form.accountCode || !form.amount || !form.incomeDate) {
-      return;
+    try {
+      if(!bankAccountSelected)
+        throw new Error("Bank account is required");
+      if(!form.incomeDate)
+        throw new Error("Income date is required");
+      if(!form.amount)
+        throw new Error("Amount is required");
+      if (lines.length === 0) 
+        throw new Error("At least one item is required");
+
+      setLoading(true);
+
+      const payload = {
+        category: "income",
+        bank_account: bankAccountSelected,
+        amount: form.amount,
+        date: form.incomeDate,
+        memo: form.description,
+        details: lines.map((line) => ({
+          account_code: line.accountCodeId,
+          account_amount: line.amount,
+          account_memo: line.memo
+        }))
+      }
+
+      const res = await createFinanceTransaction(payload);
+      
+      setShowAlert(true);
+      setIsSuccess(true);
+      setTitlePopup("Success");
+      setMessagePopup("Finance transaction created successfully");
+
+      // reset form values
+      setForm({
+        accountCode: '',
+        incomeDate: '',
+        amount: '',
+        currency: '',
+        description: '',
+        referenceNo: '',
+        customer: '',
+      });
+
+      setBankAccount(undefined);
+
+      // reset detail lines
+      setLines([
+        { id: crypto.randomUUID(), accountCodeId: '', accountCode: '', accountName: '', amount: '', memo: '' }
+      ]);
+
+      setTimeout(() => setShowAlert(false), 6000);
+
+    } catch (err: any) {
+      setShowAlert(true);
+      setIsSuccess(false);
+      setTitlePopup("Error");
+      setMessagePopup(err.message || "Failed to create finance transaction");
+      setTimeout(() => setShowAlert(false), 6000);
+    } finally {
+      setLoading(false);
     }
-
-    console.log('Submitting income payload:', form);
-
-    router.back();
   };
 
-if (loading) return <Loading/>
+  if (loading) return <Loading/>
 
   return (
     <SidebarWithHeader username={auth?.username ?? "Unknown"} daysToExpire={auth?.days_remaining ?? 0}>
@@ -126,16 +277,21 @@ if (loading) return <Loading/>
 
         <Flex gap={5}>
           <Button variant="outline" bg={"transparent"} borderColor={"#E77A1F"} color={"#E77A1F"} cursor={"pointer"} onClick={() => router.back()}>{t.delete_popup.cancel}</Button>
-          <Button bg="#E77A1F" color="white" onClick={handleSubmit}>Save Income</Button>
+          <Button bg="#E77A1F" color="white" onClick={handleSubmit} disabled={isAmountMismatch} opacity={isAmountMismatch ? 0.6 : 1} cursor={isAmountMismatch ? "not-allowed" : "pointer"}>Save Income</Button>
         </Flex>
       </Flex>
 
+      {showAlert && <AlertMessage title={titlePopup} description={messagePopup} isSuccess={isSuccess}/>}          
+      
+      {isAmountMismatch && (
+        <AlertMessage title='Error' description='Total account lines tidak sama dengan amount' isSuccess={false}/>
+      )}
+      
       <Card.Root>
         <Card.Body gap={"20px"}>
           <Field.Root required>
-            <Field.Label>Account Code</Field.Label>
-            <Field.HelperText>Determines how this income is categorized in your chart of accounts.</Field.HelperText>
-              <Select.Root collection={accountcodeCollection} value={accountCodeSelected ? [accountCodeSelected] : []} onValueChange={(details) => setAccountCodeSelected(details.value[0])} size="sm" width="100%">
+            <Field.Label>Deposit To<Field.RequiredIndicator/></Field.Label>
+              <Select.Root collection={bankAccountCollection} value={bankAccountSelected ? [bankAccountSelected] : []} onValueChange={(details) => setBankAccount(details.value[0])} size="sm" width="100%">
                 <Select.HiddenSelect />
                 <Select.Control>
                   <Select.Trigger>
@@ -148,9 +304,9 @@ if (loading) return <Loading/>
                 <Portal>
                   <Select.Positioner>
                     <Select.Content>
-                      {accountcodeCollection.items.map((acc) => (
-                        <Select.Item item={acc} key={acc.value}>
-                          {acc.label}
+                      {bankAccountCollection.items.map((bank) => (
+                        <Select.Item item={bank} key={bank.value}>
+                          {bank.label}
                           <Select.ItemIndicator />
                         </Select.Item>
                       ))}
@@ -159,58 +315,108 @@ if (loading) return <Loading/>
                 </Portal>
             </Select.Root>
           </Field.Root>
-          <SimpleGrid columns={{base: 1, md: 2, lg:3}} gap={"20px"}>
+          <SimpleGrid columns={{base: 1, md: 2}} gap={"20px"}>
             <Field.Root required>
-              <Field.Label>Income Date</Field.Label>
+              <Field.Label>Date <Field.RequiredIndicator/></Field.Label>
               <Input type="date" value={form.incomeDate} onChange={e => onChange('incomeDate', e.target.value)}/>
             </Field.Root>
             <Field.Root required>
-              <Field.Label>Amount</Field.Label>
-              <Input type="number" placeholder="0" value={form.amount} onChange={e => onChange('amount', e.target.value)}/>
-            </Field.Root>
-            <Field.Root required>
-              <Field.Label>Currency</Field.Label>
-              <Select.Root collection={currencyCollection} value={currencySelected ? [currencySelected] : []} onValueChange={(details) => setCurrencySelected(details.value[0])} size="sm" width="100%">
-                <Select.HiddenSelect />
-                <Select.Control>
-                  <Select.Trigger>
-                    <Select.ValueText placeholder={t.bank_account.select_currency_placeholder} />
-                  </Select.Trigger>
-                  <Select.IndicatorGroup>
-                    <Select.Indicator />
-                  </Select.IndicatorGroup>
-                </Select.Control>
-                <Portal>
-                  <Select.Positioner>
-                    <Select.Content>
-                      {currencyCollection.items.map((currency) => (
-                        <Select.Item item={currency} key={currency.value}>
-                          {currency.label}
-                          <Select.ItemIndicator />
-                        </Select.Item>
-                      ))}
-                    </Select.Content>
-                  </Select.Positioner>
-                </Portal>
-            </Select.Root>
+              <Field.Label>Amount <Field.RequiredIndicator/></Field.Label>
+              <InputGroup startElement={currencySymbol || ""}>
+                <Input type="text" placeholder={`0`} value={formatNumber(form.amount)} onChange={e => onChange('amount', handleAmountInput(e.target.value))}/>
+              </InputGroup>
             </Field.Root>
           </SimpleGrid>
-          <Separator/>
-          <SimpleGrid columns={{base: 1, md: 2}} gap={"20px"}>
-            <Field.Root>
-              <Field.Label>Customer / Payer (optional)</Field.Label>
-              <Input placeholder="Enter customer or payer name" value={form.customer}onChange={e => onChange('customer', e.target.value)}/>
-            </Field.Root>
-            <Field.Root>
-              <Field.Label>Reference No. (optional)</Field.Label>
-              <Input placeholder="Invoice / Receipt reference" value={form.referenceNo} onChange={e => onChange('referenceNo', e.target.value)}/>
-            </Field.Root>
-          </SimpleGrid>
-
-          <Field.Root>
-            <Field.Label>Description / Notes</Field.Label>
-            <Textarea rows={3} placeholder="Add additional details (e.g., payment source, remarks)" value={form.description} onChange={e => onChange('description', e.target.value)}/>
+          <Field.Root required>
+              <Field.Label>Memo</Field.Label>
+              <Textarea placeholder='Masukkkan nomor memo' value={form.description} onChange={e => onChange('description', e.target.value)}/>
           </Field.Root>
+          
+          <Separator/>
+
+          <Heading size="md">Account Details</Heading>
+
+          {lines.map((line, index) => (
+            <Flex key={line.id} direction="column" gap="10px">
+              <SimpleGrid columns={{ base: 1, md: 3 }} gap={"20px"}>
+                <Field.Root required>
+                  <Field.Label>Account Code<Field.RequiredIndicator/> </Field.Label>
+                  <Combobox.Root key={`account-${line.id}`}
+                    collection={accountCollection}
+                    value={line.accountCodeId ? [line.accountCodeId] : []}
+                    onValueChange={(details) => {
+                      const selected = details.value?.[0];
+                      const selectedAccount = accountCodeCollections.find(
+                        (item) => item.account_code_id === selected
+                      );
+
+                      updateLine(index, 'accountCodeId', selected ?? '');
+                      updateLine(index, 'accountCode', selectedAccount?.account_code ?? '');
+                      updateLine(index, 'accountName', selectedAccount?.account_code_name ?? '');
+                    }}
+                    onInputValueChange={(e) => {
+                      const input = e.inputValue ?? "";
+
+                      if (!input || input.trim() === "") {
+                        setAccountCollection(accountCodeCollections);
+                        return;
+                      }
+
+                      const filtered = accountCodeCollections.filter((item) =>
+                        contains(`${item.account_code} - ${item.account_code_name}`, input)
+                      );
+
+                      setAccountCollection(filtered);
+                    }}
+                  >
+                    <Combobox.Control>
+                      <Combobox.Input placeholder="Search account code" onFocus={() => setAccountCollection(accountCodeCollections)}/>
+                      <Combobox.IndicatorGroup>
+                        <Combobox.ClearTrigger />
+                        <Combobox.Trigger />
+                      </Combobox.IndicatorGroup>
+                    </Combobox.Control>
+                    <Portal>
+                      <Combobox.Positioner>
+                        <Combobox.Content>
+                          <Combobox.Empty>No account found</Combobox.Empty>
+                          {accountCollection.items.map((item) => (
+                            <Combobox.Item item={item} key={item.account_code_id}>
+                              {item.account_code} - {item.account_code_name}
+                              <Combobox.ItemIndicator />
+                            </Combobox.Item>
+                          ))}
+                        </Combobox.Content>
+                      </Combobox.Positioner>
+                    </Portal>
+                  </Combobox.Root>
+                </Field.Root>
+
+                <Field.Root required>
+                  <Field.Label>Account Name <Field.RequiredIndicator/></Field.Label>
+                  <Input placeholder="Account name" value={line.accountName} readOnly/>
+                </Field.Root>
+
+                <Field.Root required>
+                  <Field.Label>Amount <Field.RequiredIndicator/></Field.Label>
+                  <InputGroup startElement={currencySymbol || ""}>
+                    <Input type="text" placeholder={`0`} value={formatNumber(line.amount)} onChange={e => updateLine(index, 'amount', handleAmountInput(e.target.value))}/>
+                  </InputGroup>
+                  
+                </Field.Root>
+              </SimpleGrid>
+
+              <Field.Root>
+                <Field.Label>Memo</Field.Label>
+                <Textarea placeholder="Memo" value={line.memo} onChange={e => updateLine(index, 'memo', e.target.value)}/>
+              </Field.Root>
+              
+              <Button borderColor={"red"} color={"red"} variant="outline" onClick={() => removeLine(index)}>Delete</Button>
+            </Flex>
+          ))}
+
+
+          <Button mt={4} variant="outline" borderColor="#E77A1F" color="#E77A1F" onClick={addLine}>+ Add Account</Button>
         </Card.Body>
       </Card.Root>
     </SidebarWithHeader>

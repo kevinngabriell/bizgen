@@ -177,14 +177,11 @@ export default function CreateInvoicePage() {
             </Field.Root>
             <Field.Root>
               <Field.Label>Exchange Rate</Field.Label>
-              <NumberInput.Root>
-                <NumberInput.Control/>
-                <NumberInput.Input/>
-              </NumberInput.Root>
+              <Input type="number"/>
             </Field.Root>
           </SimpleGrid>
 
-          <Field.Root>
+          <Field.Root mt={3}>
             <Field.Label>Reference</Field.Label>
             <Input placeholder="(Optional) PO / Job / Shipment Ref" />
           </Field.Root>

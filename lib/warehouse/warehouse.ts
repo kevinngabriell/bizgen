@@ -46,6 +46,7 @@ export interface ProductLotSearchData {
 export interface TransactionnProductIDReportData {
     inventory_transaction_id: string;
     transaction_type: string;
+    date: string;
     qty: string;
     total_qty: string;
 }

@@ -63,7 +63,6 @@ export default function CreateSampleStockOutPage() {
     items: frameworks,
   });
   
-
   useEffect(() => {
     //retrieve warehouse
     const fetchWarehouse = async () => {
@@ -195,8 +194,6 @@ export default function CreateSampleStockOutPage() {
         return;
       }
 
-      console.log(lots);
-
       if (lots.some(l => !l.lotNumber || !l.quantity || l.quantity <= 0)) {
         setIsSuccess(false);
         setTitlePopup("Failed");
@@ -278,9 +275,7 @@ export default function CreateSampleStockOutPage() {
             </Field.Root>
             <Field.Root required>
               <Field.Label>{t.warehouse.stock_sample.productName} <Field.RequiredIndicator/></Field.Label>
-              <Combobox.Root 
-                collection={collection} 
-                value={form.product_id ? [form.product_id] : []} 
+              <Combobox.Root collection={collection} value={form.product_id ? [form.product_id] : []} 
                 onValueChange={(details) => { const selected = details.value?.[0]; handleFormChange("product_id", selected); }} 
                 onInputValueChange={(e) => { 
                   const input = e.inputValue ?? "";
@@ -313,16 +308,12 @@ export default function CreateSampleStockOutPage() {
             </Field.Root>     
             <Field.Root required>
               <Field.Label>{t.warehouse.stock_sample.purposeOfSample} <Field.RequiredIndicator/></Field.Label>
-              <Select.Root
-                collection={purposeCollection}
-                value={form.purpose ? [form.purpose] : []}
+              <Select.Root collection={purposeCollection} value={form.purpose ? [form.purpose] : []}
                 onValueChange={(details) => {
                   const value = details.value?.[0];
                   handleFormChange("purpose", value);
                 }}
-                size="sm"
-                width="100%"
-              >
+                size="sm" width="100%">
                 <Select.HiddenSelect />
                 <Select.Control>
                   <Select.Trigger>
@@ -346,33 +337,33 @@ export default function CreateSampleStockOutPage() {
                 </Portal>
               </Select.Root>
             </Field.Root>
-                  <Field.Root required>
-                          <Field.Label>{t.warehouse.stock_out.warehouseLocation} <Field.RequiredIndicator/></Field.Label>
-                          <Select.Root collection={warehouseCollection} value={warehouseSelected ? [warehouseSelected] : []} onValueChange={(details) => {
-                            const value = details.value[0];
-                            setWarehouseSelected(value);
-                            handleFormChange("warehouse_id", value);
-                          }} size="sm" width="100%">
-                            <Select.HiddenSelect />
-                            <Select.Control>
-                              <Select.Trigger>
-                                <Select.ValueText placeholder={t.warehouse.stock_in.warehousePlaceholder} />
-                              </Select.Trigger>
-                              <Select.IndicatorGroup>
-                                <Select.Indicator />
-                              </Select.IndicatorGroup>
-                            </Select.Control>
-                            <Portal>
-                              <Select.Positioner>
-                                <Select.Content>
-                                  {warehouseCollection.items.map((wr) => (
-                                    <Select.Item item={wr} key={wr.value}>{wr.label}<Select.ItemIndicator /></Select.Item>
-                                  ))}
-                                </Select.Content>
-                              </Select.Positioner>
-                            </Portal>
-                        </Select.Root>
-                        </Field.Root>
+            <Field.Root required>
+              <Field.Label>{t.warehouse.stock_out.warehouseLocation} <Field.RequiredIndicator/></Field.Label>
+              <Select.Root collection={warehouseCollection} value={warehouseSelected ? [warehouseSelected] : []} onValueChange={(details) => {
+                const value = details.value[0];
+                setWarehouseSelected(value);
+                handleFormChange("warehouse_id", value);
+              }} size="sm" width="100%">
+                <Select.HiddenSelect />
+                <Select.Control>
+                  <Select.Trigger>
+                    <Select.ValueText placeholder={t.warehouse.stock_in.warehousePlaceholder} />
+                  </Select.Trigger>
+                  <Select.IndicatorGroup>
+                    <Select.Indicator />
+                  </Select.IndicatorGroup>
+                </Select.Control>
+                <Portal>
+                  <Select.Positioner>
+                    <Select.Content>
+                      {warehouseCollection.items.map((wr) => (
+                        <Select.Item item={wr} key={wr.value}>{wr.label}<Select.ItemIndicator /></Select.Item>
+                      ))}
+                    </Select.Content>
+                  </Select.Positioner>
+                </Portal>
+              </Select.Root>
+            </Field.Root>
           </SimpleGrid>
           
           <Field.Root mt={4}>
@@ -387,9 +378,7 @@ export default function CreateSampleStockOutPage() {
               <SimpleGrid columns={{ base: 1, md: 4 }} gap={4}>
                 <Field.Root required>
                   <Field.Label>{t.warehouse.stock_sample.lotBatchNo} <Field.RequiredIndicator/></Field.Label>
-                    <Combobox.Root
-                      w={"100%"}
-                      key={`lot-number-${lot.id}`}
+                    <Combobox.Root w={"100%"} key={`lot-number-${lot.id}`}
                       collection={createListCollection<ProductLotSearchData>({
                         items: productLotCollections[index] ?? [],
                         itemToString: (item) => `${item.product_name} - ${item.lot_no}`,
@@ -459,11 +448,7 @@ export default function CreateSampleStockOutPage() {
 
                 <Field.Root required>
                   <Field.Label>{t.warehouse.stock_sample.quantity} <Field.RequiredIndicator/></Field.Label>
-                    <Input
-                      type="number"
-                      min="1"
-                      max={lot.availableQty}
-                      value={lot.quantity}
+                    <Input type="number" min="1" max={lot.availableQty} value={lot.quantity}
                       onChange={(e) => {
                         const value = Number(e.target.value);
 

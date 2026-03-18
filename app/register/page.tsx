@@ -40,7 +40,7 @@ export default function Register() {
         //     }
         //     return;
         // }
-        setActiveStep((s) => Math.min(s + 1, steps.length - 1));
+    setActiveStep((s) => Math.min(s + 1, steps.length - 1));
   };
 
   const onPrev = () => {
@@ -80,7 +80,9 @@ export default function Register() {
         return true;
   };
 
-  const onRegister = () => {}
+  const onRegister = () => {
+    
+  }
 
   return (
     <Flex w="100vw" minH="100vh" bg="white" bgGradient="linear(to-br, #FFF7ED, #FFE6C9)" align="center" justify="center" p={{ base: 6, md: 10 }}>

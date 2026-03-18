@@ -7,6 +7,7 @@ import { getLang } from "@/lib/i18n";
 import { getAllProduct, GetProductData } from "@/lib/master/product";
 import { getSearchProductLot, getWarehouseReportLot, getWarehouseReportProductID, ProductLotSearchData, WarehouseLotReportData, WarehouseProductIDReportData } from "@/lib/warehouse/warehouse";
 import { Flex, Heading, Text, Button, Table, Box, SimpleGrid, Combobox, Portal, createListCollection, Field } from "@chakra-ui/react";
+import { MarsStroke } from "lucide-react";
 import { useEffect, useState } from "react";
 
 export default function FindStock() {
@@ -21,7 +22,6 @@ export default function FindStock() {
     const [productSearch, setProductSearch] = useState("");
     const [lotSearch, setLotSearch] = useState("");
     const [showResult, setShowResult] = useState(false);
-    const [searchInput, setSearchInput] = useState("");
 
     // product
     const [allProduct, setAllProduct] = useState<GetProductData[]>([]);
@@ -93,11 +93,8 @@ export default function FindStock() {
         if(productSearch){
             try {
                 setLoading(true);
-                console.log(selectedProduct);
                 const reportProductRes = await getWarehouseReportProductID(selectedProduct);
-                setLotByProduct(reportProductRes.data)
-
-                console.log(reportProductRes);
+                setLotByProduct(reportProductRes.data);
             } catch (error:any) {
                 
             } finally {
@@ -126,18 +123,16 @@ export default function FindStock() {
     return(
         <SidebarWithHeader username={auth?.username ?? "Unknown"} daysToExpire={auth?.days_remaining ?? 0}>
             <Flex direction="column" gap={6}>
-                <Heading size="lg">Cari Stock Product</Heading>
+                <Heading size="lg">{t.warehouse.find_stock.find_stock}</Heading>
 
                 <Box borderWidth={0.5} borderRadius="lg" p={6} bg="white" boxShadow="sm">
                     <Flex direction="column" gap={5}>
-                        
-                        <Text fontSize="sm" color="gray.500">Masukkan nama product, kode product, atau nomor lot / batch untuk melihat stock yang tersedia.</Text>
+                        <Text fontSize="sm" color="gray.500">{t.warehouse.find_stock.find_stock_desc}</Text>
 
                         <SimpleGrid columns={{base: 1, md: 3, lg: 3}} gap={4} alignItems={"center"}>
                             <Field.Root>
-                                <Field.Label>Nama Produk</Field.Label>
-                                <Combobox.Root 
-                                collection={createListCollection<GetProductData>({
+                                <Field.Label>{t.products.product_name}</Field.Label>
+                                <Combobox.Root collection={createListCollection<GetProductData>({
                                     items: (productCollection[0] ?? allProduct) ?? [],
                                     itemToString: (item) => item.product_name,
                                     itemToValue: (item) => item.product_id
@@ -165,10 +160,7 @@ export default function FindStock() {
                                 }}
                                 >
                                   <Combobox.Control>
-                                    <Combobox.Input
-                                      placeholder="Search product name..."
-                                      value={productSearch}
-                                    />
+                                    <Combobox.Input placeholder={t.products.product_name_placeholder} value={productSearch}/>
                                     <Combobox.IndicatorGroup>
                                       <Combobox.ClearTrigger />
                                       <Combobox.Trigger />
@@ -180,10 +172,7 @@ export default function FindStock() {
                                       <Combobox.Content>
                                         <Combobox.Empty>{t.master.noItems}</Combobox.Empty>
                                         {((productCollection[0] ?? allProduct) ?? []).map((item) => (
-                                          <Combobox.Item
-                                              item={item}
-                                              key={`${item.product_id}`}
-                                          >
+                                          <Combobox.Item item={item} key={`${item.product_id}`}>
                                               {item.product_name}
                                               <Combobox.ItemIndicator />
                                           </Combobox.Item>
@@ -196,7 +185,7 @@ export default function FindStock() {
                             </Field.Root>
 
                             <Field.Root>
-                                <Field.Label>Lot</Field.Label>
+                                <Field.Label>{t.warehouse.stock_in.lotNumber}</Field.Label>
                                 <Combobox.Root 
                                 collection={createListCollection<ProductLotSearchData>({
                                     items: (lotCollection[0] ?? allLot) ?? [],
@@ -231,10 +220,7 @@ export default function FindStock() {
                                 }}
                                 >
                                   <Combobox.Control>
-                                    <Combobox.Input
-                                      placeholder="Search lot name..."
-                                      value={lotSearch}
-                                    />
+                                    <Combobox.Input placeholder={t.warehouse.stock_in.lotPlaceholder} value={lotSearch}/>
                                     <Combobox.IndicatorGroup>
                                       <Combobox.ClearTrigger />
                                       <Combobox.Trigger />
@@ -246,10 +232,7 @@ export default function FindStock() {
                                       <Combobox.Content>
                                         <Combobox.Empty>{t.master.noItems}</Combobox.Empty>
                                         {((lotCollection[0] ?? allLot) ?? []).map((item) => (
-                                          <Combobox.Item
-                                              item={item}
-                                              key={`${item.lot_no}-${item.product_id ?? "lot"}`}
-                                          >
+                                          <Combobox.Item item={item} key={`${item.lot_no}-${item.product_id ?? "lot"}`}>
                                               {item.lot_no}
                                               <Combobox.ItemIndicator />
                                           </Combobox.Item>
@@ -261,64 +244,78 @@ export default function FindStock() {
                                 </Combobox.Root>
                             </Field.Root>
                             
-                            <Button w={"40%"} bg={"#E77A1F"} color={"white"} cursor={"pointer"} onClick={handleSearch}>Cari Stock</Button>
+                            <Button w={"40%"} bg={"#E77A1F"} color={"white"} cursor={"pointer"} onClick={handleSearch}>{t.warehouse.find_stock.button}</Button>
                         </SimpleGrid>
                     </Flex>
                 </Box>
 
                 {!showResult && (
-                    <Flex borderWidth={2} minH={"40vh"} borderStyle={"dashed"} borderColor={"gray.300"} borderRadius={"lg"} align={"center"} justify={"center"} direction={"column"} textAlign={"center"} gap={3} bg={"gray.50"}>
+                    <Flex borderWidth={2} minH={"40vh"} bg="white" boxShadow="md" borderColor={"gray.300"} borderRadius={"lg"} align={"center"} justify={"center"} direction={"column"} textAlign={"center"} gap={3} >
                         <Text fontSize="3xl">🔎</Text>
-                        <Text fontSize="xl" fontWeight="semibold" color="gray.700"> Belum ada yang dicari nih</Text>
-                        <Text color="gray.500">Coba cari berdasarkan <b>nama product</b> atau <b>nomor lot / batch</b> dulu.</Text>
-                        <Text color="gray.400" fontSize="sm">Kalau kosong terus… sistemnya juga bingung mau nampilin apa 😅</Text>
+                        <Text fontSize="xl" fontWeight="semibold" color="gray.700">{t.warehouse.find_stock.no_found}</Text>
+                        <Text color="gray.500">{t.warehouse.find_stock.no_found_2}</Text>
+                        <Text color="gray.400" fontSize="sm">{t.warehouse.find_stock.no_found_3}</Text>
                     </Flex>
                 )}
 
                 {showResult && (
-                    <Box borderWidth={2} borderStyle={"dashed"} borderColor={"gray.300"} borderRadius={"lg"} p={4}>
-                        <Table.Root w={"100%"}>
-                            <Table.Header>
+                    <Box borderWidth={2} bg="white"
+                        boxShadow="md"
+                        borderRadius="lg" borderColor={"gray.300"} p={4}>
+                        <Box mb={4}>
+                            <Heading size="md">{t.warehouse.find_stock.product} {lotByProduct?.product_name}</Heading>
+                            <Text fontSize="sm" color="gray.500">{t.warehouse.find_stock.warehouse} {lotByProduct?.warehouse_name}</Text>
+                        </Box>
+                        
+                        <Table.Root w={"100%"} size="sm">
+                            <Table.Header bg="gray.50">
                                 <Table.Row>
-                                    <Table.ColumnHeader>Transaction Type</Table.ColumnHeader>
-                                    <Table.ColumnHeader>No Lot</Table.ColumnHeader>
-                                    <Table.ColumnHeader>Qty</Table.ColumnHeader>
-                                    <Table.ColumnHeader>Total Qty</Table.ColumnHeader>
+                                <Table.ColumnHeader>{t.warehouse.find_stock.transaction_type}</Table.ColumnHeader>
+                                <Table.ColumnHeader>{t.warehouse.stock_in.lotNumber}</Table.ColumnHeader>
+                                <Table.ColumnHeader>{t.warehouse.find_stock.transaction_date}</Table.ColumnHeader>
+                                <Table.ColumnHeader>{t.warehouse.find_stock.Qty}</Table.ColumnHeader>
+                                <Table.ColumnHeader>{t.warehouse.find_stock.total_qty}</Table.ColumnHeader>
                                 </Table.Row>
                             </Table.Header>
-                            {lotByProduct?.lots && (
-                            <Table.Body>
-                                {lotByProduct.lots.map((lot) =>
-                                lot.transactions.map((trx) => (
-                                    <Table.Row key={trx.inventory_transaction_id}>
-                                    <Table.Cell>{trx.transaction_type}</Table.Cell>
-                                    <Table.Cell>{lot.lot_no}</Table.Cell>
-                                    <Table.Cell>{trx.qty}</Table.Cell>
-                                    <Table.Cell>{trx.total_qty}</Table.Cell>
-                                    </Table.Row>
-                                ))
-                                )}
-                            </Table.Body>
-                            )}
 
-                            {lotByLot?.lots && (
                             <Table.Body>
-                                {lotByLot.lots.map((trx) => (
-                                <Table.Row key={trx.inventory_transaction_id}>
+                                {lotByProduct?.lots.map((lot) => (
+                                <>
+                                    <Table.Row key={`lot-${lot.lot_no}`} bg="gray.50">
+                                    <Table.Cell colSpan={5} fontWeight="bold">
+                                        Lot: {lot.lot_no}
+                                    </Table.Cell>
+                                    </Table.Row>
+
+                                    {lot.transactions.map((trx) => (
+                                    <Table.Row key={trx.inventory_transaction_id} _hover={{ bg: "gray.50" }}>
+                                        <Table.Cell>{trx.transaction_type}</Table.Cell>
+                                        <Table.Cell>{lot.lot_no}</Table.Cell>
+                                        <Table.Cell>{trx.date}</Table.Cell>
+                                        <Table.Cell>{trx.qty}</Table.Cell>
+                                        <Table.Cell>{trx.total_qty}</Table.Cell>
+                                    </Table.Row>
+                                    ))}
+                                </>
+                                ))}
+
+                                {lotByLot?.lots &&
+                                lotByLot.lots.map((trx) => (
+                                    <Table.Row key={trx.inventory_transaction_id} _hover={{ bg: "gray.50" }}>
                                     <Table.Cell>{trx.transaction_type}</Table.Cell>
                                     <Table.Cell>{lotByLot.lot_no}</Table.Cell>
                                     <Table.Cell>{trx.qty}</Table.Cell>
                                     <Table.Cell>{trx.total_qty}</Table.Cell>
-                                </Table.Row>
+                                    </Table.Row>
                                 ))}
                             </Table.Body>
-                            )}
                         </Table.Root>
 
-                        <SimpleGrid columns={{base :1, md : 2}} gap={5} mt={5}>
-                            <Button variant="outline" bg={"transparent"} borderColor={"#E77A1F"} color={"#E77A1F"} cursor={"pointer"}>Download Report as PDF</Button>
-                            <Button bg={"#E77A1F"} color={"white"} cursor={"pointer"}>Download Report as Excel</Button>
-                        </SimpleGrid>
+                        <Flex gap={3} justify="flex-end" mt={4}>
+                            <Button variant="outline" borderColor="#E77A1F" color="#E77A1F">{t.master.downloadPDF}</Button>
+
+                            <Button bg="#E77A1F" color="white">{t.master.downloadExcel}</Button>
+                        </Flex>
                     </Box>
                 )}
             </Flex>

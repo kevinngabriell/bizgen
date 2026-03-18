@@ -82,7 +82,7 @@ export async function createAccountCode(input: CreateAccountCodeData) : Promise<
 
     const res = await fetch(`${baseUrl}master/account-code.php`, {
         method: 'POST',
-       headers: {
+        headers: {
             Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json',
         },

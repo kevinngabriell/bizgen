@@ -14,7 +14,6 @@ import { FaTrash } from 'react-icons/fa';
 import { GetCustomerData } from '@/lib/master/customer';
 import CustomerLookup from '@/components/lookup/CustomerLookup';
 import { GetSupplierData } from '@/lib/master/supplier';
-import SupplierLookup from '@/components/lookup/SupplierLookup';
 
 type CostItem = {
   id: string;
@@ -23,6 +22,8 @@ type CostItem = {
   vendor: string;
   currency: string;
   amount: number;
+  exchangeRate: number;
+  baseAmount: number;
   remarks: string;
 };
 
@@ -39,7 +40,6 @@ export default function CostingExpensePage() {
 
   //to open customer popup
   const [customerModalOpen, setCustomerModalOpen] = useState(false);
-  const [supplierModalOpen, setSupplierModalOpen] = useState(false);
 
   //shipment type option
   const [shipmentTypeSelected, setShipmentTypeSelected] = useState<string>();
@@ -53,7 +53,6 @@ export default function CostingExpensePage() {
   });
   
   //currency option
-  const [currencySelected, setSelected] = useState<string>();
   const [currencyOptions, setCurrencyOptions] = useState<GetCurrencyData[]>([]);
 
   const currencyCollection = createListCollection({
@@ -144,13 +143,16 @@ export default function CostingExpensePage() {
       category: '',
       description: '',
       vendor: '',
-      currency: 'USD',
+      currency: '',
       amount: 0,
+      exchangeRate: 0,
+      baseAmount: 0,
       remarks: '',
     },
   ]);
 
   const [shipmentInfo, setShipmentInfo] = useState({
+    costingNo: '',
     joNumber: '',
     customer: '',
     origin: '',
@@ -166,8 +168,10 @@ export default function CostingExpensePage() {
         category: '',
         description: '',
         vendor: '',
-        currency: 'USD',
+        currency: '',
         amount: 0,
+        exchangeRate: 0,
+        baseAmount: 0,
         remarks: '',
       },
     ]);
@@ -177,13 +181,27 @@ export default function CostingExpensePage() {
     setCostItems((prev) => prev.filter((c) => c.id !== id));
   };
 
-  const handleChange = (id: string, field: keyof CostItem, value: any) => {
-    setCostItems((prev) =>
-      prev.map((c) => (c.id === id ? { ...c, [field]: value } : c)),
-    );
-  };
+const handleChange = (id: string, field: keyof CostItem, value: any) => {
+  setCostItems((prev) =>
+    prev.map((c) => {
+      if (c.id !== id) return c;
 
-  const totalAmount = costItems.reduce((sum, c) => sum + (c.amount || 0), 0);
+      const updated = { ...c, [field]: value };
+
+      const amount = Number(updated.amount) || 0;
+      const rate = Number(updated.exchangeRate) || 1;
+
+      updated.baseAmount = amount * rate;
+
+      return updated;
+    })
+  );
+};
+
+const totalAmount = costItems.reduce(
+  (sum, c) => sum + (c.baseAmount || 0),
+  0
+);
 
   const handleSaveDraft = () => {
     // toast({
@@ -212,9 +230,6 @@ export default function CostingExpensePage() {
     setCustomerModalOpen(false);
   };
 
-  const handleChooseSupplier = (supplier: GetSupplierData) => {
-    setSupplierModalOpen(false);
-  };
 
   if (loading) return <Loading/>;
   
@@ -224,7 +239,6 @@ export default function CostingExpensePage() {
         <Heading size="lg">{t.sales_costing_expense.title}</Heading>
 
         <CustomerLookup isOpen={customerModalOpen} onClose={() => setCustomerModalOpen(false)} onChoose={handleChooseCustomer} />
-        <SupplierLookup isOpen={supplierModalOpen} onClose={() => setSupplierModalOpen(false)} onChoose={handleChooseSupplier} />
 
         {/* Shipment Context Header */}
         <Card.Root variant="outline">
@@ -233,17 +247,25 @@ export default function CostingExpensePage() {
           </Card.Header>
           <Card.Body>
             <SimpleGrid columns={{ base: 1, md: 3 }} gap={4}>
-              <Field.Root>
-                <Field.Label>{t.sales_costing_expense.job_booking_number}</Field.Label>
+              <Field.Root required>
+                <Field.Label>Costing Number <Field.RequiredIndicator/></Field.Label>
+                <Input
+                  placeholder="Enter costing number"
+                  value={shipmentInfo.costingNo}
+                  onChange={(e) => setShipmentInfo({ ...shipmentInfo, costingNo: e.target.value })}
+                />
+              </Field.Root>
+              <Field.Root required>
+                <Field.Label>{t.sales_costing_expense.job_booking_number} <Field.RequiredIndicator/></Field.Label>
                 <Input placeholder={t.sales_costing_expense.job_booking_number_placeholder} value={shipmentInfo.joNumber} onChange={(e) => setShipmentInfo({ ...shipmentInfo, joNumber: e.target.value })}/>
               </Field.Root>
-              <Field.Root>
-                <Field.Label>{t.sales_costing_expense.customer}</Field.Label>
-                <Input placeholder={t.sales_costing_expense.customer_placeholder} readOnly cursor="pointer" onClick={() => setCustomerModalOpen(true)}/>
+              <Field.Root required>
+                <Field.Label>{t.sales_costing_expense.customer} <Field.RequiredIndicator/></Field.Label>
+                <Input placeholder={t.sales_costing_expense.customer_placeholder} value={shipmentInfo.customer} readOnly cursor="pointer" onClick={() => setCustomerModalOpen(true)}/>
               </Field.Root>
-              <Field.Root>
-                <Field.Label>{t.sales_costing_expense.shipment_type}</Field.Label>
-                <Select.Root collection={shipmentTypeCollection} size="sm">
+              <Field.Root required>
+                <Field.Label>{t.sales_costing_expense.shipment_type} <Field.RequiredIndicator/></Field.Label>
+                <Select.Root collection={shipmentTypeCollection} value={shipmentTypeSelected ? [shipmentTypeSelected] : []}onValueChange={(details) => setShipmentTypeSelected(details.value[0])}>
                   <Select.HiddenSelect />
                   <Select.Control>
                     <Select.Trigger>
@@ -264,9 +286,9 @@ export default function CostingExpensePage() {
                   </Portal>
                 </Select.Root>
               </Field.Root>
-              <Field.Root>
-                <Field.Label>{t.sales_costing_expense.origin_port}</Field.Label>
-                <Select.Root collection={portCollection} value={originSelected ? [originSelected] : []} onValueChange={(details) => setOriginSelected(details.value[0])} size="sm" width="100%">
+              <Field.Root required>
+                <Field.Label>{t.sales_costing_expense.origin_port}<Field.RequiredIndicator/></Field.Label>
+                <Select.Root collection={portCollection} value={originSelected ? [originSelected] : []} onValueChange={(details) => setOriginSelected(details.value[0])} width="100%">
                   <Select.HiddenSelect />
                     <Select.Control>
                       <Select.Trigger>
@@ -287,28 +309,28 @@ export default function CostingExpensePage() {
                     </Portal>
                 </Select.Root>
               </Field.Root>
-            <Field.Root>
-              <Field.Label>{t.sales_costing_expense.destination_port}</Field.Label>
-              <Select.Root collection={portCollection} value={destinationSelected ? [destinationSelected] : []} onValueChange={(details) => setDestinationSelected(details.value[0])} size="sm" width="100%">
-                    <Select.HiddenSelect />
-                    <Select.Control>
-                    <Select.Trigger>
-                      <Select.ValueText placeholder={t.sales_costing_expense.destination_port_placeholder} />
-                    </Select.Trigger>
-                    <Select.IndicatorGroup>
-                      <Select.Indicator />
-                    </Select.IndicatorGroup>
-                    </Select.Control>
-                    <Portal>
-                      <Select.Positioner>
-                        <Select.Content>
-                          {portCollection.items.map((port) => (
-                            <Select.Item item={port} key={port.value}>{port.label}<Select.ItemIndicator /></Select.Item>
-                          ))}
-                        </Select.Content>
-                      </Select.Positioner>
-                    </Portal>
-                  </Select.Root>
+            <Field.Root required>
+              <Field.Label>{t.sales_costing_expense.destination_port}<Field.RequiredIndicator/></Field.Label>
+              <Select.Root collection={portCollection} value={destinationSelected ? [destinationSelected] : []} onValueChange={(details) => setDestinationSelected(details.value[0])} width="100%">
+                <Select.HiddenSelect />
+                <Select.Control>
+                  <Select.Trigger>
+                    <Select.ValueText placeholder={t.sales_costing_expense.destination_port_placeholder} />
+                  </Select.Trigger>
+                  <Select.IndicatorGroup>
+                    <Select.Indicator />
+                  </Select.IndicatorGroup>
+                </Select.Control>
+                <Portal>
+                  <Select.Positioner>
+                    <Select.Content>
+                      {portCollection.items.map((port) => (
+                        <Select.Item item={port} key={port.value}>{port.label}<Select.ItemIndicator /></Select.Item>
+                      ))}
+                    </Select.Content>
+                  </Select.Positioner>
+                </Portal>
+              </Select.Root>
             </Field.Root>
             <Field.Root>
               <Field.Label>{t.sales_costing_expense.notes_optional}</Field.Label>
@@ -348,10 +370,10 @@ export default function CostingExpensePage() {
                   )}
                 </Flex>
 
-                <SimpleGrid column={{ base: '1fr', md: '1.2fr 1.8fr 1fr 0.7fr 1fr' }} gap={3}>
-                  <Field.Root>
-                    <Field.Label>{t.sales_costing_expense.cost_category}</Field.Label>
-                    <Select.Root collection={costCategoryOptions} size="sm">
+                <SimpleGrid columns={{base: 1, md: 2}} gap={6} mt={5} mb={4}>
+                  <Field.Root required>
+                    <Field.Label>{t.sales_costing_expense.cost_category}<Field.RequiredIndicator/></Field.Label>
+                    <Select.Root collection={costCategoryOptions} value={item.category ? [item.category] : []} onValueChange={(details) => handleChange(item.id, "category", details.value[0])}>
                       <Select.HiddenSelect />
                       <Select.Control>
                         <Select.Trigger>
@@ -372,17 +394,17 @@ export default function CostingExpensePage() {
                       </Portal>
                     </Select.Root>
                   </Field.Root>
-                  <Field.Root>
-                    <Field.Label>{t.sales_costing_expense.cost_description}</Field.Label>
+                  <Field.Root required>
+                    <Field.Label>{t.sales_costing_expense.cost_description} <Field.RequiredIndicator/></Field.Label>
                     <Input placeholder={t.sales_costing_expense.cost_description_placeholder} value={item.description} onChange={(e) => handleChange(item.id, 'description', e.target.value)}/>
                   </Field.Root>
                   <Field.Root>
                     <Field.Label>{t.sales_costing_expense.supplier}</Field.Label>
-                    <Input placeholder={t.sales_costing_expense.supplier_placeholder} readOnly cursor="pointer" onClick={() => setSupplierModalOpen(true)}/>
+                    <Input placeholder={t.sales_costing_expense.supplier_placeholder} value={item.vendor} onChange={(e) => handleChange(item.id, "vendor", e.target.value)}/>
                   </Field.Root>
-                  <Field.Root>
-                    <Field.Label>{t.sales_costing_expense.currency}</Field.Label>
-                    <Select.Root collection={currencyCollection} value={currencySelected ? [currencySelected] : []} onValueChange={(details) => setSelected(details.value[0])} size="sm" width="100%">
+                  <Field.Root required>
+                    <Field.Label>{t.sales_costing_expense.currency} <Field.RequiredIndicator/></Field.Label>
+                    <Select.Root collection={currencyCollection} value={item.currency ? [item.currency] : []} onValueChange={(details) => handleChange(item.id, "currency", details.value[0])} width="100%">
                       <Select.HiddenSelect />
                       <Select.Control>
                         <Select.Trigger>
@@ -403,15 +425,26 @@ export default function CostingExpensePage() {
                       </Portal>
                     </Select.Root>
                   </Field.Root>
-
+                  <Field.Root>
+                    <Field.Label>Exchange Rate</Field.Label>
+                    <Input type="number" value={item.exchangeRate} onChange={(e) => handleChange(item.id, "exchangeRate", Number(e.target.value))}/>
+                  </Field.Root>
+                  <Field.Root required>
+                    <Field.Label>Amount<Field.RequiredIndicator/></Field.Label>
+                    <Input type="number" value={item.amount} onChange={(e) => handleChange(item.id, "amount", Number(e.target.value))}/>
+                  </Field.Root>
                 </SimpleGrid>
+
+                <Field.Root>
+                  <Field.Label>Base Amount (USD)</Field.Label>
+                  <Input value={item.baseAmount.toFixed(2)} readOnly/>
+                </Field.Root>
 
                 <Box mt={3}>
                   <Field.Root>
                     <Field.Label>{t.sales_costing_expense.remarks_reference}</Field.Label>
                     <Textarea placeholder={t.sales_costing_expense.remarks_reference_placeholder} value={item.remarks} onChange={(e) => handleChange(item.id, 'remarks', e.target.value)}/>
                   </Field.Root>
-                  
                 </Box>
               </Box>
             ))}
@@ -420,13 +453,12 @@ export default function CostingExpensePage() {
 
             <Flex justify="space-between">
               <Text fontWeight="semibold">{t.sales_costing_expense.total_actual_cost}</Text>
-              <Text fontWeight="bold">
-                {totalAmount.toLocaleString(undefined, {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2,
-                })}{' '}
-                {costItems[0]?.currency || ''}
-              </Text>
+                <Text fontWeight="bold">
+                  {totalAmount.toLocaleString(undefined, {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })} USD
+                </Text>
             </Flex>
           </Stack>
         </Card.Body>

@@ -6,7 +6,7 @@ import SidebarWithHeader from "@/components/ui/SidebarWithHeader";
 import { FaTrash } from "react-icons/fa";
 import Loading from "@/components/loading";
 import { DecodedAuthToken, checkAuthOrRedirect, getAuthInfo } from "@/lib/auth/auth";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { getLang } from "@/lib/i18n";
 import { getAllShipVia, GetShipViaData } from "@/lib/master/ship-via";
 import { getAllOrigin, GetOriginData } from "@/lib/master/origin";
@@ -18,7 +18,6 @@ import { InfoTip } from "@/components/ui/toggle-tip";
 import { getAllCommodity, GetCommodityData } from "@/lib/master/commodity";
 
 type InquiryMode = "create" | "view" | "edit";
-type Status = "Draft" | "Submitted" | "Approved" | "Rejected";
 
 export default function Inquiry() {
   return (
@@ -32,16 +31,13 @@ function InquiryContent() {
   const [auth, setAuth] = useState<DecodedAuthToken | null>(null);
   const [loading, setLoading] = useState(false);
 
-  //router authentication
-  const router = useRouter();
-
   //language state 
   const [lang, setLang] = useState<"en" | "id">("en");
   const t = getLang(lang);
+
   //retrieve rfq ID
   const searchParams = useSearchParams();
   const rfqId = searchParams.get("rfq_id");
-  const isEditMode = !!rfqId;
 
   const [rfqStatus, setRfqStatus] = useState<string>();
   const [lastUpdatedBy, setLastUpdatedBy] = useState<string>();
@@ -51,9 +47,6 @@ function InquiryContent() {
   const [mode, setMode] = useState<InquiryMode>("create");
   const isReadOnly = mode === "view" && rfqStatus !== "draft" && rfqStatus !== "rejected";
   
-  const handleEdit = () => setMode("edit");
-  const handleCancelEdit = () => setMode("view");
-
   //set shipment type selection
   const [shipmentTypeSelected, setShipmentTypeSelected] = useState<string>();
   const [shipmentTypeOptions, setShipmentTypeOptions] = useState<GetShipViaData[]>([]);
@@ -268,6 +261,30 @@ function InquiryContent() {
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
+  const [items, setItems] = useState([
+    { name: "", hsCode: "", qty: "", unit: "", weight: "", cbm: "", packaging: "" }
+  ]);
+
+  const addItemRow = () => {
+    setItems([
+      ...items,
+      { name: "", hsCode: "", qty: "", unit: "", weight: "", cbm: "", packaging: "" }
+    ]);
+  };
+
+  const removeItemRow = (index: number) => {
+    const next = [...items];
+    next.splice(index, 1);
+    setItems(next);
+  };
+
+  const updateItemField = (index: number, field: string, value: string) => {
+    const next = [...items];
+    // @ts-ignore
+    next[index][field] = value;
+    setItems(next);
+  };
+
   const handleSave = async () => {
     try {
       // 🔎 Basic validation
@@ -321,7 +338,27 @@ function InquiryContent() {
       setMessagePopup("Sales RFQ created successfully");
       setTimeout(() => setShowAlert(false), 6000);
 
-      console.log(res);
+      setForm({
+        inquiryNo: "",
+        customerName: "",
+        contactPerson: "",
+        customerPhone: "",
+        originCountry: "",
+        destinationCountry: "",
+        commodity: "",
+        incoterm: "",
+        shipmentType: "",
+        remarks: "",
+      });
+
+      setItems([
+        { name: "", hsCode: "", qty: "", unit: "", weight: "", cbm: "", packaging: "" }
+      ]);
+      setShipmentTypeSelected(undefined);
+      setOriginSelected(undefined);
+      setDestinationSelected(undefined);
+      setTermSelected(undefined);
+      setCommoditySelected(undefined);
 
     } catch (err: any) {
       setShowAlert(true);
@@ -334,31 +371,7 @@ function InquiryContent() {
     }
   };
     
-  const [items, setItems] = useState([
-    { name: "", hsCode: "", qty: "", unit: "", weight: "", cbm: "", packaging: "" }
-  ]);
-
-  const addItemRow = () => {
-    setItems([
-      ...items,
-      { name: "", hsCode: "", qty: "", unit: "", weight: "", cbm: "", packaging: "" }
-    ]);
-  };
-
-  const removeItemRow = (index: number) => {
-    const next = [...items];
-    next.splice(index, 1);
-    setItems(next);
-  };
-
-  const updateItemField = (index: number, field: string, value: string) => {
-    const next = [...items];
-    // @ts-ignore
-    next[index][field] = value;
-    setItems(next);
-  };
-
-    //set loading process
+  //set loading process
   if (loading) return <Loading/>;
 
   return (
@@ -377,7 +390,9 @@ function InquiryContent() {
                 <Badge variant={"solid"} colorPalette={ rfqStatus === "APPROVED"  ? "green" : rfqStatus === "REJECTED" ? "red" : "yellow"}>
                   {rfqStatus}
                 </Badge>
-                <Text fontSize={"xs"} color="gray.600">Last updated by <b>{lastUpdatedBy}</b> at{" "}{lastUpdatedAt}</Text>
+                <Text fontSize="xs" color="gray.600">
+                  Last updated by <b>{lastUpdatedBy || "System"}</b> • {lastUpdatedAt ? new Date(lastUpdatedAt).toLocaleDateString(lang === "id" ? "id-ID" : "en-US", { day: "2-digit", month: "short", year: "numeric" }) : "-"}
+                </Text>
               </Flex>
             </Card.Body>
           </Card.Root>
@@ -389,24 +404,24 @@ function InquiryContent() {
       <Card.Root mt={5}>
         <Card.Body>
           <SimpleGrid columns={{base: 1 ,md: 2}} gap={6}>
-              <Field.Root>
-                <Field.Label>{t.sales_inquiry.inquiry_no}</Field.Label>
+              <Field.Root required>
+                <Field.Label>{t.sales_inquiry.inquiry_no} <Field.RequiredIndicator/></Field.Label>
                 <Input name="inquiryNo" value={form.inquiryNo} onChange={handleChange} readOnly={isReadOnly} placeholder={t.sales_inquiry.inquiry_no_placeholder}/>
               </Field.Root>
-              <Field.Root>
-                <Field.Label>{t.sales_inquiry.customer_name} <InfoTip content="Masukkan nama konsumen baru bahkan jika konsumen tersebut telah terdaftar dalam sistem" /> </Field.Label>
+              <Field.Root required>
+                <Field.Label>{t.sales_inquiry.customer_name}<Field.RequiredIndicator/> <InfoTip content="Masukkan nama konsumen baru bahkan jika konsumen tersebut telah terdaftar dalam sistem" /> </Field.Label>
                 <Input name="customerName" value={form.customerName} placeholder={t.sales_inquiry.customer_placeholder} readOnly={isReadOnly}  onChange={handleChange} />
               </Field.Root>
-              <Field.Root>
-                <Field.Label>{t.sales_inquiry.contact_person}</Field.Label>
+              <Field.Root required>
+                <Field.Label>{t.sales_inquiry.contact_person} <Field.RequiredIndicator/></Field.Label>
                 <Input name="contactPerson" value={form.contactPerson} placeholder={t.sales_inquiry.contact_person_placeholder} onChange={handleChange} readOnly={isReadOnly}/>
               </Field.Root>
-              <Field.Root>
-                <Field.Label>{t.sales_inquiry.phone} <InfoTip content="Jangan gunakan 0 tapi gunakan kode negara seperti 62 tanpa +" /></Field.Label>
+              <Field.Root required>
+                <Field.Label>{t.sales_inquiry.phone}<Field.RequiredIndicator/> <InfoTip content="Jangan gunakan 0 tapi gunakan kode negara seperti 62 tanpa +" /></Field.Label>
                 <Input name="customerPhone" value={form.customerPhone} placeholder={t.sales_inquiry.phone_placeholder} onChange={handleChange} readOnly={isReadOnly}/>
               </Field.Root>
-              <Field.Root>
-                <Field.Label>{t.sales_inquiry.shipment_type}</Field.Label>
+              <Field.Root required>
+                <Field.Label>{t.sales_inquiry.shipment_type} <Field.RequiredIndicator/> </Field.Label>
                 <Select.Root disabled={isReadOnly} collection={shipmentTypeCollection} value={shipmentTypeSelected ? [shipmentTypeSelected] : []} onValueChange={(details) => setShipmentTypeSelected(details.value[0])} size="sm" width="100%">
                   <Select.HiddenSelect />
                   <Select.Control>
@@ -428,8 +443,8 @@ function InquiryContent() {
                   </Portal>
                 </Select.Root>
               </Field.Root>
-              <Field.Root>
-                <Field.Label>{t.sales_inquiry.origin_country}</Field.Label>
+              <Field.Root required>
+                <Field.Label>{t.sales_inquiry.origin_country} <Field.RequiredIndicator/></Field.Label>
                 <Select.Root disabled={isReadOnly} collection={countryCollection} value={originSelected ? [originSelected] : []} onValueChange={(details) => setOriginSelected(details.value[0])} size="sm" width="100%">
                   <Select.HiddenSelect />
                     <Select.Control>
@@ -451,8 +466,8 @@ function InquiryContent() {
                   </Portal>
               </Select.Root>
               </Field.Root>
-              <Field.Root>
-                <Field.Label>{t.sales_inquiry.destination_country}</Field.Label>
+              <Field.Root required>
+                <Field.Label>{t.sales_inquiry.destination_country} <Field.RequiredIndicator/></Field.Label>
                 <Select.Root disabled={isReadOnly} collection={countryCollection} value={destinationSelected ? [destinationSelected] : []} onValueChange={(details) => setDestinationSelected(details.value[0])} size="sm" width="100%">
                   <Select.HiddenSelect />
                   <Select.Control>
@@ -474,8 +489,8 @@ function InquiryContent() {
                   </Portal>
                 </Select.Root>
               </Field.Root>
-              <Field.Root>
-                <Field.Label>{t.sales_inquiry.commodity}</Field.Label>
+              <Field.Root required>
+                <Field.Label>{t.sales_inquiry.commodity} <Field.RequiredIndicator/></Field.Label>
                 <Select.Root disabled={isReadOnly} collection={commodityCollection} value={commoditySelected ? [commoditySelected] : []} onValueChange={(details) => setCommoditySelected(details.value[0])} size="sm" width="100%">
                   <Select.HiddenSelect />
                   <Select.Control>
@@ -497,8 +512,8 @@ function InquiryContent() {
                   </Portal>
                 </Select.Root>
               </Field.Root>
-              <Field.Root>
-                <Field.Label>{t.sales_inquiry.incoterm}</Field.Label>
+              <Field.Root required>
+                <Field.Label>{t.sales_inquiry.incoterm} <Field.RequiredIndicator/></Field.Label>
                 <Select.Root disabled={isReadOnly} collection={termCollection} value={termSelected ? [termSelected] : []} onValueChange={(details) => setTermSelected(details.value[0])} size="sm" width="100%">
                   <Select.HiddenSelect />
                   <Select.Control>
@@ -564,16 +579,16 @@ function InquiryContent() {
                           <Input value={row.hsCode} readOnly={isReadOnly}  placeholder={t.sales_inquiry.hs_code_placeholder} onChange={(e) => updateItemField(index, "hsCode", e.target.value)}/>
                         </Table.Cell>
                         <Table.Cell>
-                          <Input value={row.qty} readOnly={isReadOnly}  placeholder={t.sales_inquiry.qty} onChange={(e) => updateItemField(index, "qty", e.target.value)}/>
+                          <Input type="number" value={row.qty} readOnly={isReadOnly}  placeholder={t.sales_inquiry.qty} onChange={(e) => updateItemField(index, "qty", e.target.value)}/>
                         </Table.Cell>
                         <Table.Cell>
                           <Select.Root disabled={isReadOnly} collection={uomCollection} value={
-    row.unit && uomCollection.items.some(i => i.value === row.unit)
-      ? [row.unit]
-      : []
-  } onValueChange={(details) =>
-    updateItemField(index, "unit", details.value?.[0] ?? "")
-  } size="sm" width="100%">
+                              row.unit && uomCollection.items.some(i => i.value === row.unit)
+                                ? [row.unit]
+                                : []
+                            } onValueChange={(details) =>
+                              updateItemField(index, "unit", details.value?.[0] ?? "")
+                            } size="sm" width="100%">
                             <Select.HiddenSelect />
                             <Select.Control>
                               <Select.Trigger>
@@ -596,11 +611,11 @@ function InquiryContent() {
                         </Table.Cell>
 
                         <Table.Cell>
-                          <Input value={row.weight} readOnly={isReadOnly}  placeholder={t.sales_inquiry.weight_placeholder} onChange={(e) => updateItemField(index, "weight", e.target.value)}/>
+                          <Input type="number" value={row.weight} readOnly={isReadOnly}  placeholder={t.sales_inquiry.weight_placeholder} onChange={(e) => updateItemField(index, "weight", e.target.value)}/>
                         </Table.Cell>
 
                         <Table.Cell>
-                          <Input value={row.cbm} readOnly={isReadOnly}  placeholder={t.sales_inquiry.cbm_placeholder} onChange={(e) => updateItemField(index, "cbm", e.target.value)}/>
+                          <Input type="number" value={row.cbm} readOnly={isReadOnly}  placeholder={t.sales_inquiry.cbm_placeholder} onChange={(e) => updateItemField(index, "cbm", e.target.value)}/>
                         </Table.Cell>
 
                         <Table.Cell>
@@ -668,7 +683,7 @@ function InquiryContent() {
         </Card.Root>
 
 
-        {mode === "view" && (
+  {mode === "view" && (
   <Card.Root mt={6}>
     <Card.Body>
       <Heading size="xl" mb={3}>History Log</Heading>
@@ -679,7 +694,20 @@ function InquiryContent() {
             {log.notes} by <b>{log.action_by}</b>
           </Text>
           <Text fontSize="xs" color="gray.500">
-            {log.action_at}
+            {log.action_at
+              ? new Date(log.action_at).toLocaleString(
+                  lang === "id" ? "id-ID" : "en-US",
+                  {
+                    day: "2-digit",
+                    month: "short",
+                    year: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                    second: "2-digit",
+                    hour12: false,
+                  }
+                )
+              : "-"}
           </Text>
         </Flex>
       ))}

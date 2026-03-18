@@ -3,6 +3,7 @@
 import Loading from "@/components/loading";
 import SidebarWithHeader from "@/components/ui/SidebarWithHeader";
 import { DecodedAuthToken, checkAuthOrRedirect, getAuthInfo } from "@/lib/auth/auth";
+import { FinanceIncomeExpenseSummary, getFinanceIncomeExpenseSummary } from "@/lib/finance/finance";
 import { Card, Flex, Heading, SimpleGrid, Text, Button, Badge, Icon,} from "@chakra-ui/react";
 import { useRouter } from "next/navigation";
 
@@ -13,6 +14,8 @@ export default function Finance() {
   const [auth, setAuth] = useState<DecodedAuthToken | null>(null);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+
+  const [summary, setSummary] = useState<FinanceIncomeExpenseSummary[]>([]);
 
   useEffect(() => {
     init();
@@ -28,9 +31,10 @@ export default function Finance() {
     setAuth(info);
 
     try {
-
-    } catch (error: any){
-
+      const res = await getFinanceIncomeExpenseSummary();
+      setSummary(res.data);
+    } catch (error: any) {
+      console.error("Failed fetch finance summary", error);
     } finally {
       setLoading(false);
     }
@@ -214,7 +218,9 @@ export default function Finance() {
                     <Flex justify="space-between" align="center">
                       <Flex flexDir={"column"}>
                         <Text fontSize="sm" color="gray.500">Total Income</Text>
-                        <Heading size="sm">Rp 0</Heading>
+                        <Heading size="sm">
+                          {summary.map((s) => `${s.currency_symbol} ${Number(s.total_income).toLocaleString()}`).join(" | ")}
+                        </Heading>
                       </Flex>
                       <Icon as={FiTrendingUp} color="green.400" />
                     </Flex>
@@ -227,7 +233,9 @@ export default function Finance() {
                     <Flex justify="space-between" align="center">
                       <Flex flexDir={"column"}>
                         <Text fontSize="sm" color="gray.500">Total Expenses</Text>
-                        <Heading size="sm">Rp 0</Heading>
+                          <Heading size="sm">
+                          {summary.map((s) => `${s.currency_symbol} ${Number(s.total_expense).toLocaleString()}`).join(" | ")}
+                        </Heading>
                       </Flex>
                       <Icon as={FiTrendingUp} color="red.400" />
                     </Flex>
@@ -240,7 +248,9 @@ export default function Finance() {
                     <Flex justify="space-between" align="center">
                       <Flex flexDir={"column"}>
                         <Text fontSize="sm" color="gray.500">Net Operating Balance</Text>
-                        <Heading size="sm">Rp 0</Heading>
+                        <Heading size="sm">
+                          {summary.map((s) => `${s.currency_symbol} ${Number(s.net_balance).toLocaleString()}`).join(" | ")}
+                        </Heading>
                       </Flex>
                       <Icon as={FiTrendingUp} color="blue.400" />
                     </Flex>

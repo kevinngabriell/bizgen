@@ -1,12 +1,14 @@
 "use client";
 
 import Loading from "@/components/loading";
+import { AlertMessage } from "@/components/ui/alert";
 import SidebarWithHeader from "@/components/ui/SidebarWithHeader";
 import { DecodedAuthToken, checkAuthOrRedirect, getAuthInfo } from "@/lib/auth/auth";
+import { createFinanceTransaction } from "@/lib/finance/finance";
 import { getLang } from "@/lib/i18n";
 import { GetAccountCodeData, getAllAccountCode } from "@/lib/master/account-code";
-import { getAllCurrency, GetCurrencyData } from "@/lib/master/currency";
-import { Button, Card, Flex, Field, Input, Text, Textarea, Heading, SimpleGrid, createListCollection, Select, Portal } from "@chakra-ui/react";
+import { getAllBankAccount, GetBankAccountData } from "@/lib/master/bank-account";
+import { Button, Card, Flex, Field, Input, Text, Textarea, Heading, SimpleGrid, createListCollection, Select, Portal, useFilter, useListCollection, InputGroup, Separator, Combobox } from "@chakra-ui/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -19,54 +21,121 @@ export default function CreateExpensePage() {
   const [lang, setLang] = useState<"en" | "id">("en");
   const t = getLang(lang);
 
-  const [accountCodeSelected, setAccountCodeSelected] = useState<string>();
-  const [accountCodeOptions, setAccountCodeOptions] = useState<GetAccountCodeData[]>([]);
-  const [currencySelected, setCurrencySelected] = useState<string>();
-  const [currencyOptions, setCurrencyOptions] = useState<GetCurrencyData[]>([]);
+  //alert & success variable
+  const [showAlert, setShowAlert] = useState(false);
+  const [titlePopup, setTitlePopup] = useState('');
+  const [messagePopup, setMessagePopup] = useState('');
+  const [isSuccess, setIsSuccess] = useState(false);
 
-  const accountcodeCollection = createListCollection({
-    items: accountCodeOptions.map((acc) => ({
-      label: `${acc.account_code} - ${acc.account_code_name}`,
-      value: acc.account_code_id,
+  const [bankAccountSelected, setBankAccount] = useState<string>();
+  const [bankAccountOptions, setBankAccountOptions] = useState<GetBankAccountData[]>([]);
+
+  const [accountCodeCollections, setAccountCodeCollections] = useState<GetAccountCodeData[]>([]);
+
+  const { contains } = useFilter({ sensitivity: "base" })
+
+  const { collection: accountCollection, set: setAccountCollection } = useListCollection<GetAccountCodeData>({
+    initialItems: [],
+    itemToString: (item) => `${item.account_code} - ${item.account_code_name}`,
+    itemToValue: (item) => item.account_code_id,
+  })
+
+  const bankAccountCollection = createListCollection({
+    items: bankAccountOptions.map((bank) => ({
+      label: `${bank.bank_number} - ${bank.bank_name} (${bank.currency_symbol})`,
+      value: bank.bank_account_id,
     })),
   });
 
-  const currencyCollection = createListCollection({
-    items: currencyOptions.map((currency) => ({
-      label: `${currency.currency_name} (${currency.currency_symbol})`,
-      value: currency.currency_id,
-    })),
-  });
+  const selectedBank = bankAccountOptions.find(
+    (b) => b.bank_account_id === bankAccountSelected
+  );
+
+  const currencySymbol = selectedBank?.currency_symbol ?? '';
+
+  const formatNumber = (value: string) => {
+    if (!value) return '';
+
+    const cleaned = value.replace(/,/g, '');
+
+    if (cleaned === '' || cleaned === '.') return cleaned;
+
+    const parts = cleaned.split('.');
+    const integerPart = parts[0];
+    const decimalPart = parts[1];
+
+    const formattedInt = Number(integerPart || 0).toLocaleString('en-US');
+
+    return decimalPart !== undefined ? `${formattedInt}.${decimalPart}` : formattedInt;
+  };
+
+  const parseNumber = (value: string) => {
+    // remove commas
+    let cleaned = value.replace(/,/g, '');
+
+    // allow only numbers and decimal point
+    cleaned = cleaned.replace(/[^0-9.]/g, '');
+
+    // prevent multiple decimals
+    const parts = cleaned.split('.');
+    if (parts.length > 2) {
+      cleaned = parts[0] + '.' + parts.slice(1).join('');
+    }
+
+    // limit to 2 decimal digits
+    const [integerPart, decimalPart] = cleaned.split('.');
+    if (decimalPart !== undefined) {
+      cleaned = `${integerPart}.${decimalPart.slice(0, 2)}`;
+    }
+
+    return cleaned;
+  };
+
+  const handleAmountInput = (value: string) => {
+    const parsed = parseNumber(value);
+
+    // ensure valid numeric format with max 2 decimals
+    const validPattern = /^\d*(\.\d{0,2})?$/;
+
+    if (parsed === '' || validPattern.test(parsed)) {
+      return parsed;
+    }
+
+    return '';
+  };
 
   useEffect(() => {
-    const fetchAccountCode = async () => {
+    const fetchBankAccount = async () => {
       try {
         setLoading(true);
-        const accountRes = await getAllAccountCode(1, 1000);
-        setAccountCodeOptions(accountRes?.data ?? []);
+        const bankRes = await getAllBankAccount(1, 1000);
+        setBankAccountOptions(bankRes?.data ?? []);
       } catch (error) {
         console.error(error);
-        setAccountCodeOptions([]);
+        setBankAccountOptions([]);
       } finally {
         setLoading(false);
       }
     };
 
-    const fetchCurrency = async () => {
+    // Fetch account codes for combobox
+    const fetchAccountCodes = async () => {
       try {
         setLoading(true);
-        const currencyRes = await getAllCurrency(1, 1000);
-        setCurrencyOptions(currencyRes?.data ?? []);
+        const accRes = await getAllAccountCode(1, 1000);
+        const accData = accRes?.data ?? [];
+        setAccountCodeCollections(accData);
+        setAccountCollection(accData);
       } catch (error) {
         console.error(error);
-        setCurrencyOptions([]);
+        setAccountCodeCollections([]);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchAccountCode();
-    fetchCurrency();
+    fetchBankAccount();
+    fetchAccountCodes();
 
     init();
   }, []);
@@ -87,121 +156,271 @@ export default function CreateExpensePage() {
     setLang(language);
 
     setLoading(false);
-  }
-    
-  if (loading) return <Loading/>;
+  };
   
   const [form, setForm] = useState({
-    expenseDate: "",
-    accountCode: "",
-    amount: "",
-    currency: "IDR",
-    vendor: "",
-    referenceNo: "",
-    description: "",
+    accountCode: '',
+    incomeDate: '',
+    amount: '',
+    currency: 'IDR',
+    description: '',
+    referenceNo: '',
+    customer: '',
   });
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setForm(prev => ({ ...prev, [name]: value }));
+  const [lines, setLines] = useState([
+    { id: crypto.randomUUID(), accountCodeId: '', accountCode: '', accountName: '', amount: '', memo: '' }
+  ]);
+
+  const addLine = () => {
+    setLines(prev => [
+      ...prev,
+      { id: crypto.randomUUID(), accountCodeId: '', accountCode: '', accountName: '', amount: '', memo: '' }
+    ]);
   };
 
-  const handleSubmit = () => {
-
+  const removeLine = (index: number) => {
+    setLines(prev => prev.filter((_, i) => i !== index));
   };
+
+  const updateLine = (index: number, key: string, value: string) => {
+    setLines(prev =>
+      prev.map((line, i) =>
+        i === index ? { ...line, [key]: value } : line
+      )
+    );
+  };
+
+  const totalLineAmount = lines.reduce((sum, line) => {
+    const num = parseFloat(line.amount || '0');
+    return sum + (isNaN(num) ? 0 : num);
+  }, 0);
+
+  const isAmountMismatch = !!form.amount && Math.abs(totalLineAmount - parseFloat(form.amount || '0')) > 0.001;
+
+  const onChange = (key: string, value: string) => {
+    setForm(prev => ({ ...prev, [key]: value }));
+  };
+
+  const handleSubmit = async () => {
+    try {
+      if(!bankAccountSelected)
+        throw new Error("Bank account is required");
+      if(!form.incomeDate)
+        throw new Error("Income date is required");
+      if(!form.amount)
+        throw new Error("Amount is required");
+      if (lines.length === 0) 
+        throw new Error("At least one item is required");
+
+      setLoading(true);
+
+      const payload = {
+        category: "expense",
+        bank_account: bankAccountSelected,
+        amount: form.amount,
+        date: form.incomeDate,
+        memo: form.description,
+        details: lines.map((line) => ({
+          account_code: line.accountCodeId,
+          account_amount: line.amount,
+          account_memo: line.memo
+        }))
+      }
+
+      const res = await createFinanceTransaction(payload);
+      
+      setShowAlert(true);
+      setIsSuccess(true);
+      setTitlePopup("Success");
+      setMessagePopup("Finance transaction created successfully");
+
+      // reset form values
+      setForm({
+        accountCode: '',
+        incomeDate: '',
+        amount: '',
+        currency: '',
+        description: '',
+        referenceNo: '',
+        customer: '',
+      });
+
+      setBankAccount(undefined);
+
+      // reset detail lines
+      setLines([
+        { id: crypto.randomUUID(), accountCodeId: '', accountCode: '', accountName: '', amount: '', memo: '' }
+      ]);
+
+      setTimeout(() => setShowAlert(false), 6000);
+
+    } catch (err: any) {
+      setShowAlert(true);
+      setIsSuccess(false);
+      setTitlePopup("Error");
+      setMessagePopup(err.message || "Failed to create finance transaction");
+      setTimeout(() => setShowAlert(false), 6000);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) return <Loading/>
 
   return (
     <SidebarWithHeader username={auth?.username ?? "Unknown"} daysToExpire={auth?.days_remaining ?? 0}>
-      <Flex flexDir={"column"}>
-        <Heading>Create Expense</Heading>
-        <Text fontSize="sm" color="gray.500">Record an operational expense and map it to an account code.</Text>
+      <Flex justify="space-between" align="center" mb={6}>
+        <Flex flexDir={"column"}>
+          <Heading size="lg">Create Expense</Heading>
+          <Text color="gray.500" mt={1}>Record an operational expense and map it to an account code.</Text>
+        </Flex>
+      
+        <Flex gap={5}>
+          <Button variant="outline" bg={"transparent"} borderColor={"#E77A1F"} color={"#E77A1F"} cursor={"pointer"} onClick={() => router.back()}>{t.delete_popup.cancel}</Button>
+          <Button bg="#E77A1F" color="white" onClick={handleSubmit} disabled={isAmountMismatch} opacity={isAmountMismatch ? 0.6 : 1} cursor={isAmountMismatch ? "not-allowed" : "pointer"}>Save Expense</Button>
+        </Flex>
       </Flex>
 
+      {showAlert && <AlertMessage title={titlePopup} description={messagePopup} isSuccess={isSuccess}/>}          
+      
+      {isAmountMismatch && (
+        <AlertMessage title='Error' description='Total account lines tidak sama dengan amount' isSuccess={false}/>
+      )}
+      
       <Card.Root mt={6}>
         <Card.Header pb={0}>
            <Text fontWeight="semibold">Expense Details</Text>
         </Card.Header>
-        <Card.Body>
+        <Card.Body gap={"20px"}>
+          <Field.Root required>
+            <Field.Label>Paid From<Field.RequiredIndicator/></Field.Label>
+              <Select.Root collection={bankAccountCollection} value={bankAccountSelected ? [bankAccountSelected] : []} onValueChange={(details) => setBankAccount(details.value[0])} size="sm" width="100%">
+                <Select.HiddenSelect />
+                <Select.Control>
+                  <Select.Trigger>
+                    <Select.ValueText placeholder={t.bank_account.select_currency_placeholder} />
+                  </Select.Trigger>
+                  <Select.IndicatorGroup>
+                    <Select.Indicator />
+                  </Select.IndicatorGroup>
+                </Select.Control>
+                <Portal>
+                  <Select.Positioner>
+                    <Select.Content>
+                      {bankAccountCollection.items.map((bank) => (
+                        <Select.Item item={bank} key={bank.value}>
+                          {bank.label}
+                          <Select.ItemIndicator />
+                        </Select.Item>
+                      ))}
+                    </Select.Content>
+                  </Select.Positioner>
+                </Portal>
+            </Select.Root>
+          </Field.Root>
           <SimpleGrid columns={{base: 1, md: 2}} gap={"20px"}>
-            <Field.Root>
-              <Field.Label>Date</Field.Label>
-              <Input type="date" name="expenseDate" value={form.expenseDate} onChange={handleChange}/>
+            <Field.Root required>
+              <Field.Label>Date<Field.RequiredIndicator/> </Field.Label>
+              <Input type="date" value={form.incomeDate} onChange={e => onChange('incomeDate', e.target.value)}/>
             </Field.Root>
-            <Field.Root>
-              <Field.Label>{t.account_code.account_code}</Field.Label>
-              <Select.Root collection={accountcodeCollection} value={accountCodeSelected ? [accountCodeSelected] : []} onValueChange={(details) => setAccountCodeSelected(details.value[0])} size="sm" width="100%">
-                <Select.HiddenSelect />
-                <Select.Control>
-                  <Select.Trigger>
-                    <Select.ValueText placeholder={t.bank_account.select_currency_placeholder} />
-                  </Select.Trigger>
-                  <Select.IndicatorGroup>
-                    <Select.Indicator />
-                  </Select.IndicatorGroup>
-                </Select.Control>
-                <Portal>
-                  <Select.Positioner>
-                    <Select.Content>
-                      {accountcodeCollection.items.map((acc) => (
-                        <Select.Item item={acc} key={acc.value}>
-                          {acc.label}
-                          <Select.ItemIndicator />
-                        </Select.Item>
-                      ))}
-                    </Select.Content>
-                  </Select.Positioner>
-                </Portal>
-            </Select.Root>
-            </Field.Root>
-            <Field.Root>
-              <Field.Label>Amount</Field.Label>
-              <Input type="number" name="amount" placeholder="0" value={form.amount} onChange={handleChange}/>
-            </Field.Root>
-            <Field.Root>
-              <Field.Label>{t.currency.currency_name}</Field.Label>
-              <Select.Root collection={currencyCollection} value={currencySelected ? [currencySelected] : []} onValueChange={(details) => setCurrencySelected(details.value[0])} size="sm" width="100%">
-                <Select.HiddenSelect />
-                <Select.Control>
-                  <Select.Trigger>
-                    <Select.ValueText placeholder={t.bank_account.select_currency_placeholder} />
-                  </Select.Trigger>
-                  <Select.IndicatorGroup>
-                    <Select.Indicator />
-                  </Select.IndicatorGroup>
-                </Select.Control>
-                <Portal>
-                  <Select.Positioner>
-                    <Select.Content>
-                      {currencyCollection.items.map((currency) => (
-                        <Select.Item item={currency} key={currency.value}>
-                          {currency.label}
-                          <Select.ItemIndicator />
-                        </Select.Item>
-                      ))}
-                    </Select.Content>
-                  </Select.Positioner>
-                </Portal>
-            </Select.Root>
-            </Field.Root>
-            <Field.Root>
-              <Field.Label>Vendor / Payee</Field.Label>
-              <Input name="vendor" placeholder="Vendor name" value={form.vendor} onChange={handleChange}/>
-            </Field.Root>
-            <Field.Root>
-              <Field.Label>Reference No.</Field.Label>
-              <Input name="referenceNo" placeholder="Invoice / Receipt No." value={form.referenceNo} onChange={handleChange}/>
+            <Field.Root required>
+              <Field.Label>Amount <Field.RequiredIndicator/></Field.Label>
+              <InputGroup startElement={currencySymbol || ""}>
+                <Input type="text" placeholder={`0`} value={formatNumber(form.amount)} onChange={e => onChange('amount', handleAmountInput(e.target.value))}/>
+              </InputGroup>
             </Field.Root>
           </SimpleGrid>
-
-          <Field.Root mt={5}>
-            <Field.Label>Description / Notes</Field.Label>
-            <Textarea name="description" placeholder="Additional details about this expense" value={form.description} onChange={handleChange}/>
+          <Field.Root required>
+            <Field.Label>Memo</Field.Label>
+            <Textarea placeholder='Masukkkan nomor memo' value={form.description} onChange={e => onChange('description', e.target.value)}/>
           </Field.Root>
 
-          <Flex justify="flex-end" mt={5}>
-            <Button variant="ghost">{t.delete_popup.cancel}</Button>
-            <Button colorScheme="purple" onClick={handleSubmit}>Save Expense</Button>
-          </Flex>
+          <Separator/>
+
+          <Heading size="md">Account Details</Heading>
+
+          {lines.map((line, index) => (
+            <Flex key={line.id} direction="column" gap="10px">
+              <SimpleGrid columns={{ base: 1, md: 3 }} gap={"20px"}>
+                <Field.Root required>
+                  <Field.Label>Account Code<Field.RequiredIndicator/> </Field.Label>
+                  <Combobox.Root key={`account-${line.id}`}
+                    collection={accountCollection}
+                    value={line.accountCodeId ? [line.accountCodeId] : []}
+                    onValueChange={(details) => {
+                      const selected = details.value?.[0];
+                      const selectedAccount = accountCodeCollections.find(
+                        (item) => item.account_code_id === selected
+                      );
+
+                      updateLine(index, 'accountCodeId', selected ?? '');
+                      updateLine(index, 'accountCode', selectedAccount?.account_code ?? '');
+                      updateLine(index, 'accountName', selectedAccount?.account_code_name ?? '');
+                    }}
+                    onInputValueChange={(e) => {
+                      const input = e.inputValue ?? "";
+
+                      if (!input || input.trim() === "") {
+                        setAccountCollection(accountCodeCollections);
+                        return;
+                      }
+
+                      const filtered = accountCodeCollections.filter((item) =>
+                        contains(`${item.account_code} - ${item.account_code_name}`, input)
+                      );
+
+                      setAccountCollection(filtered);
+                    }}
+                  >
+                    <Combobox.Control>
+                      <Combobox.Input placeholder="Search account code" onFocus={() => setAccountCollection(accountCodeCollections)}/>
+                      <Combobox.IndicatorGroup>
+                        <Combobox.ClearTrigger />
+                        <Combobox.Trigger />
+                      </Combobox.IndicatorGroup>
+                    </Combobox.Control>
+                    <Portal>
+                      <Combobox.Positioner>
+                        <Combobox.Content>
+                          <Combobox.Empty>No account found</Combobox.Empty>
+                          {accountCollection.items.map((item) => (
+                            <Combobox.Item item={item} key={item.account_code_id}>
+                              {item.account_code} - {item.account_code_name}
+                              <Combobox.ItemIndicator />
+                            </Combobox.Item>
+                          ))}
+                        </Combobox.Content>
+                      </Combobox.Positioner>
+                    </Portal>
+                  </Combobox.Root>
+                </Field.Root>
+
+                <Field.Root required>
+                  <Field.Label>Account Name <Field.RequiredIndicator/></Field.Label>
+                  <Input placeholder="Account name" value={line.accountName} readOnly/>
+                </Field.Root>
+
+                <Field.Root required>
+                  <Field.Label>Amount <Field.RequiredIndicator/></Field.Label>
+                  <InputGroup startElement={currencySymbol || ""}>
+                    <Input type="text" placeholder={`0`} value={formatNumber(line.amount)} onChange={e => updateLine(index, 'amount', handleAmountInput(e.target.value))}/>
+                  </InputGroup>
+                  
+                </Field.Root>
+              </SimpleGrid>
+
+              <Field.Root>
+                <Field.Label>Memo</Field.Label>
+                <Textarea placeholder="Memo" value={line.memo} onChange={e => updateLine(index, 'memo', e.target.value)}/>
+              </Field.Root>
+              
+              <Button borderColor={"red"} color={"red"} variant="outline" onClick={() => removeLine(index)}>Delete</Button>
+            </Flex>
+          ))}
+
+          <Button mt={4} variant="outline" borderColor="#E77A1F" color="#E77A1F" onClick={addLine}>+ Add Account</Button>
+
         </Card.Body>
       </Card.Root>
     </SidebarWithHeader>

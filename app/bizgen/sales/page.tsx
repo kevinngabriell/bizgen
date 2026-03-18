@@ -4,6 +4,7 @@ import Loading from "@/components/loading";
 import SidebarWithHeader from "@/components/ui/SidebarWithHeader";
 import { DecodedAuthToken, checkAuthOrRedirect, getAuthInfo } from "@/lib/auth/auth";
 import { getLang } from "@/lib/i18n";
+import { getSalesQuotations, GetSalesQuotationsData } from "@/lib/sales/quotation";
 import { GetRfq, getSalesRfq } from "@/lib/sales/rfq";
 import { Button, Card, Flex, Heading, Text, SimpleGrid, Badge, Icon } from "@chakra-ui/react";
 import { useRouter } from "next/navigation";
@@ -20,6 +21,16 @@ export default function Sales (){
   const t = getLang(lang);
 
   const [salesRfqData, setSalesRfqData] = useState<GetRfq[]>([]);
+  const [salesQuotationData, setSalesQuotationData] = useState<GetSalesQuotationsData[]>([]);
+
+  const formatDate = (dateStr: string) => {
+    const d = new Date(dateStr);
+    return d.toLocaleDateString(lang === "id" ? "id-ID" : "en-US", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
+  };
 
   useEffect(() => {
     init();
@@ -43,8 +54,12 @@ export default function Sales (){
     try {
       const salesRfqRes = await getSalesRfq(1, 3, "");
       setSalesRfqData(salesRfqRes.data);
+
+      const salesQuotationRes = await getSalesQuotations(1, 3, "");
+      setSalesQuotationData(salesQuotationRes.data);
     }catch (error: any){
       setSalesRfqData([]);
+      setSalesQuotationData([]);
     } finally {
       setLoading(false);
     }
@@ -92,6 +107,10 @@ export default function Sales (){
     router.push(`/bizgen/sales/inquiry?rfq_id=${rfq_id}`);
   }
 
+  const handleToSeeAll = () => {
+    router.push(`/bizgen/sales/see-all`);
+  }
+
   return (
     <SidebarWithHeader username={auth?.username ?? "Unknown"} daysToExpire={auth?.days_remaining ?? 0}>
       
@@ -124,7 +143,7 @@ export default function Sales (){
                 {salesRfqData?.map((rfq) => (
                   <Flex justify="space-between">
                     <Text fontSize="xs" color="gray.600" maxLines={1} onClick={() => handleDirectToSalesRfqDetail(rfq.sales_rfq_id)}>{rfq.sales_rfq_number}</Text>
-                    <Badge colorScheme="gray" variant="subtle">{rfq.created_at}</Badge>
+                    <Badge colorScheme="gray" variant="subtle">{formatDate(rfq.created_at)}</Badge>
                   </Flex>
                 ))}
               </Flex>
@@ -132,7 +151,7 @@ export default function Sales (){
             </Flex>
 
             <Flex justify="space-between">
-              <Button size="sm" bg={"transparent"} borderColor={"#E77A1F"} color={"#E77A1F"} cursor={"pointer"}>{t.sales_module.inquiry.see_all}</Button>
+              <Button size="sm" bg={"transparent"} borderColor={"#E77A1F"} color={"#E77A1F"} cursor={"pointer"} onClick={handleToSeeAll}>{t.sales_module.inquiry.see_all}</Button>
               <Button size="sm" bg={"#E77A1F"} color={"white"} cursor={"pointer"} onClick={handleDirectToDetailInquiry} >{t.sales_module.inquiry.create}</Button>
             </Flex>
           </Card.Body>
@@ -155,18 +174,12 @@ export default function Sales (){
                   
                   {/* Sample data for quotation */}
                   <Flex direction="column" gap={1}>
-                    <Flex justify="space-between">
-                      <Text fontSize="xs" color="gray.600" maxLines={1}>Sample item #1</Text>
-                      <Badge colorScheme="gray" variant="subtle">Today</Badge>
-                    </Flex>
-                    <Flex justify="space-between">
-                      <Text fontSize="xs" color="gray.600" maxLines={1}>Sample item #2</Text>
-                      <Badge colorScheme="gray" variant="subtle">Yesterday</Badge>
-                    </Flex>
-                    <Flex justify="space-between">
-                      <Text fontSize="xs" color="gray.600" maxLines={1}>Sample item #3</Text>
-                      <Badge colorScheme="gray" variant="subtle">2d ago</Badge>
-                    </Flex>
+                    {salesQuotationData?.map((quotation) => (
+                      <Flex justify="space-between">
+                        <Text fontSize="xs" color="gray.600" maxLines={1}>{quotation.sales_quotation_number}</Text>
+                        <Badge colorScheme="gray" variant="subtle">{formatDate(quotation.created_at)}</Badge>
+                      </Flex>
+                    ))}
                   </Flex>
                 </Flex>
 

@@ -85,38 +85,38 @@ export interface GetDetailRfqResponse {
 }
 
 export async function createSalesRfq(input: CreateRfq) : Promise<any> {
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL;
-    const token = localStorage.getItem("token");
+  const baseUrl = process.env.NEXT_PUBLIC_API_URL;
+  const token = localStorage.getItem("token");
 
-    const res = await fetch(`${baseUrl}sales/inquiries.php`, {
-        method: 'POST',
-       headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            sales_rfq_number: input.sales_rfq_number,
-            customer_name: input.customer_name,
-            pic_customer_name: input.pic_customer_name,
-            phone_whatsapp: input.phone_whatsapp,
-            ship_via_id: input.ship_via_id,
-            origin_id: input.origin_id,
-            destination_id: input.destination_id,
-            incoterm_id: input.incoterm_id,
-            commodity_id: input.commodity_id,
-            remarks: input.remarks,
-            items: input.items
-        })
-    });
+  const res = await fetch(`${baseUrl}sales/inquiries.php`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      sales_rfq_number: input.sales_rfq_number,
+      customer_name: input.customer_name,
+      pic_customer_name: input.pic_customer_name,
+      phone_whatsapp: input.phone_whatsapp,
+      ship_via_id: input.ship_via_id,
+      origin_id: input.origin_id,
+      destination_id: input.destination_id,
+      incoterm_id: input.incoterm_id,
+      commodity_id: input.commodity_id,
+      remarks: input.remarks,
+      items: input.items
+    })
+  });
 
-    const json = await res.json();
+  const json = await res.json();
 
-    //Jika statusnya bukan 201 atau 200 maka error 
-    if (json.status_code !== 201 && json.status_code !== 200) {
-        throw new Error(json.status_message || 'Failed to create sales rfq');
-    }
+  //Jika statusnya bukan 201 atau 200 maka error 
+  if (json.status_code !== 201 && json.status_code !== 200) {
+      throw new Error(json.status_message || 'Failed to create sales rfq');
+  }
 
-    return json;
+  return json;
 }
 
 export async function generateRfqNumber(): Promise<GetRfqNumber> {

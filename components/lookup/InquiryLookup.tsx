@@ -1,7 +1,7 @@
 "use client";
 
-import { GetDetailRfqResponse, GetRfq, getSalesRfq } from "@/lib/sales/rfq";
-import { Button, CloseButton, Dialog, Input, InputGroup, Portal, Table, Text } from "@chakra-ui/react";
+import { GetRfq, getSalesRfq } from "@/lib/sales/rfq";
+import { Button, CloseButton, Dialog, Field, Input, InputGroup, Portal, Table, Text } from "@chakra-ui/react";
 import { useEffect, useState } from "react";
 import { LuSearch } from "react-icons/lu";
 import Loading from "../loading";
@@ -75,13 +75,13 @@ export default function InquiryLookup({
             </Dialog.Header>
 
             <Dialog.Body>
-              <InputGroup startElement={<LuSearch />} mb={5}>
-                <Input
-                  placeholder={t.sales_quotation.linked_inquiry_placeholder}
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                />
-              </InputGroup>
+              <Field.Root>
+                <Field.Label>Search</Field.Label>
+                <InputGroup startElement={<LuSearch />} mb={5}>
+                  <Input placeholder={t.sales_quotation.linked_inquiry_placeholder} value={search} onChange={(e) => setSearch(e.target.value)}/>
+                </InputGroup>
+              </Field.Root>
+              
 
               {loading ? (
                 <Loading />
@@ -91,52 +91,38 @@ export default function InquiryLookup({
                 <Table.Root>
                   <Table.Header>
                     <Table.Row bg="bg.panel">
-                      <Table.ColumnHeader textAlign="center">
-                        RFQ No
-                      </Table.ColumnHeader>
-                      <Table.ColumnHeader textAlign="center">
-                        Customer
-                      </Table.ColumnHeader>
-                      <Table.ColumnHeader textAlign="center">
-                        Date
-                      </Table.ColumnHeader>
-                      <Table.ColumnHeader textAlign="center">
-                        {t.master.action}
-                      </Table.ColumnHeader>
+                      <Table.ColumnHeader textAlign="center">RFQ No</Table.ColumnHeader>
+                      <Table.ColumnHeader textAlign="center">Customer</Table.ColumnHeader>
+                      <Table.ColumnHeader textAlign="center">Date</Table.ColumnHeader>
+                      <Table.ColumnHeader textAlign="center">{t.master.action}</Table.ColumnHeader>
                     </Table.Row>
                   </Table.Header>
                   <Table.Body>
                     {rfq.map((item) => (
-                      <Table.Row
-                        key={item.sales_rfq_id}
-                        cursor="pointer"
-                        _hover={{ bg: "gray.50" }}
+                      <Table.Row key={item.sales_rfq_id} cursor="pointer" _hover={{ bg: "gray.50" }}
                         onClick={() => {
                           onChoose(item);
                           onClose();
                         }}
                       >
-                        <Table.Cell textAlign="center">
-                          {item.sales_rfq_number}
+                        <Table.Cell textAlign="center">{item.sales_rfq_number}</Table.Cell>
+                        <Table.Cell textAlign="center">{item.customer_name}</Table.Cell>
+                        <Table.Cell textAlign="center">{item.created_at ? new Date(item.created_at).toLocaleString(
+                            lang === "id" ? "id-ID" : "en-US",
+                            {
+                              day: "2-digit",
+                              month: "short",
+                              year: "numeric",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                              second: "2-digit",
+                              hour12: false,
+                            }
+                          )
+                        : "-"}
                         </Table.Cell>
                         <Table.Cell textAlign="center">
-                          {item.customer_name}
-                        </Table.Cell>
-                        <Table.Cell textAlign="center">
-                          {item.created_at}
-                        </Table.Cell>
-                        <Table.Cell textAlign="center">
-                          <Button
-                            size="sm"
-                            bg={"#E77A1F"}
-                            color={"white"}
-                            onClick={() => {
-                              onChoose(item);
-                              onClose();
-                            }}
-                          >
-                            {t.master.choose}
-                          </Button>
+                          <Button size="sm" bg={"#E77A1F"} color={"white"} onClick={() => {onChoose(item);onClose();}}>{t.master.choose}</Button>
                         </Table.Cell>
                       </Table.Row>
                     ))}
