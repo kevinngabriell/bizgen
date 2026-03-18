@@ -15,6 +15,8 @@ import CustomerLookup from '@/components/lookup/CustomerLookup';
 import { generateSalesNumber } from '@/lib/sales/sales-order';
 import { AlertMessage } from '@/components/ui/alert';
 import { FaTrash } from 'react-icons/fa';
+import { getAllTax, GetTaxData } from '@/lib/master/tax';
+import { getAllUOM, UOMData } from '@/lib/master/uom';
 
 type SalesOrderMode = "create" | "view" | "edit";
 
@@ -60,6 +62,7 @@ function SalesOrderContent() {
   const [etd, setEtd] = useState("");
   const [eta, setEta] = useState("");
   const [remarks, setRemarks] = useState("");
+
   //shipment type option
   const [shipmentTypeSelected, setShipmentTypeSelected] = useState<string>();
   const [shipmentTypeOptions, setShipmentTypeOptions] = useState<GetShipViaData[]>([]);
@@ -68,6 +71,16 @@ function SalesOrderContent() {
     items: shipmentTypeOptions.map((shipment) => ({
       label: `${shipment.ship_via_name}`,
       value: shipment.ship_via_id,
+    })),
+  });
+
+  const [taxSelected, setTaxSelected] = useState<string>();
+  const [taxOptions, setTaxOptions] = useState<GetTaxData[]>([]);
+
+  const taxCollection = createListCollection({
+    items: taxOptions.map((tax) => ({
+      label: `${tax.tax_name}`,
+      value: tax.tax_id,
     })),
   });
 
@@ -93,6 +106,15 @@ function SalesOrderContent() {
       value: term.term_id
     }))
   });
+
+  const [uomOptions, setUOMOptions] = useState<UOMData[]>([]);
+    
+  const uomCollection = createListCollection({
+    items: uomOptions.map((uom) => ({
+      label: `${uom.uom_name}`,
+      value: uom.uom_id,
+    })),
+  });
   
   //alert & success variable
   const [showAlert, setShowAlert] = useState(false);
@@ -110,16 +132,22 @@ function SalesOrderContent() {
         const [
           shipViaRes,
           portRes,
-          termRes
+          termRes,
+          taxRes,
+          uomRes,
         ] = await Promise.all([
           getAllShipVia(1, 1000),
           getAllPort(1, 1000),
-          getAllTerm(1, 1000)
+          getAllTerm(1, 1000),
+          getAllTax(1, 1000),
+          getAllUOM(1, 1000)
         ]);
 
         setShipmentTypeOptions(shipViaRes?.data ?? []);
         setPortOptions(portRes?.data ?? []);
         setTermOptions(termRes?.data ?? []);
+        setTaxOptions(taxRes?.data ?? []);
+        setUOMOptions(uomRes?.data ?? []);
 
       } catch (err) {
         console.error(err);
@@ -136,10 +164,6 @@ function SalesOrderContent() {
       try {
         const res = await generateSalesNumber();
         setSalesOrderNumber(res.number);
-        // setForm(prev => ({
-        //   ...prev,
-        //   inquiryNo: res.number,
-        // }));
       } catch (err) {
         console.error("Failed to generate RFQ number", err);
       }
@@ -274,41 +298,42 @@ function SalesOrderContent() {
           <SimpleGrid columns={{base: 1, md: 2, lg: 3}} gap={5} mb={6}>
             <Field.Root required>
               <Field.Label>Sales Order Number <Field.RequiredIndicator/></Field.Label>
-                <Input placeholder='Please input sales order' value={salesOrderNumber}onChange={(e) => setSalesOrderNumber(e.target.value)}/>
+                <Input placeholder='Please input sales order' value={salesOrderNumber} onChange={(e) => setSalesOrderNumber(e.target.value)}/>
             </Field.Root> 
             <Field.Root>
               <Field.Label>{t.sales_order.inquiry_quotation_ref}</Field.Label>
-              <Input
-                placeholder={t.sales_order.inquiry_quotation_ref_placeholder}
-                value={inquiryRef}
-                onChange={(e) => setInquiryRef(e.target.value)}
-              />
+              <Input placeholder={t.sales_order.inquiry_quotation_ref_placeholder} value={inquiryRef} onChange={(e) => setInquiryRef(e.target.value)}/>
             </Field.Root>
             <Field.Root required>
               <Field.Label>{t.sales_order.order_date} <Field.RequiredIndicator/></Field.Label>
-              <Input
-                type="date"
-                value={orderDate}
-                onChange={(e) => setOrderDate(e.target.value)}
-              />
+              <Input type="date" value={orderDate} onChange={(e) => setOrderDate(e.target.value)}/>
             </Field.Root>
             <Field.Root>
               <Field.Label>Tax Type</Field.Label>
-              <Input
-                placeholder="Tax type"
-                value={taxType}
-                onChange={(e) => setTaxType(e.target.value)}
-              />
+              <Select.Root collection={taxCollection} value={taxSelected ? [taxSelected] : []} onValueChange={(details) => setTaxSelected(details.value[0])}>
+                <Select.HiddenSelect />
+                <Select.Control>
+                  <Select.Trigger>
+                    <Select.ValueText placeholder={t.sales_order.shipment_mode_placeholder} />
+                  </Select.Trigger>
+                  <Select.IndicatorGroup>
+                    <Select.Indicator />
+                  </Select.IndicatorGroup>
+                </Select.Control>
+                <Portal>
+                  <Select.Positioner>
+                    <Select.Content>
+                      {taxCollection.items.map((tax) => (
+                         <Select.Item item={tax} key={tax.value}>{tax.label}<Select.ItemIndicator /></Select.Item>
+                      ))}
+                    </Select.Content>
+                  </Select.Positioner>
+                </Portal>
+              </Select.Root>
             </Field.Root>
             <Field.Root required>
               <Field.Label>{t.sales_order.customer}<Field.RequiredIndicator/></Field.Label>
-                <Input
-                  placeholder={t.sales_order.customer_placeholder}
-                  value={selectedCustomer?.customer_name ?? ""}
-                  readOnly
-                  cursor="pointer"
-                  onClick={() => setCustomerModalOpen(true)}
-                />
+                <Input placeholder={t.sales_order.customer_placeholder} value={selectedCustomer?.customer_name ?? ""} readOnly cursor="pointer" onClick={() => setCustomerModalOpen(true)}/>
             </Field.Root>
             <Field.Root>
               <Field.Label>Customer Information</Field.Label>
@@ -317,34 +342,29 @@ function SalesOrderContent() {
             </Field.Root>
             <Field.Root>
               <Field.Label>{t.sales_order.service_type}</Field.Label>
-                <Select.Root
-                  collection={jobTypeOptions}
-                  value={jobTypeSelected ? [jobTypeSelected] : []}
-                  onValueChange={(details) => setJobTypeSelected(details.value[0])}
-                  size="sm"
-                >
-                  <Select.HiddenSelect />
-                  <Select.Control>
-                    <Select.Trigger>
-                      <Select.ValueText placeholder={t.sales_order.service_type_placeholder} />
-                    </Select.Trigger>
-                    <Select.IndicatorGroup>
-                      <Select.Indicator />
-                    </Select.IndicatorGroup>
-                  </Select.Control>
-                  <Portal>
-                    <Select.Positioner>
-                      <Select.Content>
-                        {jobTypeOptions.items.map((jobType) => (
-                          <Select.Item item={jobType} key={jobType.value}>
-                            {jobType.label}
-                            <Select.ItemIndicator />
-                          </Select.Item>
-                        ))}
-                      </Select.Content>
-                    </Select.Positioner>
-                  </Portal>
-                </Select.Root>
+              <Select.Root collection={jobTypeOptions} value={jobTypeSelected ? [jobTypeSelected] : []}onValueChange={(details) => setJobTypeSelected(details.value[0])}>
+                <Select.HiddenSelect />
+                <Select.Control>
+                  <Select.Trigger>
+                    <Select.ValueText placeholder={t.sales_order.service_type_placeholder} />
+                  </Select.Trigger>
+                  <Select.IndicatorGroup>
+                    <Select.Indicator />
+                  </Select.IndicatorGroup>
+                </Select.Control>
+                <Portal>
+                  <Select.Positioner>
+                    <Select.Content>
+                      {jobTypeOptions.items.map((jobType) => (
+                        <Select.Item item={jobType} key={jobType.value}>
+                          {jobType.label}
+                          <Select.ItemIndicator />
+                        </Select.Item>
+                      ))}
+                    </Select.Content>
+                  </Select.Positioner>
+                </Portal>
+              </Select.Root>
             </Field.Root>
             <Field.Root>
               <Field.Label>{t.sales_order.shipment_mode}</Field.Label>
@@ -463,19 +483,11 @@ function SalesOrderContent() {
           <SimpleGrid columns={{base: 1, md: 2}} gap={6} mb={6}>
             <Field.Root required>
               <Field.Label>ETD<Field.RequiredIndicator/> </Field.Label>
-              <Input
-                type="date"
-                value={etd}
-                onChange={(e) => setEtd(e.target.value)}
-              />
+              <Input type="date" value={etd} onChange={(e) => setEtd(e.target.value)}/>
             </Field.Root>
             <Field.Root required>
               <Field.Label>ETA<Field.RequiredIndicator/></Field.Label>
-              <Input
-                type="date"
-                value={eta}
-                onChange={(e) => setEta(e.target.value)}
-              />
+              <Input type="date" value={eta} onChange={(e) => setEta(e.target.value)}/>
             </Field.Root>
           </SimpleGrid>
 
@@ -483,101 +495,65 @@ function SalesOrderContent() {
 
           <Heading size="md" mt={6} mb={4}>{t.sales_order.cargo_details}</Heading>
 
-          <Box overflowX="auto" width="100%">
-            <Box minW="1000px">
+          <Box overflowX="auto">
+            <Box>
               {items.map((item) => (
-                <SimpleGrid
-                  key={item.id}
-                  minW="1200px"
-                  templateColumns="200px 220px 120px 120px 160px 160px 160px 180px 120px"
-                  gap={4}
-                  mb={4}
-                >
-                  
+                <SimpleGrid key={item.id} templateColumns="200px 220px 120px 120px 160px 160px 160px 180px 120px" gap={4} mb={4}>
                   <Field.Root>
                     <Field.Label>PO Number</Field.Label>
-                    <Input
-                      placeholder="Purchase Order Number"
-                      value={item.purchaseOrderNo}
-                      onChange={(e) => handleItemChange(item.id, "purchaseOrderNo", e.target.value)}
-                    />
+                    <Input  placeholder="Purchase Order Number" value={item.purchaseOrderNo} onChange={(e) => handleItemChange(item.id, "purchaseOrderNo", e.target.value)}/>
                   </Field.Root>
-
                   <Field.Root>
                     <Field.Label>Product Name</Field.Label>
-                    <Input
-                      placeholder="Product name"
-                      value={item.productName}
-                      onChange={(e) => handleItemChange(item.id, "productName", e.target.value)}
-                    />
+                    <Input placeholder="Product name" value={item.productName}onChange={(e) => handleItemChange(item.id, "productName", e.target.value)}/>
                   </Field.Root>
-
                   <Field.Root>
                     <Field.Label>Quantity</Field.Label>
-                    <Input
-                      type="number"
-                      placeholder="Qty"
-                      value={item.quantity}
-                      onChange={(e) => handleItemChange(item.id, "quantity", e.target.value)}
-                    />
+                    <Input type="number" placeholder="Qty" value={item.quantity} onChange={(e) => handleItemChange(item.id, "quantity", e.target.value)}/>
                   </Field.Root>
-
                   <Field.Root>
                     <Field.Label>Unit</Field.Label>
-                    <Input
-                      placeholder="UOM"
-                      value={item.uom}
-                      onChange={(e) => handleItemChange(item.id, "uom", e.target.value)}
-                    />
+                    <Select.Root disabled={isReadOnly} collection={uomCollection} value={item.uom && uomCollection.items.some(i => i.value === item.uom) ? [item.uom] : []} onValueChange={(details) => handleItemChange(item.id, "uom", details.value?.[0] ?? "")} size="sm" width="100%">
+                      <Select.HiddenSelect />
+                      <Select.Control>
+                        <Select.Trigger>
+                          <Select.ValueText placeholder={t.sales_inquiry.unit_placeholder} />
+                        </Select.Trigger>
+                        <Select.IndicatorGroup>
+                          <Select.Indicator />
+                        </Select.IndicatorGroup>
+                      </Select.Control>
+                      <Portal>
+                          <Select.Positioner>
+                            <Select.Content>
+                              {uomCollection.items.map((uom) => (
+                                <Select.Item item={uom} key={uom.value}>{uom.label}<Select.ItemIndicator /></Select.Item>
+                              ))}
+                            </Select.Content>
+                          </Select.Positioner>
+                        </Portal>
+                    </Select.Root>
                   </Field.Root>
 
                   <Field.Root>
                     <Field.Label>Unit Price</Field.Label>
-                    <Input
-                      type="number"
-                      placeholder="Unit price"
-                      value={item.unitPrice}
-                      onChange={(e) => handleItemChange(item.id, "unitPrice", e.target.value)}
-                    />
+                    <Input type="number" placeholder="Unit price" value={item.unitPrice} onChange={(e) => handleItemChange(item.id, "unitPrice", e.target.value)}/>
                   </Field.Root>
-
                   <Field.Root>
                     <Field.Label>DPP (Before Tax)</Field.Label>
-                    <Input
-                      type="number"
-                      placeholder="DPP"
-                      value={item.dpp}
-                      onChange={(e) => handleItemChange(item.id, "dpp", e.target.value)}
-                    />
+                    <Input type="number" placeholder="DPP" value={item.dpp} onChange={(e) => handleItemChange(item.id, "dpp", e.target.value)}/>
                   </Field.Root>
-
                   <Field.Root>
                     <Field.Label>PPN (Tax)</Field.Label>
-                    <Input
-                      type="number"
-                      placeholder="PPN"
-                      value={item.ppn}
-                      onChange={(e) => handleItemChange(item.id, "ppn", e.target.value)}
-                    />
+                    <Input type="number" placeholder="PPN" value={item.ppn} onChange={(e) => handleItemChange(item.id, "ppn", e.target.value)}/>
                   </Field.Root>
-
                   <Field.Root>
                     <Field.Label>Total</Field.Label>
-                    <Input
-                      type="number"
-                      placeholder="Total"
-                      value={item.total}
-                      onChange={(e) => handleItemChange(item.id, "total", e.target.value)}
-                    />
+                    <Input type="number" placeholder="Total" value={item.total} onChange={(e) => handleItemChange(item.id, "total", e.target.value)}/>
                   </Field.Root>
 
                   <Flex align="flex-end">
-                    <Button
-                      color="red"
-                      borderColor={"red"}
-                      variant="outline"
-                      onClick={() => removeItemRow(item.id)}
-                    >
+                    <Button color="red" borderColor={"red"} variant="outline" onClick={() => removeItemRow(item.id)}>
                       <FaTrash color='red'/>
                       Delete
                     </Button>
@@ -588,7 +564,7 @@ function SalesOrderContent() {
 
               {/* TOTAL ROW */}
               <Box mt={2} pt={2} borderTop="2px solid" borderColor="gray.300">
-                <SimpleGrid minW="1200px" templateColumns="200px 220px 120px 120px 160px 160px 160px 180px 120px"gap={4}mb={4}>
+                <SimpleGrid minW="1000px" templateColumns="200px 220px 120px 120px 160px 160px 160px 180px 120px"gap={4}mb={4}>
                   <Text fontWeight="bold">TOTAL</Text>
                   <Box></Box>
                   <Box></Box>
@@ -601,28 +577,17 @@ function SalesOrderContent() {
               </Box>
             </Box>
           </Box>
-
           <Button mt={2} bg={"transparent"} borderColor={"#E77A1F"} color={"#E77A1F"} cursor={"pointer"} onClick={addItemRow}>
             Add Item
           </Button>
-
-          
-
           <Field.Root mt={4}>
             <Field.Label>{t.sales_order.remarks}</Field.Label>
-            <Textarea
-              rows={4}
-              placeholder={t.sales_order.remarks_placeholder}
-              value={remarks}
-              onChange={(e) => setRemarks(e.target.value)}
-            />
+            <Textarea rows={4} placeholder={t.sales_order.remarks_placeholder} value={remarks} onChange={(e) => setRemarks(e.target.value)}/>
           </Field.Root>
-
           <Flex justify="flex-end" gap={3} mt={5}>
             <Button variant="outline" bg={"transparent"} borderColor={"#E77A1F"} color={"#E77A1F"} cursor={"pointer"} >{t.sales_order.cancel}</Button>
             <Button bg={"#E77A1F"} color={"white"} cursor={"pointer"} type="submit">{t.sales_order.save_sales_order}</Button>
           </Flex>
-
         </Card.Body>
       </Card.Root> 
     </SidebarWithHeader>

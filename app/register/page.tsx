@@ -1,12 +1,18 @@
 "use client";
 
 import { useState } from "react";
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Box, Button, Flex, Heading, Input, InputGroup, SimpleGrid, Stack, Text, Field, Steps, ButtonGroup, Badge, Textarea } from "@chakra-ui/react";
 import { LuLock } from "react-icons/lu";
 import { PasswordInput } from "@/components/ui/password-input";
 import { getLang } from "@/lib/i18n";
+import Loading from "@/components/loading";
+import { AlertMessage } from "@/components/ui/alert";
+import { RegisterAsNewEmployee } from "@/lib/auth/register";
 
 export default function Register() {
+  const router = useRouter();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [whatsappNumber, setWhatsappNumber] = useState('');
@@ -17,9 +23,32 @@ export default function Register() {
   const [businessAddress, setBusinessAddress] = useState('');
   const [companyCode, setCompanyCode] = useState('');
 
-  const t = getLang("en"); 
+  //alert & success variable
+  const [loading, setLoading] = useState(false);
+  const [showAlert, setShowAlert] = useState(false);
+  const [titlePopup, setTitlePopup] = useState('');
+  const [messagePopup, setMessagePopup] = useState('');
+  const [isSuccess, setIsSuccess] = useState(false);
 
+  const [countdown, setCountdown] = useState<number | null>(null);
+
+  const t = getLang("en"); 
   const [plan, setPlan] = useState<'Starter' | 'Growth' | 'Enterprise' | ''>('');
+
+  useEffect(() => {
+    if (countdown === null) return;
+
+    if (countdown === 0) {
+      router.push("/login");
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      setCountdown((c) => (c !== null ? c - 1 : null));
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, [countdown, router]);
 
   const passwordHint = () => {
     if (!password) return null;
@@ -30,59 +59,151 @@ export default function Register() {
     return null;
   };
 
+  const isStrongPassword = (pwd: string) => {
+    return (
+      pwd.length >= 8 &&
+      /[a-z]/.test(pwd) &&
+      /[A-Z]/.test(pwd) &&
+      /[0-9]/.test(pwd)
+    );
+  };
+
   const onNext = () => {
-        // if (!canGoNext()) {
-        //     if (activeStep === 1 && password && !isStrongPassword(password)) {
-        //         setAlert({
-        //           title: "Password tidak valid !!",
-        //           description: "Password harus mengandung 8 karakter, huruf besar, huruf kecil, dan angka.",
-        //         });
-        //     }
-        //     return;
-        // }
+    if (!canGoNext()) {
+      if (activeStep === 1 && password && !isStrongPassword(password)) {
+        setShowAlert(true);
+        setIsSuccess(false);
+        setTitlePopup("Password tidak valid !!");
+        setMessagePopup("Password harus mengandung 8 karakter, huruf besar, huruf kecil, dan angka.");
+        setTimeout(() => setShowAlert(false), 6000);
+      }
+      return;
+    }
+
     setActiveStep((s) => Math.min(s + 1, steps.length - 1));
   };
 
   const onPrev = () => {
-        setActiveStep((s) => {
-            const next = Math.max(s - 1, 0);
-            if (next === 0) {
-                // optional reset for role-dependent fields
-                // setPlan('');
-                // setCompanyCode('');
-                // setBusinessName('');
-                // setBusinessCategory('');
-                // setBusinessAddress('');
-            }
-            return next;
-        });
-  };
-
-  const canGoNext = () => {
-        // if (activeStep === 0) {
-        //     return isOwner !== null;
-        // }
-        // if (activeStep === 1) {
-        //     // base account always required
-        //     if (!username.trim() || !password.trim()) return false;
-        //     if (!isStrongPassword(password)) return false;
-
-        //     if (isOwner === true) {
-        //         return !!businessName.trim() && !!businessCategory.trim() && !!businessAddress.trim();
-        //     }
-        //     // non-owner
-        //     return !!companyCode.trim();
-        // }
-        // if (activeStep === 2) {
-        //     if (isOwner === true) return plan === 'basic';
-        //     return true;
-        // }
-        return true;
-  };
-
-  const onRegister = () => {
+    setActiveStep((s) => {
+    const next = Math.max(s - 1, 0);
     
+    if (next === 0) {
+      // optional reset for role-dependent fields
+      setPlan('');
+      setCompanyCode('');
+      setBusinessName('');
+      setBusinessCategory('');
+      setBusinessAddress('');
+    }
+    return next;
+    });
+  };
+
+  function canGoNext() {
+    if (activeStep === 0) {
+      return isOwner !== null;
+    }
+
+    if (activeStep === 1) {
+      // base account always required
+      if (!username.trim() || !password.trim()) return false;
+      if (!isStrongPassword(password)) return false;
+
+      if (isOwner === true) {
+          return !!businessName.trim() && !!businessCategory.trim() && !!businessAddress.trim();
+      }
+            // non-owner
+      return !!companyCode.trim();
+    }
+
+    if (activeStep === 2) {
+      // if (isOwner === true) return plan === 'starter';
+      return true;
+    }
+    return true;
   }
+
+  const onRegister = async () => {
+    // basic validation
+    if (!username || !password || !whatsappNumber) {
+      setShowAlert(true);
+      setIsSuccess(false);
+      setTitlePopup("Data belum lengkap");
+      setMessagePopup("Username, password, dan nomor whatsapp wajib diisi.");
+      setTimeout(() => setShowAlert(false), 4000);
+      return;
+    }
+
+    if (!isStrongPassword(password)) {
+      setShowAlert(true);
+      setIsSuccess(false);
+      setTitlePopup("Password tidak valid");
+      setMessagePopup("Password harus minimal 8 karakter dan mengandung huruf besar, huruf kecil, serta angka.");
+      setTimeout(() => setShowAlert(false), 4000);
+      return;
+    }
+
+    if (isOwner === true) {
+      if (!businessName || !businessCategory || !businessAddress) {
+        setShowAlert(true);
+        setIsSuccess(false);
+        setTitlePopup("Data bisnis belum lengkap");
+        setMessagePopup("Nama bisnis, kategori, dan alamat bisnis wajib diisi.");
+        setTimeout(() => setShowAlert(false), 4000);
+        return;
+      }
+
+      if (!plan) {
+        setShowAlert(true);
+        setIsSuccess(false);
+        setTitlePopup("Paket belum dipilih");
+        setMessagePopup("Silakan pilih paket terlebih dahulu.");
+        setTimeout(() => setShowAlert(false), 4000);
+        return;
+      }
+    }
+
+    if (isOwner === false && !companyCode) {
+      setShowAlert(true);
+      setIsSuccess(false);
+      setTitlePopup("Company code belum diisi");
+      setMessagePopup("Silakan masukkan company code.");
+      setTimeout(() => setShowAlert(false), 4000);
+      return;
+    }
+
+    if(!isOwner){
+      try {
+        setLoading(true);
+
+        const employeePayload = {
+          username: username,
+          password: password,
+          whatsapp_number: whatsappNumber,
+          company_code: companyCode
+        }
+
+        const res = await RegisterAsNewEmployee(employeePayload);
+        setShowAlert(true);
+        setIsSuccess(true);
+        setTitlePopup("Success");
+        setCountdown(5);
+
+      } catch(err: any) {
+        setShowAlert(true);
+        setIsSuccess(false);
+        setTitlePopup("Error");
+        setMessagePopup(err.message || "Failed to regis");
+      } finally {
+        setLoading(false);
+      }
+    } else if (isOwner) {
+
+    }
+
+  }
+
+  if(loading) return <Loading/>
 
   return (
     <Flex w="100vw" minH="100vh" bg="white" bgGradient="linear(to-br, #FFF7ED, #FFE6C9)" align="center" justify="center" p={{ base: 6, md: 10 }}>
@@ -92,7 +213,17 @@ export default function Register() {
           <Heading size="lg" color={"gray.800"}>{t.register.title}</Heading>
           <Text color="gray.600">{t.register.description}</Text>
         </Flex>
-
+        {showAlert && (
+          <AlertMessage
+            title={titlePopup}
+            description={
+              isSuccess && countdown !== null
+                ? `User successfully created. Redirecting to login in ${countdown}...`
+                : messagePopup
+            }
+            isSuccess={isSuccess}
+          />
+        )}
         
         <Steps.Root defaultStep={0} count={steps.length} step={activeStep} onStepChange={(details) => setActiveStep(details.step)} colorPalette={"orange"} >
           <Steps.List>
@@ -111,10 +242,18 @@ export default function Register() {
 
             <SimpleGrid columns={{ base: 1, md: 2 }} gap={4}>
               {/* Business Owner Box */}
-              <Box p={5} borderWidth="1px" borderRadius="xl" cursor="pointer" bg={isOwner === true ? 'orange.40' : 'white'} borderColor={isOwner === true ? 'orange.400' : 'gray.200'} onClick={() => { setIsOwner(true); setActiveStep(1);}}>
+              <Box
+                p={5}
+                borderWidth="1px"
+                borderRadius="xl"
+                cursor="not-allowed"
+                opacity={0.6}
+                bg={'white'}
+                borderColor={'gray.200'}
+              >
                 <Flex justify="space-between" align="center" mb={2}>
                   <Text fontWeight="bold" color={"black"}>{t.register.step_one_card_1}</Text>
-                  {isOwner === true && <Badge colorPalette="orange">{t.register.step_one_card_selected}</Badge>}
+                  <Badge colorPalette="gray">Coming Soon</Badge>
                 </Flex>
                 <Text fontSize="sm" color="gray.600">{t.register.step_one_card_2}</Text>
               </Box>
