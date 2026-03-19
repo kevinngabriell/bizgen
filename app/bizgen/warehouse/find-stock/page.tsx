@@ -4,7 +4,7 @@ import Loading from "@/components/loading";
 import SidebarWithHeader from "@/components/ui/SidebarWithHeader";
 import { checkAuthOrRedirect, DecodedAuthToken, getAuthInfo } from "@/lib/auth/auth";
 import { getLang } from "@/lib/i18n";
-import { getAllProduct, GetProductData } from "@/lib/master/item";
+import { getAllItem, GetItemData } from "@/lib/master/item";
 import { getSearchProductLot, getWarehouseReportLot, getWarehouseReportProductID, ProductLotSearchData, WarehouseLotReportData, WarehouseProductIDReportData } from "@/lib/warehouse/warehouse";
 import { Flex, Heading, Text, Button, Table, Box, SimpleGrid, Combobox, Portal, createListCollection, Field } from "@chakra-ui/react";
 import { MarsStroke } from "lucide-react";
@@ -24,8 +24,8 @@ export default function FindStock() {
     const [showResult, setShowResult] = useState(false);
 
     // product
-    const [allProduct, setAllProduct] = useState<GetProductData[]>([]);
-    const [productCollection, setProductCollection] = useState<GetProductData[][]>([]);
+    const [allProduct, setAllProduct] = useState<GetItemData[]>([]);
+    const [productCollection, setProductCollection] = useState<GetItemData[][]>([]);
     const [selectedProduct, setSelectedProduct] = useState("");
 
     // lot
@@ -56,9 +56,9 @@ export default function FindStock() {
         setLang(language);
 
         //product calling API
-        const productRes = await getAllProduct(1, 1000);
+        const productRes = await getAllItem(1, 1000);
         const rawProductData = productRes?.data ?? [];
-        const product: GetProductData[] = Array.isArray(rawProductData) ? rawProductData : [rawProductData];
+        const product: GetItemData[] = Array.isArray(rawProductData) ? rawProductData : [rawProductData];
           
         setAllProduct(product);
         setProductCollection([product]);
@@ -132,28 +132,28 @@ export default function FindStock() {
                         <SimpleGrid columns={{base: 1, md: 3, lg: 3}} gap={4} alignItems={"center"}>
                             <Field.Root>
                                 <Field.Label>{t.products.product_name}</Field.Label>
-                                <Combobox.Root collection={createListCollection<GetProductData>({
+                                <Combobox.Root collection={createListCollection<GetItemData>({
                                     items: (productCollection[0] ?? allProduct) ?? [],
-                                    itemToString: (item) => item.product_name,
-                                    itemToValue: (item) => item.product_id
+                                    itemToString: (item) => item.item_name,
+                                    itemToValue: (item) => item.item_id
                                 })}
                                 value={selectedProduct ? [selectedProduct] : []}
                                 onValueChange={(details) => {
                                     const selected = details.value?.[0];
 
                                     const product = allProduct.find(
-                                        (item) => item.product_id === selected
+                                        (item) => item.item_id === selected
                                     );
 
-                                    setSelectedProduct(product?.product_id ?? "");
-                                    setProductSearch(product?.product_name ?? "");
+                                    setSelectedProduct(product?.item_id ?? "");
+                                    setProductSearch(product?.item_name ?? "");
                                 }}
                                 onInputValueChange={(details) => {
                                   const value = details.inputValue ?? "";
                                   setProductSearch(value);
 
                                   const filtered = (allProduct ?? []).filter((item) =>
-                                    item.product_name?.toLowerCase().includes(value.toLowerCase())
+                                    item.item_name?.toLowerCase().includes(value.toLowerCase())
                                   );
 
                                   setProductCollection([filtered]);
@@ -172,8 +172,8 @@ export default function FindStock() {
                                       <Combobox.Content>
                                         <Combobox.Empty>{t.master.noItems}</Combobox.Empty>
                                         {((productCollection[0] ?? allProduct) ?? []).map((item) => (
-                                          <Combobox.Item item={item} key={`${item.product_id}`}>
-                                              {item.product_name}
+                                          <Combobox.Item item={item} key={`${item.item_id}`}>
+                                              {item.item_name}
                                               <Combobox.ItemIndicator />
                                           </Combobox.Item>
                                         ))}

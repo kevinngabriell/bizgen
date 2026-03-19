@@ -8,7 +8,7 @@ import { DecodedAuthToken, checkAuthOrRedirect, getAuthInfo } from "@/lib/auth/a
 import { useRouter } from "next/navigation";
 import { getLang } from "@/lib/i18n";
 import { FaTrash } from "react-icons/fa";
-import { getAllProduct, GetProductData } from "@/lib/master/item";
+import { getAllItem, GetItemData } from "@/lib/master/item";
 import { getSearchProductLot, ProductLotSearchData, createStockOutSample } from "@/lib/warehouse/warehouse";
 import { getAllListMyWarehouse, GetListMyWarehouseData } from "@/lib/master/warehouse";
 import { AlertMessage } from "@/components/ui/alert";
@@ -19,14 +19,14 @@ export default function CreateStockOutPage() {
   const [loading, setLoading] = useState(false);
 
   //product collection & selection
-  const [allProducts, setAllProducts] = useState<GetProductData[]>([]);
+  const [allProducts, setAllProducts] = useState<GetItemData[]>([]);
   const [selectedProduct, setSelectedProduct] = useState("");
   const { contains } = useFilter({ sensitivity: "base"})
 
-  const { collection, set } = useListCollection<GetProductData>({
+  const { collection, set } = useListCollection<GetItemData>({
     initialItems: [],
-    itemToString: (item) => item.product_name,
-    itemToValue: (item) => item.product_id,
+    itemToString: (item) => item.item_name,
+    itemToValue: (item) => item.item_id,
   })
 
   //router authentication
@@ -152,7 +152,7 @@ export default function CreateStockOutPage() {
     const language = info?.language === "id" ? "id" : "en";
     setLang(language);
 
-    const productRes = await getAllProduct(1, 1000);
+    const productRes = await getAllItem(1, 1000);
     const products = productRes?.data ?? [];
     setAllProducts(products);
     set(products);
@@ -287,7 +287,7 @@ export default function CreateStockOutPage() {
                   setSelectedProduct(input);
                   
                   const filtered = allProducts.filter((item) =>
-                    contains(item.product_name, input)
+                    contains(item.item_name, input)
                   );
               
                   set(filtered);
@@ -304,7 +304,7 @@ export default function CreateStockOutPage() {
                     <Combobox.Content>
                       <Combobox.Empty>{t.master.noItems}</Combobox.Empty>
                         {collection.items.map((item) => (
-                          <Combobox.Item item={item} key={item.product_code}>{item.product_name}<Combobox.ItemIndicator /></Combobox.Item>
+                          <Combobox.Item item={item} key={item.item_code}>{item.item_name}<Combobox.ItemIndicator /></Combobox.Item>
                         ))}
                     </Combobox.Content>
                   </Combobox.Positioner>
