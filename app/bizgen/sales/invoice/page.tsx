@@ -18,6 +18,7 @@ type LineItem = {
   description: string;
   quantity: number;
   unitPrice: number;
+  taxPercent: number;
 };
 
 export default function CreateInvoicePage() {
@@ -88,6 +89,8 @@ export default function CreateInvoicePage() {
     invoiceDate: dayjs().format("YYYY-MM-DD"),
     customer: "",
     jobRef: "",
+    salesOrderNo: "",
+    deliveryOrderNo: "",
     currency: "IDR",
     rate: 1,
     dueDate: "",
@@ -95,7 +98,7 @@ export default function CreateInvoicePage() {
   });
 
   const [items, setItems] = useState<LineItem[]>([
-    { id: crypto.randomUUID(), description: "", quantity: 1, unitPrice: 0 },
+    { id: crypto.randomUUID(), description: "", quantity: 1, unitPrice: 0, taxPercent: 0 },
   ]);
 
   const [taxPercent, setTaxPercent] = useState(0);
@@ -110,8 +113,11 @@ export default function CreateInvoicePage() {
   );
 
   const taxAmount = useMemo(
-    () => (subTotal * (taxPercent || 0)) / 100,
-    [subTotal, taxPercent]
+    () => items.reduce((sum, it) => {
+      const base = (it.quantity || 0) * (it.unitPrice || 0);
+      return sum + (base * (it.taxPercent || 0)) / 100;
+    }, 0),
+    [items]
   );
 
   const grandTotal = useMemo(() => subTotal + taxAmount, [subTotal, taxAmount]);
@@ -135,7 +141,7 @@ export default function CreateInvoicePage() {
   const addItem = () => {
     setItems((p) => [
       ...p,
-      { id: crypto.randomUUID(), description: "", quantity: 1, unitPrice: 0 },
+      { id: crypto.randomUUID(), description: "", quantity: 1, unitPrice: 0, taxPercent: 0 },
     ]);
   };
 
@@ -212,6 +218,14 @@ export default function CreateInvoicePage() {
               <Input placeholder={t.sales_invoice.job_reference_placeholder} value={form.jobRef} onChange={handleChange("jobRef")}/>
             </Field.Root>
             <Field.Root>
+              <Field.Label>Sales Order No</Field.Label>
+              <Input placeholder="Enter SO Number" value={form.salesOrderNo} onChange={handleChange("salesOrderNo")}/>
+            </Field.Root>
+            <Field.Root>
+              <Field.Label>Delivery Order No</Field.Label>
+              <Input placeholder="Enter DO Number" value={form.deliveryOrderNo} onChange={handleChange("deliveryOrderNo")}/>
+            </Field.Root>
+            <Field.Root>
               <Field.Label>{t.sales_invoice.currency}</Field.Label>
                     <Select.Root collection={currencyCollection} value={currencySelected ? [currencySelected] : []} onValueChange={(details) => setSelected(details.value[0])} size="sm" width="100%">
                       <Select.HiddenSelect />
@@ -241,32 +255,41 @@ export default function CreateInvoicePage() {
             </Field.Root>
           </SimpleGrid>
 
-          <Flex justify="space-between" align="center" mb={3}>
+          <Flex justify="space-between" align="center" mb={3} mt={7}>
             <Text fontWeight="semibold">{t.sales_invoice.line_items}</Text>
             <Button size="sm" variant="outline" onClick={addItem}>{t.sales_invoice.add_item}</Button>
           </Flex>
 
           {items.map((it) => {
-            const amount = (it.quantity || 0) * (it.unitPrice || 0);
+            const base = (it.quantity || 0) * (it.unitPrice || 0);
+            const lineTax = (base * (it.taxPercent || 0)) / 100;
+            const amount = base + lineTax;
 
             return(
               <Card.Root key={it.id} variant="subtle">
                 <Card.Body>
-                  <SimpleGrid templateColumns={{base: "1fr", md: "3fr 1fr 1fr 1fr auto"}} gap={4} alignItems="end">
+                  <SimpleGrid templateColumns={{base: "1fr", md: "3fr 1fr 1fr 1fr 1fr auto"}} gap={4} alignItems="end">
                     <Field.Root>
                       <Field.Label>{t.sales_invoice.description_label}</Field.Label>
                       <Input placeholder={t.sales_invoice.description_placeholder} value={it.description} onChange={(e) => updateItem(it.id, {description: e.target.value,})}/>
                     </Field.Root>
                     <Field.Root>
                       <Field.Label>{t.sales_invoice.quantity}</Field.Label>
-                      <NumberInput.Root>
+                      <NumberInput.Root value={String(it.quantity)} onValueChange={(d) => updateItem(it.id, { quantity: Number(d.value) })}>
                         <NumberInput.Control/>
                         <NumberInput.Input/>
                       </NumberInput.Root>
                     </Field.Root>
                     <Field.Root>
                       <Field.Label>{t.sales_invoice.unit_price}</Field.Label>
-                      <NumberInput.Root>
+                      <NumberInput.Root value={String(it.unitPrice)} onValueChange={(d) => updateItem(it.id, { unitPrice: Number(d.value) })}>
+                        <NumberInput.Control/>
+                        <NumberInput.Input/>
+                      </NumberInput.Root>
+                    </Field.Root>
+                    <Field.Root>
+                      <Field.Label>Tax (%)</Field.Label>
+                      <NumberInput.Root value={String(it.taxPercent)} onValueChange={(d) => updateItem(it.id, { taxPercent: Number(d.value) })}>
                         <NumberInput.Control/>
                         <NumberInput.Input/>
                       </NumberInput.Root>

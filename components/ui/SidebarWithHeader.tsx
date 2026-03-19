@@ -219,7 +219,7 @@ const SidebarWithHeader = ({ username, children, daysToExpire }: SidebarWithHead
   const { open, onOpen, onClose } = useDisclosure()
 
   return (
-    <Box minH="100vh" bg={useColorModeValue('gray.100', 'gray.900')} width="100vw">
+    <Box minH="100vh" bg={useColorModeValue('gray.100', 'gray.900')} maxW="100vw" w={"100%"} overflowX="hidden">
       <SidebarContent onClose={onClose} display={{ base: 'none', md: 'block' }} />
         <Drawer.Root open={open} placement={"start"} size="full" > 
             <Drawer.Content>
@@ -228,7 +228,7 @@ const SidebarWithHeader = ({ username, children, daysToExpire }: SidebarWithHead
         </Drawer.Root>
 
         <MobileNav onOpen={onOpen} username={username} daysToExpire={daysToExpire} />
-        <Box ml={{ base: 0, md: 60 }} p="4">
+        <Box ml={{ base: 0, md: 60 }} p="4" overflowX="auto" maxW="100%">
             {children}
         </Box>
     </Box>

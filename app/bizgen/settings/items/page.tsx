@@ -6,24 +6,25 @@ import { useEffect, useState } from "react";
 import ProductDialog from "./productDialog";
 import { LuChevronLeft, LuChevronRight, LuSearch } from "react-icons/lu";
 import Loading from "@/components/loading";
-import { createProduct, deleteProduct, getAllProduct, GetProductData, updateProduct } from "@/lib/master/product";
+// import { createProduct, deleteProduct, getAllProduct, GetProductData, updateProduct } from "@/lib/master/item";
 import { checkAuthOrRedirect, DecodedAuthToken, getAuthInfo } from "@/lib/auth/auth";
 import { FiEdit, FiTrash } from "react-icons/fi";
 import { AlertMessage } from "@/components/ui/alert";
 import { getLang } from "@/lib/i18n";
+import { createItem, deleteItem, getAllItem, GetItemData, updateItem } from "@/lib/master/item";
 
-export default function SettingProduct(){
+export default function SettingItem(){
     //authentication & loading variable
     const [auth, setAuth] = useState<DecodedAuthToken | null>(null);
     const [loading, setLoading] = useState(false);
 
     //related to product variable
-    const [isProductOpen, setIsProductOpen] = useState(false);
-    const [productPage, setProductPage] = useState(1);
-    const [productPagination, setProductPagination] = useState({ total_pages: 1, page: 1 });
-    const [findProduct, setFindProduct] = useState('');
-    const [productData, setProductData] = useState<GetProductData[]>([]);
-    const [editingProduct, setEditingProduct] = useState<GetProductData | null>(null);
+    const [isItemOpen, setIsItemOpen] = useState(false);
+    const [itemPage, setItemPage] = useState(1);
+    const [itemPagination, setItemPagination] = useState({ total_pages: 1, page: 1 });
+    const [findItem, setFindItem] = useState('');
+    const [itemData, setItemData] = useState<GetItemData[]>([]);
+    const [editingItem, setEditingItem] = useState<GetItemData | null>(null);
 
     //alert & success variable
     const [showAlert, setShowAlert] = useState(false);
@@ -37,7 +38,7 @@ export default function SettingProduct(){
 
     useEffect(() => {
         init();
-    }, [productPage]);
+    }, [itemPage]);
 
     const init = async () => {
         setLoading(true);
@@ -55,36 +56,36 @@ export default function SettingProduct(){
         setLang(language);
 
         try {
-            const productRes = await getAllProduct(productPage, 10, findProduct);
-            setProductData(productRes.data);
-            setProductPagination((prev) => ({
+            const itemRes = await getAllItem(itemPage, 10, findItem);
+            setItemData(itemRes.data);
+            setItemPagination((prev) => ({
                 ...prev,
-                total_pages: productRes.pagination?.total_pages || 1,
-                page: productPage,
+                total_pages: itemRes.pagination?.total_pages || 1,
+                page: itemPage,
             }));
 
         } catch (error: any){
-            setProductData([]);
+            setItemData([]);
 
         } finally {
             setLoading(false);
         }
     }
 
-    const handleCreateProduct  = async(data: {
-        product_code: string;
-        product_name: string;
-        product_description: string;
+    const handleCreateItem  = async(data: {
+        item_code: string;
+        item_name: string;
+        item_description: string;
     }) => {
         try {
             setLoading(true);
-            await createProduct(data);
+            await createItem(data);
             setShowAlert(true);
             setIsSuccess(true);
             setTitlePopup(t.master.success);
             setMessagePopup(t.products.success_product_create);
             setTimeout(() => setShowAlert(false), 6000);
-            setIsProductOpen(false);
+            setIsItemOpen(false);
             init();
         } catch (err: any) {
             setShowAlert(true);
@@ -97,21 +98,21 @@ export default function SettingProduct(){
         }
     }
 
-    const handleUpdateProduct  = async(data: {
-        product_id: string;
-        product_code: string;
-        product_name: string;
-        product_description: string;
+    const handleUpdateItem  = async(data: {
+        item_id: string;
+        item_code: string;
+        item_name: string;
+        item_description: string;
     }) => {
         try {
             setLoading(true);
-            await updateProduct(data);
+            await updateItem(data);
             setShowAlert(true);
             setIsSuccess(true);
             setTitlePopup(t.master.success);
             setMessagePopup(t.products.success_product_update);
             setTimeout(() => setShowAlert(false), 6000);
-            setIsProductOpen(false);
+            setIsItemOpen(false);
             init();
         } catch (err: any) {
             setShowAlert(true);
@@ -125,13 +126,13 @@ export default function SettingProduct(){
     }
 
     const handleOpenProductDialog = () => {
-        setIsProductOpen(true);
+        setIsItemOpen(true);
     };
 
-    const handleDeleteProduct = async({ product_id }: { product_id: string }) => {
+    const handleDeleteItem = async({ item_id }: { item_id: string }) => {
         try {
             setLoading(true);
-            await deleteProduct(product_id);
+            await deleteItem(item_id);
             setShowAlert(true);
             setIsSuccess(true);
             setTitlePopup(t.master.success);
@@ -159,11 +160,11 @@ export default function SettingProduct(){
                 
                 <Flex gap={2} alignItems={"center"}>
                     <InputGroup startElement={<LuSearch />}>
-                        <Input placeholder={t.products.search} bg={"white"} value={findProduct}
-                            onChange={(e) => setFindProduct(e.target.value)}
+                        <Input placeholder={t.products.search} bg={"white"} value={findItem}
+                            onChange={(e) => setFindItem(e.target.value)}
                             onKeyDown={(e) => {
                                 if (e.key === "Enter") {
-                                    setProductPage(1);
+                                    setItemPage(1);
                                     init();
                                 }
                             }} width="250px"
@@ -178,26 +179,26 @@ export default function SettingProduct(){
 
             {showAlert && <AlertMessage title={titlePopup} description={messagePopup} isSuccess={isSuccess} />}
 
-            <ProductDialog isOpen={isProductOpen} 
+            <ProductDialog isOpen={isItemOpen} 
                 setIsOpen={(open) => {
-                    setIsProductOpen(open);
-                    if (!open) setEditingProduct(null);
+                    setIsItemOpen(open);
+                    if (!open) setEditingItem(null);
                 }}
-                title={editingProduct ? t.products.update_button : t.products.create_button}
-                placeholders={editingProduct ? { product_id: editingProduct.product_id, product_code: editingProduct.product_code, product_name: editingProduct.product_name, product_description: editingProduct.product_description } : undefined}
+                title={editingItem ? t.products.update_button : t.products.create_button}
+                placeholders={editingItem ? { item_id: editingItem.item_id, item_code: editingItem.item_code, item_name: editingItem.item_name, item_description: editingItem.item_description } : undefined}
                 onSubmit={(data) => {
-                    if (editingProduct) {
-                        handleUpdateProduct({
-                            product_id: data.product_id ?? editingProduct.product_id,
-                            product_code: data.product_code,
-                            product_name: data.product_name,
-                            product_description: data.product_description,
+                    if (editingItem) {
+                        handleUpdateItem({
+                            item_id: data.item_id ?? editingItem.item_id,
+                            item_code: data.item_code,
+                            item_name: data.item_name,
+                            item_description: data.item_description,
                         });
                     } else {
-                        handleCreateProduct({
-                            product_code: data.product_code,
-                            product_name: data.product_name,
-                            product_description: data.product_description,
+                        handleCreateItem({
+                            item_code: data.item_code,
+                            item_name: data.item_name,
+                            item_description: data.item_description,
                         });
                     }
                 }}
@@ -214,19 +215,19 @@ export default function SettingProduct(){
                 </Table.Header>
 
                 <Table.Body>
-                    {productData.map((product) => (
-                    <Table.Row key={product.product_id}>
-                        <Table.Cell textAlign={"center"}>{product.product_code}</Table.Cell>
-                        <Table.Cell textAlign={"center"}>{product.product_name}</Table.Cell>
+                    {itemData.map((product) => (
+                    <Table.Row key={product.item_id}>
+                        <Table.Cell textAlign={"center"}>{product.item_code}</Table.Cell>
+                        <Table.Cell textAlign={"center"}>{product.item_name}</Table.Cell>
 
                         {/* If more than 60 chracters then trim product description*/}
-                        <Table.Cell textAlign={"center"}>{product.product_description.length > 60 ? product.product_description.substring(0, 60) + "..." : product.product_description}</Table.Cell>
+                        <Table.Cell textAlign={"center"}>{product.item_description.length > 60 ? product.item_description.substring(0, 60) + "..." : product.item_description}</Table.Cell>
                         <Table.Cell textAlign="center">
                             <Flex justify="center" gap={4} fontSize={"2xl"}>
                                 <FiEdit style={{ cursor: "pointer" }}
                                     onClick={() => {
-                                        setEditingProduct(product);
-                                        setIsProductOpen(true);
+                                        setEditingItem(product);
+                                        setIsItemOpen(true);
                                     }}
                                 />
                                 <Dialog.Root>
@@ -249,7 +250,7 @@ export default function SettingProduct(){
                                                     <Dialog.ActionTrigger asChild>
                                                         <Button variant="outline">{t.delete_popup.cancel}</Button>
                                                     </Dialog.ActionTrigger>
-                                                    <Button bg={"red"} color={"white"} cursor={"pointer"} onClick={() => handleDeleteProduct({ product_id: product.product_id })}>{t.delete_popup.delete}</Button>
+                                                    <Button bg={"red"} color={"white"} cursor={"pointer"} onClick={() => handleDeleteItem({ item_id: product.item_id })}>{t.delete_popup.delete}</Button>
                                                 </Dialog.Footer>
                                                 
                                                 <Dialog.CloseTrigger asChild>
@@ -269,7 +270,7 @@ export default function SettingProduct(){
             </Table.Root> 
 
             <Flex display={"flex"} justify="flex-end" alignItems={"end"} width={"100%"} mt={"3"}>
-                <Pagination.Root count={productPagination.total_pages}pageSize={1} page={productPage} onPageChange={(details) => setProductPage(details.page)}>
+                <Pagination.Root count={itemPagination.total_pages}pageSize={1} page={itemPage} onPageChange={(details) => setItemPage(details.page)}>
                     <ButtonGroup variant="ghost" size="sm" wrap="wrap">
                     <Pagination.PrevTrigger asChild>
                         <IconButton>
@@ -278,7 +279,7 @@ export default function SettingProduct(){
                     </Pagination.PrevTrigger>
 
                     <Pagination.Items render={(page) => (
-                            <IconButton key={page.value} variant={page.value === productPage ? "outline" : "ghost"} onClick={() => setProductPage(page.value)}>{page.value} </IconButton>
+                            <IconButton key={page.value} variant={page.value === itemPage ? "outline" : "ghost"} onClick={() => setItemPage(page.value)}>{page.value} </IconButton>
                     )}/>
 
                     <Pagination.NextTrigger asChild>

@@ -9,16 +9,16 @@ interface ProductDialogProps {
     setIsOpen: (open: boolean) => void;
     title: string;
     placeholders?: {
-        product_id?: string;
-        product_code?: string;
-        product_name?: string;
-        product_description?: string;
+        item_id?: string;
+        item_code?: string;
+        item_name?: string;
+        item_description?: string;
     };
     onSubmit?: (data: {
-        product_id?: string; 
-        product_code: string; 
-        product_name: string; 
-        product_description: string;
+        item_id?: string; 
+        item_code: string; 
+        item_name: string; 
+        item_description: string;
     }) => void;
 }
 
@@ -51,10 +51,10 @@ export default function ProductDialog({
 
         init();
         
-        setProductID(placeholders?.product_id ?? "");
-        setProductCode(placeholders?.product_code ?? "");
-        setProductName(placeholders?.product_name ?? "");
-        setProductDesc(placeholders?.product_description ?? "");
+        setProductID(placeholders?.item_id ?? "");
+        setProductCode(placeholders?.item_code ?? "");
+        setProductName(placeholders?.item_name ?? "");
+        setProductDesc(placeholders?.item_description ?? "");
 
     }, [placeholders, isOpen]);
 
@@ -95,10 +95,10 @@ export default function ProductDialog({
                             </Dialog.ActionTrigger>
                             <Button disabled={!isValid}  bg={"#E77A1F"} color={"white"} cursor={"pointer"} onClick={() =>
                                 onSubmit?.({
-                                    product_id: productID,
-                                    product_code: productCode,
-                                    product_name: productName,
-                                    product_description: productDesc
+                                    item_id: productID,
+                                    item_code: productCode,
+                                    item_name: productName,
+                                    item_description: productDesc
                                 })
                             }>{t.master.save}</Button>
                         </Dialog.Footer>

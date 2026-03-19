@@ -8,7 +8,7 @@ import { DecodedAuthToken, checkAuthOrRedirect, getAuthInfo } from "@/lib/auth/a
 import { useRouter } from "next/navigation";
 import { getLang } from "@/lib/i18n";
 import { FaTrash } from "react-icons/fa";
-import { getAllProduct, GetProductData } from "@/lib/master/product";
+import { getAllProduct, GetProductData } from "@/lib/master/item";
 import { getSearchProductLot, ProductLotSearchData, createStockOutSample } from "@/lib/warehouse/warehouse";
 import { getAllListMyWarehouse, GetListMyWarehouseData } from "@/lib/master/warehouse";
 import { AlertMessage } from "@/components/ui/alert";

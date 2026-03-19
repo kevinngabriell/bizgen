@@ -5,7 +5,7 @@ import { AlertMessage } from "@/components/ui/alert";
 import SidebarWithHeader from "@/components/ui/SidebarWithHeader";
 import { DecodedAuthToken, checkAuthOrRedirect, getAuthInfo } from "@/lib/auth/auth";
 import { getLang } from "@/lib/i18n";
-import { getAllProduct, GetProductData } from "@/lib/master/product";
+import { getAllProduct, GetProductData } from "@/lib/master/item";
 import { getAllListMyWarehouse, GetListMyWarehouseData } from "@/lib/master/warehouse";
 import { createStockOutSample, getSearchProductLot, ProductLotSearchData } from "@/lib/warehouse/warehouse";
 import {Button, Card, Flex, Field, Heading, Input, NumberInput, Textarea, SimpleGrid, useFilter, useListCollection, createListCollection, Combobox, Portal, Select, Text} from "@chakra-ui/react";

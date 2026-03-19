@@ -4,7 +4,7 @@ import Loading from "@/components/loading";
 import SidebarWithHeader from "@/components/ui/SidebarWithHeader";
 import { checkAuthOrRedirect, DecodedAuthToken, getAuthInfo } from "@/lib/auth/auth";
 import { getLang } from "@/lib/i18n";
-import { getAllProduct, GetProductData } from "@/lib/master/product";
+import { getAllProduct, GetProductData } from "@/lib/master/item";
 import { getSearchProductLot, getWarehouseReportLot, getWarehouseReportProductID, ProductLotSearchData, WarehouseLotReportData, WarehouseProductIDReportData } from "@/lib/warehouse/warehouse";
 import { Flex, Heading, Text, Button, Table, Box, SimpleGrid, Combobox, Portal, createListCollection, Field } from "@chakra-ui/react";
 import { MarsStroke } from "lucide-react";

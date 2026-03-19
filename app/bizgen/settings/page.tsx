@@ -69,7 +69,7 @@ export default function Settings (){
 
             <SimpleGrid columns={{ base: 1, md: 2, lg: 4 }} gap="20px">
                 <SettingCard title={t.settings_menu.user} description={t.settings_menu.user_description} link={"/bizgen/settings/users"} _package={"Starter"} imageSrc="/assets/user.svg"/>
-                <SettingCard title={t.settings_menu.product} description={t.settings_menu.product_description} link={"/bizgen/settings/product"} _package={"Starter"} imageSrc="/assets/product.svg"/>
+                <SettingCard title={t.settings_menu.product} description={t.settings_menu.product_description} link={"/bizgen/settings/items"} _package={"Starter"} imageSrc="/assets/product.svg"/>
                 <SettingCard title={t.settings_menu.customer} description={t.settings_menu.customer_description} link={"/bizgen/settings/customer"} _package={"Starter"} imageSrc="/assets/customer.svg"/>
                 <SettingCard title={t.settings_menu.finance} description={t.settings_menu.finance_description} link={"/bizgen/settings/finance"} _package={"Starter"} imageSrc="/assets/deposit.svg" />
                 <SettingCard title={t.settings_menu.supplier} description={t.settings_menu.supplier_description} link={"/bizgen/settings/supplier"} _package={"Starter"} imageSrc="/assets/delivery.svg"/>

@@ -7,7 +7,7 @@ import SidebarWithHeader from "@/components/ui/SidebarWithHeader";
 import Loading from "@/components/loading";
 import { DecodedAuthToken, checkAuthOrRedirect, getAuthInfo } from "@/lib/auth/auth";
 import { getLang } from "@/lib/i18n";
-import { getAllProduct, GetProductData } from "@/lib/master/product";
+import { getAllProduct, GetProductData } from "@/lib/master/item";
 import { getAllUOM, UOMData } from "@/lib/master/uom";
 import { FaTrash } from "react-icons/fa";
 import { getAllListMyWarehouse, GetListMyWarehouseData } from "@/lib/master/warehouse";

@@ -1,8 +1,8 @@
 'use client';
 
 import { Suspense, useEffect, useState } from 'react';
-import { Box, Button, Card, createListCollection, Field, Flex, Heading, Input, Portal, Select, Separator, SimpleGrid, Text, Textarea } from '@chakra-ui/react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { Box, Button, Card, Combobox, createListCollection, Field, Flex, Heading, Input, Portal, Select, Separator, SimpleGrid, Text, Textarea, useFilter, useListCollection } from '@chakra-ui/react';
+import { useSearchParams } from 'next/navigation';
 import SidebarWithHeader from '@/components/ui/SidebarWithHeader';
 import { checkAuthOrRedirect, DecodedAuthToken, getAuthInfo } from '@/lib/auth/auth';
 import Loading from '@/components/loading';
@@ -17,6 +17,7 @@ import { AlertMessage } from '@/components/ui/alert';
 import { FaTrash } from 'react-icons/fa';
 import { getAllTax, GetTaxData } from '@/lib/master/tax';
 import { getAllUOM, UOMData } from '@/lib/master/uom';
+import { getAllItem, GetItemData } from '@/lib/master/item';
 
 type SalesOrderMode = "create" | "view" | "edit";
 
@@ -115,6 +116,15 @@ function SalesOrderContent() {
       value: uom.uom_id,
     })),
   });
+
+  const [itemCollections, setItemCollections] = useState<GetItemData[]>([]);
+  const { contains } = useFilter({ sensitivity: "base" })
+
+  const { collection: itemCollection, set: setItemCollection } = useListCollection<GetItemData>({
+    initialItems: [],
+    itemToString: (item) => `${item.item_code} - ${item.item_name}`,
+    itemToValue: (item) => item.item_id,
+  })
   
   //alert & success variable
   const [showAlert, setShowAlert] = useState(false);
@@ -135,12 +145,14 @@ function SalesOrderContent() {
           termRes,
           taxRes,
           uomRes,
+          itemRes
         ] = await Promise.all([
           getAllShipVia(1, 1000),
           getAllPort(1, 1000),
           getAllTerm(1, 1000),
           getAllTax(1, 1000),
-          getAllUOM(1, 1000)
+          getAllUOM(1, 1000),
+          getAllItem(1, 10000)
         ]);
 
         setShipmentTypeOptions(shipViaRes?.data ?? []);
@@ -148,6 +160,11 @@ function SalesOrderContent() {
         setTermOptions(termRes?.data ?? []);
         setTaxOptions(taxRes?.data ?? []);
         setUOMOptions(uomRes?.data ?? []);
+
+        const itemData = itemRes?.data ?? [];
+
+        setItemCollection(itemData);
+        setItemCollections(itemData);
 
       } catch (err) {
         console.error(err);
@@ -500,12 +517,54 @@ function SalesOrderContent() {
               {items.map((item) => (
                 <SimpleGrid key={item.id} templateColumns="200px 220px 120px 120px 160px 160px 160px 180px 120px" gap={4} mb={4}>
                   <Field.Root>
-                    <Field.Label>PO Number</Field.Label>
-                    <Input  placeholder="Purchase Order Number" value={item.purchaseOrderNo} onChange={(e) => handleItemChange(item.id, "purchaseOrderNo", e.target.value)}/>
-                  </Field.Root>
-                  <Field.Root>
                     <Field.Label>Product Name</Field.Label>
-                    <Input placeholder="Product name" value={item.productName}onChange={(e) => handleItemChange(item.id, "productName", e.target.value)}/>
+                    <Combobox.Root key={`item-${item.id}`}
+                      collection={itemCollection}
+                      value={item.id ? [item.id.toString()] : []}
+                      onValueChange={(details) => {
+                      const selected = details.value?.[0];
+                      const selectedAccount = itemCollections.find(
+                        (item) => item.item_id === selected
+                      );
+
+                      handleItemChange(item.id, 'productName', selected ?? '');
+                    }}
+                    onInputValueChange={(e) => {
+                      const input = e.inputValue ?? "";
+
+                      if (!input || input.trim() === "") {
+                        setItemCollection(itemCollections);
+                        return;
+                      }
+
+                      const filtered = itemCollections.filter((item) =>
+                        contains(`${item.item_code} - ${item.item_name}`, input)
+                      );
+
+                      setItemCollection(filtered);
+                    }}
+                      >
+                        <Combobox.Control>
+                                              <Combobox.Input placeholder="Search account code" onFocus={() => setItemCollection(itemCollections)}/>
+                                              <Combobox.IndicatorGroup>
+                                                <Combobox.ClearTrigger />
+                                                <Combobox.Trigger />
+                                              </Combobox.IndicatorGroup>
+                                            </Combobox.Control>
+                                            <Portal>
+                                              <Combobox.Positioner>
+                                                <Combobox.Content>
+                                                  <Combobox.Empty>No account found</Combobox.Empty>
+                                                  {itemCollection.items.map((item) => (
+                                                    <Combobox.Item item={item} key={item.item_id}>
+                                                      {item.item_code} - {item.item_name}
+                                                      <Combobox.ItemIndicator />
+                                                    </Combobox.Item>
+                                                  ))}
+                                                </Combobox.Content>
+                                              </Combobox.Positioner>
+                                            </Portal>
+                    </Combobox.Root>
                   </Field.Root>
                   <Field.Root>
                     <Field.Label>Quantity</Field.Label>
@@ -551,6 +610,10 @@ function SalesOrderContent() {
                     <Field.Label>Total</Field.Label>
                     <Input type="number" placeholder="Total" value={item.total} onChange={(e) => handleItemChange(item.id, "total", e.target.value)}/>
                   </Field.Root>
+                  <Field.Root>
+                    <Field.Label>Catatan</Field.Label>
+                    <Input/>
+                  </Field.Root>
 
                   <Flex align="flex-end">
                     <Button color="red" borderColor={"red"} variant="outline" onClick={() => removeItemRow(item.id)}>
@@ -566,7 +629,6 @@ function SalesOrderContent() {
               <Box mt={2} pt={2} borderTop="2px solid" borderColor="gray.300">
                 <SimpleGrid minW="1000px" templateColumns="200px 220px 120px 120px 160px 160px 160px 180px 120px"gap={4}mb={4}>
                   <Text fontWeight="bold">TOTAL</Text>
-                  <Box></Box>
                   <Box></Box>
                   <Box></Box>
                   <Input value={totals.unitPrice} readOnly textAlign="right" fontWeight="bold" />

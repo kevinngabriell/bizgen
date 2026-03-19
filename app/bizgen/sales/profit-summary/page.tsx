@@ -7,16 +7,17 @@ import { DecodedAuthToken, checkAuthOrRedirect, getAuthInfo } from "@/lib/auth/a
 import { getLang } from "@/lib/i18n";
 import { getAllCurrency, GetCurrencyData } from "@/lib/master/currency";
 import { GetCustomerData } from "@/lib/master/customer";
-import {Button, Flex, Heading, Input, SimpleGrid, Text, Separator, NumberInput, Badge, Card, Field, Select, Portal, createListCollection} from "@chakra-ui/react";
+import {Button, Flex, Heading, Input, SimpleGrid, Text, Separator, NumberInput, Badge, Card, Field, Select, Portal, createListCollection, Box} from "@chakra-ui/react";
 import { useRouter } from "next/navigation";
 
 import { useEffect, useState } from "react";
 
 type LineItem = {
   id: string;
-  label: string;
-  currency: string;
-  amount: number;
+  itemName: string;
+  qty: number;
+  sellingPrice: number;
+  landedCost: number;
 };
 
 export default function CreateProfitSummaryPage() {
@@ -50,8 +51,7 @@ export default function CreateProfitSummaryPage() {
   const [currency, setCurrency] = useState("USD");
   const [exchangeRate, setExchangeRate] = useState(15000);
 
-  const [revenue, setRevenue] = useState<LineItem[]>([]);
-  const [costs, setCosts] = useState<LineItem[]>([]);
+  const [items, setItems] = useState<LineItem[]>([]);
 
   useEffect(() => {
     init();
@@ -91,18 +91,21 @@ export default function CreateProfitSummaryPage() {
     setLoading(false);
   }
     
-  const addRevenue = () => {
-    setRevenue([
-      ...revenue,
-      { id: crypto.randomUUID(), label: "", currency, amount: 0 },
+  const addItem = () => {
+    setItems([
+      ...items,
+      {
+        id: crypto.randomUUID(),
+        itemName: "",
+        qty: 1,
+        sellingPrice: 0,
+        landedCost: 0,
+      },
     ]);
   };
 
-  const addCost = () => {
-    setCosts([
-      ...costs,
-      { id: crypto.randomUUID(), label: "", currency, amount: 0 },
-    ]);
+  const removeItem = (id: string) => {
+    setItems(prev => prev.length > 1 ? prev.filter(i => i.id !== id) : prev);
   };
 
   const updateItem = (
@@ -115,12 +118,9 @@ export default function CreateProfitSummaryPage() {
     setList(list.map((i) => (i.id === id ? { ...i, [key]: value } : i)));
   };
 
-  const subtotal = (list: LineItem[]) =>
-    list.reduce((sum, i) => sum + (Number(i.amount) || 0), 0);
-
-  const revenueTotal = subtotal(revenue);
-  const costTotal = subtotal(costs);
-  const grossProfit = revenueTotal - costTotal;
+  const totalRevenue = items.reduce((sum, i) => sum + i.qty * i.sellingPrice, 0);
+  const totalCost = items.reduce((sum, i) => sum + i.qty * i.landedCost, 0);
+  const grossProfit = totalRevenue - totalCost;
   const grossProfitIdr = grossProfit * exchangeRate;
 
   const handleSubmit = () => {
@@ -130,10 +130,9 @@ export default function CreateProfitSummaryPage() {
       customer,
       currency,
       exchange_rate: exchangeRate,
-      revenue_items: revenue,
-      cost_items: costs,
-      revenue_total: revenueTotal,
-      cost_total: costTotal,
+      items,
+      total_revenue: totalRevenue,
+      total_cost: totalCost,
       gross_profit: grossProfit,
       gross_profit_idr: grossProfitIdr,
     };
@@ -178,6 +177,9 @@ export default function CreateProfitSummaryPage() {
               <Field.Label>{t.sales_profit_summary.job_order_booking}</Field.Label>
               <Input placeholder={t.sales_profit_summary.job_order_booking_placeholder} value={jobOrderNo} onChange={(e) => setJobOrderNo(e.target.value)}/>
             </Field.Root>
+            
+          </SimpleGrid>
+          <SimpleGrid columns={{base: 1, lg: 3}} gap={5} mt={4}>
             <Field.Root mb={2}>
               <Field.Label>{t.sales_profit_summary.customer}</Field.Label>
               <Input placeholder={t.sales_profit_summary.customer_placeholder} readOnly cursor="pointer" onClick={() => setCustomerModalOpen(true)}/>
@@ -219,54 +221,85 @@ export default function CreateProfitSummaryPage() {
       <Card.Root>
         <Card.Header>
           <Flex justify="space-between" align="center">
-            <Heading size="md">{t.sales_profit_summary.revenue_section}</Heading>
-            <Button size="sm" bg={"#E77A1F"} color={"white"} cursor={"pointer"} onClick={addRevenue}>{t.sales_profit_summary.add_revenue}</Button>
+            <Heading size="md">Items</Heading>
+            <Button size="sm" bg="#E77A1F" color="white" onClick={addItem}>Add Item</Button>
           </Flex>
         </Card.Header>
         <Card.Body>
-          {revenue.map((item) => (
-            <Flex key={item.id} gap={3} mb={3}>
-              <Input placeholder={t.sales_profit_summary.description_label} value={item.label} onChange={(e) => updateItem(revenue, setRevenue, item.id, "label", e.target.value)}/>
-              {/* Harusnya selection untuk currency */}
-              <NumberInput.Root>
-                <NumberInput.Control/>
-                <NumberInput.Input/>
-              </NumberInput.Root>
-            </Flex>
+          <Box overflowX="auto">
+                      {items.map((item) => (
+            <SimpleGrid templateColumns={"350px 150px 180px 180px 180px 100px"} key={item.id} gap={5} mb={3}>
+              <Field.Root>
+                <Field.Label>Product/Services</Field.Label>
+                <Input placeholder="Item Name" value={item.itemName} onChange={(e) => updateItem(items, setItems, item.id, "itemName", e.target.value)} />
+              </Field.Root>
+              <Field.Root>
+                <Field.Label>Qty</Field.Label>
+                <NumberInput.Root value={String(item.qty)} onValueChange={(d) => updateItem(items, setItems, item.id, "qty", Number(d.value))}>
+                  <NumberInput.Control/>
+                  <NumberInput.Input placeholder="Qty"/>
+                </NumberInput.Root>
+              </Field.Root>
+              <Field.Root>
+                <Field.Label>Selling Price</Field.Label>
+                <NumberInput.Root value={String(item.sellingPrice)} onValueChange={(d) => updateItem(items, setItems, item.id, "sellingPrice", Number(d.value))}>
+                  <NumberInput.Control/>
+                  <NumberInput.Input placeholder="Selling Price"/>
+                </NumberInput.Root>
+              </Field.Root>
+              <Field.Root>
+                <Field.Label>Landed Cost</Field.Label>
+                <NumberInput.Root value={String(item.landedCost)} onValueChange={(d) => updateItem(items, setItems, item.id, "landedCost", Number(d.value))}>
+                  <NumberInput.Control/>
+                  <NumberInput.Input placeholder="Landed Cost"/>
+                </NumberInput.Root>
+              </Field.Root>
+              <Field.Root>
+                <Field.Label>Profit</Field.Label>
+                <Text>
+                  {(item.qty * (item.sellingPrice - item.landedCost)).toLocaleString()} 
+                  ({item.sellingPrice > 0
+                    ? (((item.sellingPrice - item.landedCost) / item.sellingPrice) * 100).toFixed(2)
+                    : 0
+                  }%)
+                </Text>
+                <Text fontSize="sm" color="gray.500">
+                 
+                </Text>
+              </Field.Root>
+              <Flex align="flex-end">
+                <Button colorScheme="red" variant="ghost" onClick={() => removeItem(item.id)}>
+                  Delete
+                </Button>
+              </Flex>
+            </SimpleGrid>
           ))}
+
+          </Box>
+
           <Separator />
+
           <Flex justify="space-between" mt={3}>
-            <Text fontWeight="semibold">{t.sales_profit_summary.revenue_total} ({currency})</Text>
-            <Text fontWeight="bold">{revenueTotal.toLocaleString()}</Text>
+            <Text fontWeight="semibold">Total Revenue ({currency})</Text>
+            <Text fontWeight="bold">{totalRevenue.toLocaleString()}</Text>
+          </Flex>
+
+          <Flex justify="space-between" mt={2}>
+            <Text fontWeight="semibold">Total Cost ({currency})</Text>
+            <Text fontWeight="bold">{totalCost.toLocaleString()}</Text>
+          </Flex>
+
+          <Flex justify="space-between" mt={2}>
+            <Text fontWeight="semibold">Margin (%)</Text>
+            <Text fontWeight="bold">
+              {totalRevenue > 0
+                ? ((grossProfit / totalRevenue) * 100).toFixed(2)
+                : 0
+              }%
+            </Text>
           </Flex>
         </Card.Body>
       </Card.Root>
-
-       <Card.Root mt={5}>
-        <Card.Header>
-          <Flex justify="space-between" align="center">
-            <Heading size="md">{t.sales_profit_summary.cost_section}</Heading>
-            <Button size="sm" bg={"#E77A1F"} color={"white"} cursor={"pointer"} onClick={addCost}>{t.sales_profit_summary.add_cost}</Button>
-          </Flex>
-        </Card.Header>
-        <Card.Body>
-          {costs.map((item) => (
-            <Flex key={item.id} gap={3} mb={3}>
-              <Input placeholder={t.sales_profit_summary.description_placeholder} value={item.label} onChange={(e) => updateItem(costs, setCosts, item.id, "label", e.target.value)}/>
-              {/* Harusnya selection untuk currency */}
-              <NumberInput.Root>
-                <NumberInput.Control/>
-                <NumberInput.Input/>
-              </NumberInput.Root>
-            </Flex>
-          ))}
-          <Separator />
-          <Flex justify="space-between" mt={3}>
-            <Text fontWeight="semibold">{t.sales_profit_summary.cost_total} ({currency})</Text>
-            <Text fontWeight="bold">{costTotal.toLocaleString()}</Text>
-          </Flex>
-        </Card.Body>
-       </Card.Root>
 
        <Card.Root mt={5}>
         <Card.Header>
