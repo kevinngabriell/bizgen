@@ -25,6 +25,13 @@ export interface CreateSalesBookingData {
   local_charge: string;
   other_charge: string;
   remarks: string;
+  inquiry_id: string;
+}
+
+export interface GetSalesBookingData {
+  job_order_id: string;
+  job_order_no: string;
+  created_at: string;
 }
 
 export async function generateSalesBookingNumber(): Promise<GetSalesBookingNumber> {
@@ -79,6 +86,7 @@ export async function createSalesJobOrder(input: CreateSalesBookingData) : Promi
       freight_charge: input.freight_charge,
       local_charge: input.local_charge,
       other_charge: input.other_charge,
+      inquiry_id: input.inquiry_id,
       remarks: input.remarks
     })
   });
@@ -91,4 +99,27 @@ export async function createSalesJobOrder(input: CreateSalesBookingData) : Promi
   }
 
   return json;
+}
+
+export async function getSalesJobOrder(page: number = 1, limit : number = 10, search: string = ''): Promise<{data: GetSalesBookingData[]; pagination: any}>{
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL;
+    const token = localStorage.getItem("token");
+
+    const res = await fetch(`${baseUrl}sales/job-order.php?page=${page}&limit=${limit}&params=${search}`, {
+        method: 'GET',
+        headers: {
+            'Authorization': `Bearer ${token}`,
+        },
+    });
+
+    const json = await res.json();
+
+    if (json.status_code !== 200) {
+        throw new Error(json.status_message || 'Failed to fetch job order');
+    }
+
+    return {
+        data: json.data?.data || [],
+        pagination: json.data?.pagination || {}
+    };
 }

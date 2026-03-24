@@ -28,6 +28,8 @@ export default function CreateInvoicePage() {
   //router authentication
   const router = useRouter();
 
+  //PARAMETER DETAILNYA invoice_id
+
   //language state 
   const [lang, setLang] = useState<"en" | "id">("en");
   const t = getLang(lang);

@@ -10,6 +10,7 @@ export interface CreateSalesQuotationsData {
     currency: string;
     subtotal: string;
     total_amount: string;
+    inquiry_id: string;
     items: CreateSalesQuotationsDataItem[];
 }
 
@@ -72,6 +73,7 @@ export async function createSalesQuotation(input: CreateSalesQuotationsData) : P
       currency: input.currency,
       subtotal: input.subtotal,
       total_amount: input.total_amount,
+      inquiry_id: input.inquiry_id,
       items: input.items
     })
   });

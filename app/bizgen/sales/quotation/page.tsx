@@ -2,7 +2,7 @@
 
 import Loading from "@/components/loading";
 import CustomerLookup from "@/components/lookup/CustomerLookup";
-import InquiryLookup from "@/components/lookup/InquiryLookup";
+import InquiryLookup from "@/components/lookup/SalesInquiryLookup";
 import { AlertMessage } from "@/components/ui/alert";
 import SidebarWithHeader from "@/components/ui/SidebarWithHeader";
 import { DecodedAuthToken, checkAuthOrRedirect, getAuthInfo } from "@/lib/auth/auth";
@@ -12,7 +12,7 @@ import { GetCustomerData } from "@/lib/master/customer";
 import { createSalesQuotation, generateQuotationNumber } from "@/lib/sales/quotation";
 import { GetRfq, getDetailSalesRfq } from "@/lib/sales/rfq";
 import {Button, Flex, Heading, HStack, Input, Select, SimpleGrid, Stack, Text, Badge, IconButton, Separator, Card, Field, createListCollection, Portal,} from "@chakra-ui/react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import { FaTrash } from "react-icons/fa";
 
@@ -69,6 +69,7 @@ function QuotationContent() {
   const [quotationDate, setQuotationDate] = useState("");
   const [validUntil, setValidUntil] = useState("");
   const [linkedInquiry, setLinkedInquiry] = useState("");
+  const [linkedInquiryID, setLinkedInquiryID] = useState("");
 
   //alert & success variable
   const [showAlert, setShowAlert] = useState(false);
@@ -96,7 +97,7 @@ function QuotationContent() {
     }
 
     const loadGeneratedNumber = async () => {
-      if (quotationID) return; // kalau ada rfqId, jangan generate (view/edit mode)
+      if (quotationID) return;
     
       try {
         const res = await generateQuotationNumber();
@@ -184,6 +185,7 @@ function QuotationContent() {
 
       setSelectedInquiry(rfq);
       setLinkedInquiry(rfq.sales_rfq_number);
+      setLinkedInquiryID(rfq.sales_rfq_id);
 
       // fetch detail RFQ to get items
       const detailRes = await getDetailSalesRfq(rfq.sales_rfq_id);
@@ -213,17 +215,17 @@ function QuotationContent() {
   const handleSave = async () => {
     try {
       if(!selectedCustomer)
-        throw new Error("Customer is required");
+        throw new Error(t.sales_quotation.error_1);
       if(!quotationNo)
-        throw new Error("Quotation number is required");
+        throw new Error(t.sales_quotation.error_2);
       if(!quotationDate)
-        throw new Error("Quotation date is required");
+        throw new Error(t.sales_quotation.error_3);
       if(!validUntil)
-        throw new Error("Expired quotation date is required");
+        throw new Error(t.sales_quotation.error_4);
       if(!currencySelected)
-        throw new Error("Currency is required");
+        throw new Error(t.sales_quotation.error_5);
       if(items.length === 0)
-        throw new Error("At least one item is required");
+        throw new Error(t.sales_quotation.error_6);
 
       setLoading(true);
 
@@ -231,6 +233,7 @@ function QuotationContent() {
         quotation_number: quotationNo,
         customer_id: selectedCustomer.customer_id,
         quotation_date: quotationDate,
+        inquiry_id: linkedInquiryID,
         valid_until: validUntil,
         currency: currencySelected,
         subtotal: subtotal.toString(),
@@ -248,8 +251,8 @@ function QuotationContent() {
 
       setShowAlert(true);
       setIsSuccess(true);
-      setTitlePopup("Success");
-      setMessagePopup("Sales Quotation created successfully");
+      setTitlePopup(t.master.success);
+      setMessagePopup(t.sales_quotation.success_create);
       setTimeout(() => setShowAlert(false), 6000);
 
       setSelectedCustomer(null);
@@ -257,17 +260,18 @@ function QuotationContent() {
       setQuotationDate("");
       setValidUntil("");
       setSelected("");
+      setLinkedInquiry("");
+      setLinkedInquiryID("");
       setItems([{ product: "", description: "", qty: 1, unitPrice: 0 }]);
     } catch (err: any) {
       setShowAlert(true);
       setIsSuccess(false);
-      setTitlePopup("Error");
-      setMessagePopup(err.message || "Failed to create RFQ");
+      setTitlePopup(t.master.error);
+      setMessagePopup(err.message || t.sales_quotation.error_msg);
       setTimeout(() => setShowAlert(false), 6000);
     } finally {
       setLoading(false);
     }
-    
   } 
 
   const canGeneratePDF = !!selectedCustomer;
@@ -316,14 +320,14 @@ function QuotationContent() {
                   <Input type="date" value={quotationDate} onChange={(e) => setQuotationDate(e.target.value)}/>
                 </Field.Root>
                 <Field.Root required>
-                  <Field.Label>Tanggal Akhir Penawaran<Field.RequiredIndicator/></Field.Label>
+                  <Field.Label>{t.sales_quotation.valid_until}<Field.RequiredIndicator/></Field.Label>
                   <Input type="date" value={validUntil} onChange={(e) => setValidUntil(e.target.value)}/>
                 </Field.Root>
               </SimpleGrid>
               
               <Field.Root required>
                 <Field.Label>{t.sales_quotation.currency} <Field.RequiredIndicator/></Field.Label>
-                <Select.Root collection={currencyCollection} value={currencySelected ? [currencySelected] : []} onValueChange={(details) => setSelected(details.value[0])} size="sm" width="100%">
+                <Select.Root collection={currencyCollection} value={currencySelected ? [currencySelected] : []} onValueChange={(details) => setSelected(details.value[0])} width="100%">
                   <Select.HiddenSelect />
                   <Select.Control>
                     <Select.Trigger>
@@ -359,25 +363,21 @@ function QuotationContent() {
             <Card.Root key={index} p={4} mb={2}>
               <SimpleGrid columns={{ base: 1, md: 4 }} gap={3}>
                 <Field.Root required>
-                  <Field.Label>Product Name<Field.RequiredIndicator/></Field.Label>
+                  <Field.Label>{t.sales_quotation.product_service}<Field.RequiredIndicator/></Field.Label>
                   <Input placeholder={t.sales_quotation.product_service} value={row.product} onChange={(e) => updateItemField(index, "product", e.target.value)}/>
                 </Field.Root>
-
-                <Field.Root>
-                  <Field.Label>Description</Field.Label>
+                <Field.Root required>
+                  <Field.Label>{t.sales_quotation.description}<Field.RequiredIndicator/></Field.Label>
                   <Input placeholder={t.sales_quotation.description} value={row.description} onChange={(e) => updateItemField(index, "description", e.target.value)}/>
                 </Field.Root>
-                
                 <Field.Root required>
-                  <Field.Label>Quantity<Field.RequiredIndicator/></Field.Label>
+                  <Field.Label>{t.sales_quotation.quantity}<Field.RequiredIndicator/></Field.Label>
                   <Input type="number" placeholder={t.sales_quotation.quantity} value={row.qty} onChange={(e) => updateItemField(index, "qty", e.target.value)}/>
                 </Field.Root>
-                
                 <Field.Root required>
-                  <Field.Label>Unit Price<Field.RequiredIndicator/></Field.Label>
+                  <Field.Label>{t.sales_quotation.unit_price}<Field.RequiredIndicator/></Field.Label>
                   <Input type="number" placeholder={t.sales_quotation.unit_price} value={row.unitPrice} onChange={(e) => updateItemField(index, "unitPrice", e.target.value)}/>
                 </Field.Root>
-                
               </SimpleGrid>
 
               <HStack justify="space-between" mt={3}>
@@ -413,7 +413,7 @@ function QuotationContent() {
 
           {/* restircted if customer only draft */}
           {!canGeneratePDF && (
-            <Text fontSize="sm" color="red.500" mt={2}>Customer not found in master data. You can only save as draft.</Text>
+            <Text fontSize="sm" color="red.500" mt={2}>{t.sales_quotation.error_7}</Text>
           )}
         </Card.Body>
       </Card.Root>

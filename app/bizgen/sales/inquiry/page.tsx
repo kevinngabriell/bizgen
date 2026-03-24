@@ -289,21 +289,21 @@ function InquiryContent() {
     try {
       // 🔎 Basic validation
       if (!form.inquiryNo) 
-        throw new Error("Inquiry number is required");
+        throw new Error(t.sales_inquiry.error_1);
       if (!form.customerName) 
-        throw new Error("Customer is required");
+        throw new Error(t.sales_inquiry.error_2);
       if (!shipmentTypeSelected) 
-        throw new Error("Shipment type is required");
+        throw new Error(t.sales_inquiry.error_3);
       if (!originSelected) 
-        throw new Error("Origin is required");
+        throw new Error(t.sales_inquiry.error_4);
       if (!destinationSelected) 
-        throw new Error("Destination is required");
+        throw new Error(t.sales_inquiry.error_5);
       if (!termSelected) 
-        throw new Error("Incoterm is required");
+        throw new Error(t.sales_inquiry.error_6);
       if (!commoditySelected) 
-        throw new Error("Commodity selection is required");
+        throw new Error(t.sales_inquiry.error_7);
       if (items.length === 0) 
-        throw new Error("At least one item is required");
+        throw new Error(t.sales_inquiry.error_8);
 
       setLoading(true);
 
@@ -322,7 +322,6 @@ function InquiryContent() {
           item_name: row.name,
           uom_id: row.unit,
           quantity: Number(row.qty),
-
           hs_code: row.hsCode || undefined,
           weight_kg: row.weight ? Number(row.weight) : undefined,
           cbm: row.cbm ? Number(row.cbm) : undefined,
@@ -334,26 +333,12 @@ function InquiryContent() {
 
       setShowAlert(true);
       setIsSuccess(true);
-      setTitlePopup("Success");
-      setMessagePopup("Sales RFQ created successfully");
+      setTitlePopup(t.master.success);
+      setMessagePopup(t.sales_inquiry.success_msg);
       setTimeout(() => setShowAlert(false), 6000);
 
-      setForm({
-        inquiryNo: "",
-        customerName: "",
-        contactPerson: "",
-        customerPhone: "",
-        originCountry: "",
-        destinationCountry: "",
-        commodity: "",
-        incoterm: "",
-        shipmentType: "",
-        remarks: "",
-      });
-
-      setItems([
-        { name: "", hsCode: "", qty: "", unit: "", weight: "", cbm: "", packaging: "" }
-      ]);
+      setForm({inquiryNo: "", customerName: "", contactPerson: "", customerPhone: "", originCountry: "", destinationCountry: "", commodity: "", incoterm: "", shipmentType: "", remarks: ""});
+      setItems([{ name: "", hsCode: "", qty: "", unit: "", weight: "", cbm: "", packaging: "" }]);
       setShipmentTypeSelected(undefined);
       setOriginSelected(undefined);
       setDestinationSelected(undefined);
@@ -363,8 +348,8 @@ function InquiryContent() {
     } catch (err: any) {
       setShowAlert(true);
       setIsSuccess(false);
-      setTitlePopup("Error");
-      setMessagePopup(err.message || "Failed to create RFQ");
+      setTitlePopup(t.master.error);
+      setMessagePopup(err.message || t.sales_inquiry.error_msg);
       setTimeout(() => setShowAlert(false), 6000);
     } finally {
       setLoading(false);
@@ -391,7 +376,7 @@ function InquiryContent() {
                   {rfqStatus}
                 </Badge>
                 <Text fontSize="xs" color="gray.600">
-                  Last updated by <b>{lastUpdatedBy || "System"}</b> • {lastUpdatedAt ? new Date(lastUpdatedAt).toLocaleDateString(lang === "id" ? "id-ID" : "en-US", { day: "2-digit", month: "short", year: "numeric" }) : "-"}
+                  {t.master.last_update_by} <b>{lastUpdatedBy || "System"}</b> • {lastUpdatedAt ? new Date(lastUpdatedAt).toLocaleDateString(lang === "id" ? "id-ID" : "en-US", { day: "2-digit", month: "short", year: "numeric" }) : "-"}
                 </Text>
               </Flex>
             </Card.Body>
@@ -409,7 +394,7 @@ function InquiryContent() {
                 <Input name="inquiryNo" value={form.inquiryNo} onChange={handleChange} readOnly={isReadOnly} placeholder={t.sales_inquiry.inquiry_no_placeholder}/>
               </Field.Root>
               <Field.Root required>
-                <Field.Label>{t.sales_inquiry.customer_name}<Field.RequiredIndicator/> <InfoTip content="Masukkan nama konsumen baru bahkan jika konsumen tersebut telah terdaftar dalam sistem" /> </Field.Label>
+                <Field.Label>{t.sales_inquiry.customer_name}<Field.RequiredIndicator/> <InfoTip content={t.sales_inquiry.hint_1}/> </Field.Label>
                 <Input name="customerName" value={form.customerName} placeholder={t.sales_inquiry.customer_placeholder} readOnly={isReadOnly}  onChange={handleChange} />
               </Field.Root>
               <Field.Root required>
@@ -417,12 +402,12 @@ function InquiryContent() {
                 <Input name="contactPerson" value={form.contactPerson} placeholder={t.sales_inquiry.contact_person_placeholder} onChange={handleChange} readOnly={isReadOnly}/>
               </Field.Root>
               <Field.Root required>
-                <Field.Label>{t.sales_inquiry.phone}<Field.RequiredIndicator/> <InfoTip content="Jangan gunakan 0 tapi gunakan kode negara seperti 62 tanpa +" /></Field.Label>
+                <Field.Label>{t.sales_inquiry.phone}<Field.RequiredIndicator/> <InfoTip content={t.sales_inquiry.hint_2} /></Field.Label>
                 <Input name="customerPhone" value={form.customerPhone} placeholder={t.sales_inquiry.phone_placeholder} onChange={handleChange} readOnly={isReadOnly}/>
               </Field.Root>
               <Field.Root required>
                 <Field.Label>{t.sales_inquiry.shipment_type} <Field.RequiredIndicator/> </Field.Label>
-                <Select.Root disabled={isReadOnly} collection={shipmentTypeCollection} value={shipmentTypeSelected ? [shipmentTypeSelected] : []} onValueChange={(details) => setShipmentTypeSelected(details.value[0])} size="sm" width="100%">
+                <Select.Root disabled={isReadOnly} collection={shipmentTypeCollection} value={shipmentTypeSelected ? [shipmentTypeSelected] : []} onValueChange={(details) => setShipmentTypeSelected(details.value[0])} width="100%">
                   <Select.HiddenSelect />
                   <Select.Control>
                     <Select.Trigger>
@@ -445,7 +430,7 @@ function InquiryContent() {
               </Field.Root>
               <Field.Root required>
                 <Field.Label>{t.sales_inquiry.origin_country} <Field.RequiredIndicator/></Field.Label>
-                <Select.Root disabled={isReadOnly} collection={countryCollection} value={originSelected ? [originSelected] : []} onValueChange={(details) => setOriginSelected(details.value[0])} size="sm" width="100%">
+                <Select.Root disabled={isReadOnly} collection={countryCollection} value={originSelected ? [originSelected] : []} onValueChange={(details) => setOriginSelected(details.value[0])} width="100%">
                   <Select.HiddenSelect />
                     <Select.Control>
                       <Select.Trigger>
@@ -468,7 +453,7 @@ function InquiryContent() {
               </Field.Root>
               <Field.Root required>
                 <Field.Label>{t.sales_inquiry.destination_country} <Field.RequiredIndicator/></Field.Label>
-                <Select.Root disabled={isReadOnly} collection={countryCollection} value={destinationSelected ? [destinationSelected] : []} onValueChange={(details) => setDestinationSelected(details.value[0])} size="sm" width="100%">
+                <Select.Root disabled={isReadOnly} collection={countryCollection} value={destinationSelected ? [destinationSelected] : []} onValueChange={(details) => setDestinationSelected(details.value[0])} width="100%">
                   <Select.HiddenSelect />
                   <Select.Control>
                   <Select.Trigger>
@@ -491,7 +476,7 @@ function InquiryContent() {
               </Field.Root>
               <Field.Root required>
                 <Field.Label>{t.sales_inquiry.commodity} <Field.RequiredIndicator/></Field.Label>
-                <Select.Root disabled={isReadOnly} collection={commodityCollection} value={commoditySelected ? [commoditySelected] : []} onValueChange={(details) => setCommoditySelected(details.value[0])} size="sm" width="100%">
+                <Select.Root disabled={isReadOnly} collection={commodityCollection} value={commoditySelected ? [commoditySelected] : []} onValueChange={(details) => setCommoditySelected(details.value[0])} width="100%">
                   <Select.HiddenSelect />
                   <Select.Control>
                     <Select.Trigger>
@@ -514,7 +499,7 @@ function InquiryContent() {
               </Field.Root>
               <Field.Root required>
                 <Field.Label>{t.sales_inquiry.incoterm} <Field.RequiredIndicator/></Field.Label>
-                <Select.Root disabled={isReadOnly} collection={termCollection} value={termSelected ? [termSelected] : []} onValueChange={(details) => setTermSelected(details.value[0])} size="sm" width="100%">
+                <Select.Root disabled={isReadOnly} collection={termCollection} value={termSelected ? [termSelected] : []} onValueChange={(details) => setTermSelected(details.value[0])} width="100%">
                   <Select.HiddenSelect />
                   <Select.Control>
                     <Select.Trigger>
@@ -535,21 +520,19 @@ function InquiryContent() {
                   </Portal>
                 </Select.Root>
               </Field.Root>
-
               <Field.Root>
                 <Field.Label>{t.sales_inquiry.remarks}</Field.Label>
                 <Textarea name="remarks" value={form.remarks} onChange={handleChange} readOnly={isReadOnly} placeholder={t.sales_inquiry.remarks_placeholder}/>
               </Field.Root>
             </SimpleGrid>
             
+            {/* Inquiry Item Section */}
             <Card.Root mt={6}>
               <Card.Body>
                 <Flex justify="space-between" align="center" mb="3">
                   <Heading size="md">{t.sales_inquiry.item_list_title}</Heading>
                   {!isReadOnly && (
-                    <Button size="sm" bg="#E77A1F" color="white" onClick={addItemRow}>
-                      {t.sales_inquiry.add_item}
-                    </Button>
+                    <Button size="sm" bg="#E77A1F" color="white" onClick={addItemRow}>{t.sales_inquiry.add_item}</Button>
                   )}
                 </Flex>
 
@@ -582,13 +565,9 @@ function InquiryContent() {
                           <Input type="number" value={row.qty} readOnly={isReadOnly}  placeholder={t.sales_inquiry.qty} onChange={(e) => updateItemField(index, "qty", e.target.value)}/>
                         </Table.Cell>
                         <Table.Cell>
-                          <Select.Root disabled={isReadOnly} collection={uomCollection} value={
-                              row.unit && uomCollection.items.some(i => i.value === row.unit)
-                                ? [row.unit]
-                                : []
-                            } onValueChange={(details) =>
-                              updateItemField(index, "unit", details.value?.[0] ?? "")
-                            } size="sm" width="100%">
+                          <Select.Root disabled={isReadOnly} collection={uomCollection} 
+                            value={row.unit && uomCollection.items.some(i => i.value === row.unit) ? [row.unit] : []} 
+                            onValueChange={(details) => updateItemField(index, "unit", details.value?.[0] ?? "")} width="100%">
                             <Select.HiddenSelect />
                             <Select.Control>
                               <Select.Trigger>
@@ -609,27 +588,18 @@ function InquiryContent() {
                             </Portal>
                           </Select.Root>
                         </Table.Cell>
-
                         <Table.Cell>
                           <Input type="number" value={row.weight} readOnly={isReadOnly}  placeholder={t.sales_inquiry.weight_placeholder} onChange={(e) => updateItemField(index, "weight", e.target.value)}/>
                         </Table.Cell>
-
                         <Table.Cell>
                           <Input type="number" value={row.cbm} readOnly={isReadOnly}  placeholder={t.sales_inquiry.cbm_placeholder} onChange={(e) => updateItemField(index, "cbm", e.target.value)}/>
                         </Table.Cell>
-
                         <Table.Cell>
                           <Input value={row.packaging} readOnly={isReadOnly}  placeholder={t.sales_inquiry.packaging_placeholder} onChange={(e) => updateItemField(index, "packaging", e.target.value)}/>
                         </Table.Cell>
-
                         <Table.Cell>
                           {!isReadOnly && (
-                          <IconButton
-                            aria-label="Remove"
-                            variant="ghost"
-                            color="red"
-                            onClick={() => removeItemRow(index)}
-                          >
+                          <IconButton aria-label="Remove" variant="ghost" color="red" onClick={() => removeItemRow(index)}>
                             <FaTrash />
                           </IconButton>
                         )}
@@ -642,41 +612,25 @@ function InquiryContent() {
             </Card.Root>
 
             <Flex justify="flex-end" mt={5}>
-
+              {/* if the inqiry was create for the first time then save as draft */}
               {mode === "create" && (
-                <Button bg="#E77A1F" color="white" onClick={handleSave}>
-                  {t.sales_inquiry.save_draft}
-                </Button>
+                <Button bg="#E77A1F" color="white" onClick={handleSave}>{t.sales_inquiry.save_draft}</Button>
               )}
-
-              
             </Flex>
 
             {rfqStatus === "draft" && (
               <Flex justify={"flex-end"}>
-                <Button bg="#E77A1F" color="white" onClick={handleSave}>
-                  Submit
-                </Button>
+                <Button bg="#E77A1F" color="white" onClick={handleSave}>{t.master.submit}</Button>
               </Flex>
             )}
             
             {rfqStatus === "submitted" && (
                 <Flex gap={3} justifyContent={"space-between"}>
-                  <Button variant="outline">
-                    Export PDF
-                  </Button>
-
+                  <Button variant="outline">{t.master.export_pdf}</Button>
                   <Flex gap={6}>
-                    <Button color="red" borderColor={"red"} variant="outline">
-                      Reject
-                    </Button>
-
-                    <Button backgroundColor="green">
-                      Approve
-                    </Button>
+                    <Button color="red" borderColor={"red"} variant="outline">{t.master.reject}</Button>
+                    <Button backgroundColor="green">{t.master.approve}</Button>
                   </Flex>
-
-                  
                 </Flex>
               )}
           </Card.Body>

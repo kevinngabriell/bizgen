@@ -22,6 +22,12 @@ export interface CreateSalesDocumentData {
   milestones: CreateSalesDocumentMilestones[];
 }
 
+export interface GetSalesDocumentItemData {
+  shipment_id: string;
+  shipment_no: string;
+  created_at: string;
+}
+
 export async function generateSalesDocumentNumber(): Promise<GetSalesDocumentNumber> {
   const baseUrl = process.env.NEXT_PUBLIC_API_URL;
   const token = localStorage.getItem("token");
@@ -75,4 +81,27 @@ export async function createSalesDocument(input: CreateSalesDocumentData) : Prom
   }
 
   return json;
+}
+
+export async function getSalesDocument(page: number = 1, limit : number = 10, search: string = ''): Promise<{data: GetSalesDocumentItemData[]; pagination: any}>{
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL;
+    const token = localStorage.getItem("token");
+
+    const res = await fetch(`${baseUrl}sales/shipments.php?page=${page}&limit=${limit}&params=${search}`, {
+        method: 'GET',
+        headers: {
+            'Authorization': `Bearer ${token}`,
+        },
+    });
+
+    const json = await res.json();
+
+    if (json.status_code !== 200) {
+        throw new Error(json.status_message || 'Failed to fetch sales shipments');
+    }
+
+    return {
+        data: json.data?.data || [],
+        pagination: json.data?.pagination || {}
+    };
 }

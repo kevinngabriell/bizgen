@@ -1,10 +1,10 @@
 "use client";
 
-import { Box, Button, Card, createListCollection, Field, Flex, Grid, GridItem, Heading, HStack, Icon, Input, Portal, Select, Separator, SimpleGrid, Stack, Tag, Text, Textarea,} from "@chakra-ui/react";
+import { Button, Card, createListCollection, Field, Flex, Heading, Icon, Input, Portal, Select, SimpleGrid, Tag, Text, Textarea,} from "@chakra-ui/react";
 import { FiFileText, FiPackage, FiTruck } from "react-icons/fi";
 import { Suspense, useEffect, useState } from "react";
 import SidebarWithHeader from "@/components/ui/SidebarWithHeader";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import Loading from "@/components/loading";
 import { DecodedAuthToken, checkAuthOrRedirect, getAuthInfo } from "@/lib/auth/auth";
 import { getLang } from "@/lib/i18n";
@@ -13,6 +13,8 @@ import { getAllTerm, GetTermData } from "@/lib/master/term";
 import { getAllPort, GetPortData } from "@/lib/master/port";
 import { createSalesDocument, generateSalesDocumentNumber } from "@/lib/sales/document";
 import { AlertMessage } from "@/components/ui/alert";
+import SalesBookingLookup from "@/components/lookup/SalesJoborderLookup";
+import { GetSalesBookingData } from "@/lib/sales/booking-confirmation";
 
 type ShipmentMode = "create" | "view" | "edit";
 
@@ -76,6 +78,12 @@ function ShipmentProcessContent() {
   const [titlePopup, setTitlePopup] = useState('');
   const [messagePopup, setMessagePopup] = useState('');
   const [isSuccess, setIsSuccess] = useState(false);
+
+  const [jobOrderModalOpen, setJobOrderModalOpen] = useState(false);
+  const [selectedJobOrder, setSelectedJobOrder] = useState<GetSalesBookingData | null>(null);
+
+  const [linkedJobOrder, setLinkedJobOrder] = useState("");
+  const [linkedJobOrderID, setLinkedJobOrderID] = useState("");
   
   // form state for input values
   const [form, setForm] = useState({
@@ -90,13 +98,13 @@ function ShipmentProcessContent() {
 
   // milestones state for each step
   const [milestones, setMilestones] = useState([
-    { id: "cargo_pickup", label: "Cargo Pickup", note: "", time: "" },
-    { id: "stuffing", label: "Stuffing / Warehouse In", note: "", time: "" },
-    { id: "customs_declaration", label: "Customs Declaration", note: "", time: "" },
-    { id: "port_in", label: "Port In", note: "", time: "" },
-    { id: "on_board", label: "On Board Vessel / Flight", note: "", time: "" },
-    { id: "arrival_port", label: "Arrival Port", note: "", time: "" },
-    { id: "delivery_to_consignee", label: "Delivery to Consignee", note: "", time: "" },
+    { id: "cargo_pickup", label: `${t.sales_shipment_process.cargo_pickup}`, note: "", time: "" },
+    { id: "stuffing", label: `${t.sales_shipment_process.stuffing}`, note: "", time: "" },
+    { id: "customs_declaration", label: `${t.sales_shipment_process.customs_declaration}`, note: "", time: "" },
+    { id: "port_in", label: `${t.sales_shipment_process.port_in}`, note: "", time: "" },
+    { id: "on_board", label: `${t.sales_shipment_process.onboard}`, note: "", time: "" },
+    { id: "arrival_port", label: `${t.sales_shipment_process.arrival_port}`, note: "", time: "" },
+    { id: "delivery_to_consignee", label: `${t.sales_shipment_process.delivery}`, note: "", time: "" },
   ]);
     
   const portCollection = createListCollection({
@@ -113,11 +121,7 @@ function ShipmentProcessContent() {
 
         await init();
 
-        const [
-          shipViaRes,
-          portRes,
-          termRes
-        ] = await Promise.all([
+        const [shipViaRes, portRes, termRes] = await Promise.all([
           getAllShipVia(1, 1000),
           getAllPort(1, 1000),
           getAllTerm(1, 1000)
@@ -178,42 +182,47 @@ function ShipmentProcessContent() {
     setLang(language);
   }
 
+  const handleChooseJobOrder = async (job_order: GetSalesBookingData) => {
+      try {
+        setLoading(true);
+        setSelectedJobOrder(job_order);
+        setLinkedJobOrder(job_order.job_order_no);
+        setLinkedJobOrderID(job_order.job_order_id);
+      } catch (error) {
+        console.error("Failed to bind inquiry items", error);
+      } finally {
+        setLoading(false);
+        setJobOrderModalOpen(false);
+      }
+    };
+  
+
   const handleSave = async () => {
     try {
       setLoading(true);
 
       if (!form.shipment_no.trim())
-        throw new Error("Shipment number is required");
-
-      // if (!form.booking_no.trim())
-      //   throw new Error("Job order / booking number is required");
-
+        throw new Error(t.sales_shipment_process.error_1);
+      if (!linkedJobOrderID)
+        throw new Error(t.sales_shipment_process.error_2);
       if (!shipmentTypeSelected)
-        throw new Error("Shipment type is required");
-
+        throw new Error(t.sales_shipment_process.error_3);
       if (!termSelected)
-        throw new Error("Incoterm is required");
-
+        throw new Error(t.sales_shipment_process.error_4);
       if (!form.status)
-        throw new Error("Shipment status is required");
-
+        throw new Error(t.sales_shipment_process.error_5);
       if (!originSelected)
-        throw new Error("Origin port is required");
-
+        throw new Error(t.sales_shipment_process.error_6);
       if (!destinationSelected)
-        throw new Error("Destination port is required");
-
+        throw new Error(t.sales_shipment_process.error_7);
       if (originSelected === destinationSelected)
-        throw new Error("Origin and destination port cannot be the same");
-
+        throw new Error(t.sales_shipment_process.error_8);
       if (!form.etd)
-        throw new Error("ETD is required");
-
+        throw new Error(t.sales_shipment_process.error_9);
       if (!form.eta)
-        throw new Error("ETA is required");
-
+        throw new Error(t.sales_shipment_process.error_10);
       if (new Date(form.eta) < new Date(form.etd))
-        throw new Error("ETA cannot be earlier than ETD");
+        throw new Error(t.sales_shipment_process.error_11);
 
       // Validate milestones (optional but if time exists, must be valid)
       for (const milestone of milestones) {
@@ -229,7 +238,7 @@ function ShipmentProcessContent() {
 
       const payload = {
         shipment_no: form.shipment_no,
-        job_order_id: "sjob69b962a4859b6",
+        job_order_id: linkedJobOrderID,
         ship_via_id: shipmentTypeSelected,
         term_id: termSelected,
         origin_port: originSelected,
@@ -250,35 +259,27 @@ function ShipmentProcessContent() {
       // If validation passed
       setShowAlert(true);
       setIsSuccess(true);
-      setTitlePopup("Success");
-      setMessagePopup("Shipment saved successfully");
+      setTitlePopup(t.master.success);
+      setMessagePopup(t.sales_shipment_process.success_msg);
 
       // reset form values
-      setForm({
-        shipment_no: "",
-        booking_no: "",
-        status: "",
-        eta: "",
-        etd: "",
-        container_info: "",
-        remarks: "",
-      });
-
-      // reset selections
+      setForm({shipment_no: "", booking_no: "", status: "", eta: "", etd: "", container_info: "", remarks: ""});
       setShipmentTypeSelected(undefined);
       setTermSelected(undefined);
       setOriginSelected(undefined);
       setDestinationSelected(undefined);
+      setLinkedJobOrder("");
+      setLinkedJobOrderID("");
 
       // reset milestones
       setMilestones([
-        { id: "cargo_pickup", label: "Cargo Pickup", note: "", time: "" },
-        { id: "stuffing", label: "Stuffing / Warehouse In", note: "", time: "" },
-        { id: "customs_declaration", label: "Customs Declaration", note: "", time: "" },
-        { id: "port_in", label: "Port In", note: "", time: "" },
-        { id: "on_board", label: "On Board Vessel / Flight", note: "", time: "" },
-        { id: "arrival_port", label: "Arrival Port", note: "", time: "" },
-        { id: "delivery_to_consignee", label: "Delivery to Consignee", note: "", time: "" },
+        { id: "cargo_pickup", label: `${t.sales_shipment_process.cargo_pickup}`, note: "", time: "" },
+        { id: "stuffing", label: `${t.sales_shipment_process.stuffing}`, note: "", time: "" },
+        { id: "customs_declaration", label: `${t.sales_shipment_process.customs_declaration}`, note: "", time: "" },
+        { id: "port_in", label: `${t.sales_shipment_process.port_in}`, note: "", time: "" },
+        { id: "on_board", label: `${t.sales_shipment_process.onboard}`, note: "", time: "" },
+        { id: "arrival_port", label: `${t.sales_shipment_process.arrival_port}`, note: "", time: "" },
+        { id: "delivery_to_consignee", label: `${t.sales_shipment_process.delivery}`, note: "", time: "" },
       ]);
 
       setTimeout(() => setShowAlert(false), 6000);
@@ -286,8 +287,8 @@ function ShipmentProcessContent() {
     } catch (err: any) {
       setShowAlert(true);
       setIsSuccess(false);
-      setTitlePopup("Error");
-      setMessagePopup(err.message || "Failed to create sales document");
+      setTitlePopup(t.master.error);
+      setMessagePopup(err.message || t.sales_shipment_process.error_msg);
     } finally {
       setLoading(false);
       setTimeout(() => setShowAlert(false), 6000);
@@ -317,8 +318,9 @@ function ShipmentProcessContent() {
         </Flex>
       </Flex>
 
-          {showAlert && <AlertMessage title={titlePopup} description={messagePopup} isSuccess={isSuccess}/>}
-          
+      {showAlert && <AlertMessage title={titlePopup} description={messagePopup} isSuccess={isSuccess}/>}
+      <SalesBookingLookup isOpen={jobOrderModalOpen} onClose={() => setJobOrderModalOpen(false)} onChoose={handleChooseJobOrder}/>
+
       <Card.Root>
         <Card.Header>
           <Flex gap={4} alignItems={"center"}>
@@ -329,23 +331,16 @@ function ShipmentProcessContent() {
         <Card.Body>
           <SimpleGrid templateColumns={{ base: "1fr", md: "1fr 1fr" }} gap={4}>
             <Field.Root required>
-              <Field.Label>Shipment Number<Field.RequiredIndicator/></Field.Label>
-              <Input
-                placeholder={t.sales_shipment_process.job_booking_no_placeholder}
-                value={form.shipment_no}
-                onChange={(e) => setForm({ ...form, shipment_no: e.target.value })}
-              />
+              <Field.Label>{t.sales_shipment_process.shipment_number}<Field.RequiredIndicator/></Field.Label>
+              <Input placeholder={t.sales_shipment_process.shipment_number_placeholder} value={form.shipment_no} onChange={(e) => setForm({ ...form, shipment_no: e.target.value })}/>
             </Field.Root>
             <Field.Root required>
-              <Field.Label>Job Order<Field.RequiredIndicator/></Field.Label>
+              <Field.Label>{t.sales_shipment_process.job_booking_no}<Field.RequiredIndicator/></Field.Label>
+              <Input placeholder={t.sales_shipment_process.job_booking_no_placeholder} value={linkedJobOrder} readOnly cursor="pointer" onClick={() => setJobOrderModalOpen(true)}/>
             </Field.Root>
             <Field.Root required>
               <Field.Label>{t.sales_shipment_process.shipment_type}<Field.RequiredIndicator/></Field.Label>
-                <Select.Root
-                  collection={shipmentTypeCollection}
-                  value={shipmentTypeSelected ? [shipmentTypeSelected] : []}
-                  onValueChange={(details) => setShipmentTypeSelected(details.value[0])}
-                >
+                <Select.Root collection={shipmentTypeCollection} value={shipmentTypeSelected ? [shipmentTypeSelected] : []} onValueChange={(details) => setShipmentTypeSelected(details.value[0])}>
                   <Select.HiddenSelect />
                   <Select.Control>
                     <Select.Trigger>
@@ -371,7 +366,7 @@ function ShipmentProcessContent() {
             </Field.Root>
             <Field.Root required>
               <Field.Label>{t.sales_shipment_process.incoterm}<Field.RequiredIndicator/></Field.Label>
-                <Select.Root collection={termCollection} value={termSelected ? [termSelected] : []} onValueChange={(details) => setTermSelected(details.value[0])} size="sm" width="100%">
+                <Select.Root collection={termCollection} value={termSelected ? [termSelected] : []} onValueChange={(details) => setTermSelected(details.value[0])} width="100%">
                   <Select.HiddenSelect />
                   <Select.Control>
                     <Select.Trigger>
@@ -394,14 +389,7 @@ function ShipmentProcessContent() {
             </Field.Root>
             <Field.Root required>
               <Field.Label>{t.sales_shipment_process.shipment_status} <Field.RequiredIndicator/></Field.Label>
-                <Select.Root
-                  collection={statusOptions}
-                  value={form.status ? [form.status] : []}
-                  onValueChange={(details) =>
-                    setForm({ ...form, status: details.value[0] })
-                  }
-                  size="sm"
-                >
+                <Select.Root collection={statusOptions} value={form.status ? [form.status] : []} onValueChange={(details) => setForm({ ...form, status: details.value[0] })}>
                   <Select.HiddenSelect />
                   <Select.Control>
                     <Select.Trigger>
@@ -440,7 +428,7 @@ function ShipmentProcessContent() {
           <SimpleGrid templateColumns={{ base: "1fr", md: "1fr 1fr" }} gap={4}>
             <Field.Root required>
               <Field.Label>{t.sales_shipment_process.port_loading} <Field.RequiredIndicator/></Field.Label>
-                <Select.Root collection={portCollection} value={originSelected ? [originSelected] : []} onValueChange={(details) => setOriginSelected(details.value[0])} size="sm" width="100%">
+              <Select.Root collection={portCollection} value={originSelected ? [originSelected] : []} onValueChange={(details) => setOriginSelected(details.value[0])} size="sm" width="100%">
                   <Select.HiddenSelect />
                     <Select.Control>
                       <Select.Trigger>
@@ -463,7 +451,7 @@ function ShipmentProcessContent() {
             </Field.Root>
             <Field.Root required>
               <Field.Label>{t.sales_shipment_process.port_discharge} <Field.RequiredIndicator/></Field.Label>
-                <Select.Root collection={portCollection} value={destinationSelected ? [destinationSelected] : []} onValueChange={(details) => setDestinationSelected(details.value[0])} size="sm" width="100%">
+              <Select.Root collection={portCollection} value={destinationSelected ? [destinationSelected] : []} onValueChange={(details) => setDestinationSelected(details.value[0])} size="sm" width="100%">
                   <Select.HiddenSelect />
                   <Select.Control>
                   <Select.Trigger>
@@ -482,39 +470,23 @@ function ShipmentProcessContent() {
                       </Select.Content>
                     </Select.Positioner>
                   </Portal>
-                </Select.Root>
+              </Select.Root>
             </Field.Root>
             <Field.Root required>
               <Field.Label>{t.sales_shipment_process.eta} <Field.RequiredIndicator/></Field.Label>
-              <Input
-                type="date"
-                value={form.eta}
-                onChange={(e) => setForm({ ...form, eta: e.target.value })}
-              />
+              <Input type="date" value={form.eta} onChange={(e) => setForm({ ...form, eta: e.target.value })}/>
             </Field.Root>
             <Field.Root required>
               <Field.Label>{t.sales_shipment_process.etd} <Field.RequiredIndicator/></Field.Label>
-              <Input
-                type="date"
-                value={form.etd}
-                onChange={(e) => setForm({ ...form, etd: e.target.value })}
-              />
+              <Input type="date" value={form.etd} onChange={(e) => setForm({ ...form, etd: e.target.value })}/>
             </Field.Root>
             <Field.Root>
               <Field.Label>{t.sales_shipment_process.container_info}</Field.Label>
-              <Textarea
-                placeholder={t.sales_shipment_process.container_info_placeholder}
-                value={form.container_info}
-                onChange={(e) => setForm({ ...form, container_info: e.target.value })}
-              />
+              <Textarea placeholder={t.sales_shipment_process.container_info_placeholder} value={form.container_info} onChange={(e) => setForm({ ...form, container_info: e.target.value })}/>
             </Field.Root>
             <Field.Root>
               <Field.Label>{t.sales_shipment_process.remarks}</Field.Label>
-              <Textarea
-                placeholder={t.sales_shipment_process.remarks_placeholder}
-                value={form.remarks}
-                onChange={(e) => setForm({ ...form, remarks: e.target.value })}
-              />
+              <Textarea placeholder={t.sales_shipment_process.remarks_placeholder} value={form.remarks} onChange={(e) => setForm({ ...form, remarks: e.target.value })}/>
             </Field.Root>
           </SimpleGrid>
         </Card.Body>
@@ -529,28 +501,16 @@ function ShipmentProcessContent() {
         </Card.Header>
         <Card.Body>
           {milestones.map((item, index) => (
-            <SimpleGrid
-              key={item.label}
-              templateColumns={{ base: "1fr", md: "260px 1fr 200px" }}
-              gap={3}
-              alignItems="center"
-              mb={4}
-            >
+            <SimpleGrid key={item.label} templateColumns={{ base: "1fr", md: "260px 1fr 200px" }} gap={3} alignItems="center" mb={4}>
               <Text>{item.label}</Text>
-
-              <Textarea
-                placeholder={t.sales_shipment_process.notes_optional}
-                value={item.note}
+              <Textarea placeholder={t.sales_shipment_process.notes_optional} value={item.note}
                 onChange={(e) => {
-                  const updated = [...milestones];
+                  const updated = [...milestones]; 
                   updated[index].note = e.target.value;
                   setMilestones(updated);
                 }}
               />
-
-              <Input
-                type="datetime-local"
-                value={item.time}
+              <Input type="datetime-local" value={item.time}
                 onChange={(e) => {
                   const updated = [...milestones];
                   updated[index].time = e.target.value;

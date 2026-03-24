@@ -131,7 +131,13 @@ export const id = {
     noItems: "Data tidak ditemukan",
     remove: "Hapus",
     downloadExcel: "Unduh Excel",
-    downloadPDF: "Unduh PDF"
+    downloadPDF: "Unduh PDF",
+    last_update_by: "Terakhir diperbaharui oleh",
+    last_update_at: "Terakhir diperbaharui pada",
+    submit: "Kirim",
+    export_pdf: "Ekspor PDF",
+    reject: "Tolak",
+    approve: "Setujui"
   },
   customer: {
     title: "Data Master Customer",
@@ -587,253 +593,198 @@ sales_module : {
   title_create: "Buat Inquiry",
   title_view: "Detail Inquiry",
   title_edit: "Edit Inquiry",
-
   inquiry_no: "Nomor Inquiry",
   inquiry_no_placeholder: "Otomatis atau isi manual",
-
   customer_name: "Customer",
   customer_placeholder: "Masukkan nama customer",
-
   contact_person: "PIC / Kontak",
   contact_person_placeholder: "Masukkan nama PIC",
-
   phone: "Telepon / WhatsApp",
   phone_placeholder: "Masukkan nomor telepon",
-
   shipment_type: "Metode Pengiriman",
   shipment_type_placeholder: "Pilih metode pengiriman",
-
   origin_country: "Negara Asal",
   origin_country_placeholder: "Pilih negara asal",
-
   destination_country: "Negara Tujuan",
   destination_country_placeholder: "Pilih negara tujuan",
-
   commodity: "Komoditas",
   commodity_placeholder: "Masukkan jenis barang",
-
   incoterm: "Incoterm",
   incoterm_placeholder: "Pilih incoterm",
-
   remarks: "Catatan / Instruksi Khusus",
   remarks_placeholder: "Tambahkan catatan atau instruksi khusus",
-
   item_list_title: "Daftar Barang / Komoditas",
-  item_list_description:
-    "Tambahkan satu atau lebih barang. Data ini akan digunakan untuk proses penawaran dan operasional.",
-
+  item_list_description:"Tambahkan satu atau lebih barang. Data ini akan digunakan untuk proses penawaran dan operasional.",
   add_item: "Tambah Barang",
-
   item_name: "Nama Barang",
   item_name_placeholder: "Masukkan nama barang",
-
   hs_code: "Kode HS",
   hs_code_placeholder: "Masukkan kode HS",
-
   qty: "Jumlah",
   qty_placeholder: "Masukkan jumlah",
-
   unit: "Satuan",
   unit_placeholder: "Pilih satuan",
-
   weight: "Berat (KG)",
   weight_placeholder: "Masukkan berat",
-
   cbm: "Volume (CBM)",
   cbm_placeholder: "Masukkan volume",
-
   packaging: "Jenis Kemasan",
   packaging_placeholder: "Contoh: Karton, Palet, Drum",
-
   save_draft: "Simpan Draft",
   submit: "Kirim Inquiry",
   edit: "Edit",
-  export_pdf: "Export PDF"
+  export_pdf: "Export PDF",
+  error_1 : "Nomor inquiry wajib diisi",
+  error_2 : "Customer wajib diisi",
+  error_3 : "Jenis pengiriman wajib diisi",
+  error_4 : "Origin wajib diisi",
+  error_5 : "Destination wajib diisi",
+  error_6 : "Incoterm wajib diisi",
+  error_7 : "Pemilihan komoditas wajib diisi",
+  error_8 : "Minimal harus ada satu item",
+  success_msg : "Inquiry telah berhasil dibuat",
+  error_msg : "Gagal membuat inquiry",
+  hint_1 : "Masukkan nama konsumen baru bahkan jika konsumen tersebut telah terdaftar dalam sistem",
+  hint_2 : "Jangan gunakan 0 tapi gunakan kode negara seperti 62 tanpa +"
 },
 sales_quotation: {
   title_create: "Buat Penawaran",
-
-  //sections
   customer_information: "Informasi Customer",
   quotation_details: "Detail Penawaran",
   quotation_items: "Item Penawaran",
-
-  //customer
   customer_name: "Customer",
   customer_name_placeholder: "Pilih customer",
-
   contact_person: "PIC / Kontak",
   contact_person_placeholder: "Masukkan nama PIC",
-
   phone_number: "Nomor Telepon",
   phone_number_placeholder: "Masukkan nomor telepon",
-
   customer_address: "Alamat Customer",
   customer_address_placeholder: "Masukkan alamat customer",
-
-  //quotation info
   quotation_no: "Nomor Penawaran",
   quotation_no_placeholder: "Otomatis atau isi manual",
-
   quotation_date: "Tanggal Penawaran",
-
   currency: "Mata Uang",
   currency_placeholder: "Pilih mata uang",
-
   linked_inquiry: "Inquiry Terkait (Opsional)",
   linked_inquiry_placeholder: "Pilih inquiry",
-
-  //items
   add_item: "Tambah Item",
-
   product_service: "Produk / Layanan",
   product_service_placeholder: "Masukkan nama produk atau layanan",
-
   description: "Deskripsi",
   description_placeholder: "Masukkan deskripsi",
-
   quantity: "Jumlah",
   quantity_placeholder: "Masukkan jumlah",
-
   unit_price: "Harga Satuan",
   unit_price_placeholder: "Masukkan harga satuan",
-
   subtotal_auto: "Subtotal akan dihitung otomatis",
-
-  //buttons
   cancel: "Batal",
   save_draft: "Simpan Draft",
   save_generate_pdf: "Simpan & Generate PDF",
-
   success_create: "Penawaran berhasil dibuat.",
   success_update: "Penawaran berhasil diperbarui.",
-  success_delete: "Penawaran berhasil dihapus."
+  success_delete: "Penawaran berhasil dihapus.",
+  error_1 : "Customer wajib diisi",
+  error_2 : "Nomor quotation wajib diisi",
+  error_3 : "Tanggal quotation wajib diisi",
+  error_4 : "Tanggal kadaluarsa quotation wajib diisi",
+  error_5 : "Mata uang wajib diisi",
+  error_6 : "Minimal harus ada satu item",
+  error_msg : "Gagal membuat Quotation",
+  valid_until : "Tanggal Akhir Penawaran",
+  error_7 : "Customer tidak ditemukan di master data. Anda hanya dapat menyimpan sebagai draft."
 },
 booking_confirmation: {
   title: "Konfirmasi Booking / Job Order",
-
   draft: "Draft",
   save_draft: "Simpan Draft",
   confirm_create_job: "Konfirmasi & Buat Job",
-
-  //sections
   job_details: "Detail Job",
   parties_information: "Informasi Pihak Terkait",
   routing_cargo: "Detail Rute & Kargo",
   charges_summary: "Ringkasan Biaya",
   attachments: "Lampiran",
-
-  //job meta
   booking_no: "Nomor Booking",
   booking_no_placeholder: "Otomatis atau isi manual",
-
   job_type: "Jenis Job",
   job_type_placeholder: "Pilih jenis job",
-
   service: "Layanan Pengiriman",
   service_placeholder: "Pilih layanan",
-
   estimated_departure: "Estimasi Keberangkatan",
   estimated_arrival: "Estimasi Kedatangan",
-
-  //parties
   shipper: "Shipper (Pengirim)",
   consignee: "Consignee (Penerima)",
-
   company_name: "Nama Perusahaan",
   company_name_placeholder: "Masukkan nama perusahaan",
-
   contact_person: "PIC / Kontak",
   contact_person_placeholder: "Masukkan nama PIC",
-
   address: "Alamat",
   address_placeholder: "Masukkan alamat",
-
-  //routing
   origin_port: "Pelabuhan Muat / Asal",
   origin_port_placeholder: "Pilih pelabuhan asal",
-
   destination_port: "Pelabuhan Bongkar / Tujuan",
   destination_port_placeholder: "Pilih pelabuhan tujuan",
-
   incoterm: "Incoterm",
   incoterm_placeholder: "Pilih incoterm",
-
-  //cargo
   package_type: "Jenis Kemasan",
   package_type_placeholder: "Contoh: Karton, Palet, Loose Cargo",
-
   total_packages: "Total Kemasan",
   total_packages_placeholder: "Masukkan total kemasan",
-
   gross_weight: "Berat Kotor (KG)",
   gross_weight_placeholder: "Masukkan total berat",
-
   cbm: "Volume (CBM)",
   cbm_placeholder: "Masukkan volume kargo",
-
-  //charges
   freight_charge: "Biaya Freight",
   local_charge: "Biaya Lokal",
   other_charge: "Biaya Lainnya",
-
   remarks: "Catatan / Instruksi Khusus",
   remarks_placeholder: "Tambahkan catatan (opsional)",
-
-  //attachments
   upload_documents: "Upload dokumen pendukung (opsional)",
   choose_file: "Pilih File",
-
-  //success messages
   success_draft: "Booking berhasil disimpan sebagai draft.",
-  success_confirm: "Booking berhasil dikonfirmasi dan job telah dibuat."
+  success_confirm: "Booking berhasil dikonfirmasi dan job telah dibuat.",
+  error_1 : "Nomor booking wajib diisi",
+  error_2 : "Jenis pekerjaan wajib diisi",
+  error_3 : "Jenis layanan / pengiriman wajib diisi",
+  error_4 : "Pelabuhan asal wajib diisi",
+  error_5 : "Pelabuhan tujuan wajib diisi",
+  error_6 : "Term wajib diisi",
+  error_7 : "Pelabuhan asal dan pelabuhan tujuan tidak boleh sama",
+  error_8 : "Gross Weight atau CBM harus lebih dari 0",
+  error_9 : "Total paket tidak boleh negatif",
+  error_10 : "Biaya tidak boleh negatif",
+  error_msg : "Gagal membuat job order/booking",
+  inquiry_no : "Nomor Inquiry",
 },
 sales_shipment_process: {
   title: "Proses Pengiriman & Dokumen",
   description: "Kelola eksekusi pengiriman, milestone operasional, serta dokumen ekspor/impor untuk job ini.",
-
   save_draft: "Simpan Draft",
   save_continue: "Simpan & Lanjutkan",
   edit: "Edit",
   mark_completed: "Tandai Pengiriman Selesai",
-
-  //sections
   shipment_overview: "Ringkasan Pengiriman",
   routing_container: "Detail Rute & Kontainer",
   milestones: "Tracking Milestone",
   shipment_documents: "Dokumen Pengiriman",
   shipment_documents_desc: "Upload atau kelola dokumen ekspor/impor yang dibutuhkan.",
-
-  //overview
   job_booking_no: "Nomor Job / Booking",
   job_booking_no_placeholder: "Otomatis atau isi manual",
-
   shipment_type: "Jenis Pengiriman",
   shipment_type_placeholder: "Pilih jenis pengiriman",
-
   incoterm: "Incoterm",
   incoterm_placeholder: "Pilih incoterm",
-
   shipment_status: "Status Pengiriman",
   shipment_status_placeholder: "Pilih status pengiriman",
-
-  //routing
   port_loading: "Pelabuhan Muat",
   port_loading_placeholder: "Pilih pelabuhan asal",
-
   port_discharge: "Pelabuhan Bongkar",
   port_discharge_placeholder: "Pilih pelabuhan tujuan",
-
   eta: "Estimasi Waktu Tiba (ETA)",
   etd: "Estimasi Waktu Berangkat (ETD)",
-
   container_info: "Informasi Kontainer / Kemasan",
   container_info_placeholder: "Kontainer 20ft / 40ft, CBM, berat, total kemasan…",
-
   remarks: "Catatan Operasional",
   remarks_placeholder: "Catatan operasi, instruksi penanganan, dll.",
-
-  //milestones
   cargo_pickup: "Pickup Barang",
   stuffing: "Stuffing / Masuk Gudang",
   customs_declaration: "Deklarasi Bea Cukai",
@@ -841,10 +792,7 @@ sales_shipment_process: {
   onboard: "Naik Kapal / Pesawat",
   arrival_port: "Tiba di Pelabuhan Tujuan",
   delivery: "Pengiriman ke Consignee",
-
   notes_optional: "Catatan (opsional)",
-
-  //documents
   commercial_invoice: "Faktur Komersial",
   packing_list: "Daftar Pengepakan",
   bill_of_lading: "Bill of Lading / Air Waybill",
@@ -853,197 +801,194 @@ sales_shipment_process: {
   customs_document: "Dokumen Kepabeanan",
   gate_pass: "Gate Pass / Delivery Order",
   supporting_docs: "Dokumen Pendukung Lainnya",
-
   optional: "Opsional",
-  view_replace: "Lihat / Ganti"
+  view_replace: "Lihat / Ganti",
+  error_1: "Nomor pengiriman wajib diisi",
+  error_2: "Nomor job order / booking wajib diisi",
+  error_3: "Jenis pengiriman wajib diisi",
+  error_4: "Incoterm wajib diisi",
+  error_5: "Status pengiriman wajib diisi",
+  error_6: "Pelabuhan asal wajib diisi",
+  error_7: "Pelabuhan tujuan wajib diisi",
+  error_8: "Pelabuhan asal dan pelabuhan tujuan tidak boleh sama",
+  error_9: "ETD wajib diisi",
+  error_10: "ETA wajib diisi",
+  error_11: "ETA tidak boleh lebih awal dari ETD",
+  success_msg: "Pengiriman berhasil disimpan !!",
+  error_msg: "Gagal membuat dokumen pengiriman !!",
+  shipment_number: "Nomor pengiriman",
+  shipment_number_placeholder: "Masukkan nomor pengiriman"
 },
 sales_costing_expense: {
   title: "Pencatatan Biaya & Aktualisasi",
   description: "Catat biaya aktual pengiriman untuk memantau profit serta mengontrol pengeluaran operasional.",
-
-  //shipment context
   shipment_context: "Konteks Pengiriman",
-
   job_booking_number: "Nomor Job / Booking",
   job_booking_number_placeholder: "Masukkan nomor job atau booking",
-
   customer: "Customer",
   customer_placeholder: "Pilih customer",
-
   shipment_type: "Jenis Pengiriman",
   shipment_type_placeholder: "Pilih jenis pengiriman",
-
   origin_port: "Pelabuhan / Lokasi Asal",
   origin_port_placeholder: "Pilih pelabuhan asal",
-
   destination_port: "Pelabuhan / Lokasi Tujuan",
   destination_port_placeholder: "Pilih pelabuhan tujuan",
-
   notes_optional: "Catatan (opsional)",
   notes_optional_placeholder: "Tambahkan catatan internal jika diperlukan",
-
-  //cost items
   actual_expense_items: "Daftar Biaya Aktual",
   add_cost_item: "Tambah Biaya",
   expense_line: "Baris Biaya",
-
   cost_category: "Kategori Biaya",
   cost_category_placeholder: "Pilih kategori biaya",
-
   cost_description: "Deskripsi",
   cost_description_placeholder: "Masukkan deskripsi biaya",
-
   supplier: "Vendor / Supplier",
   supplier_placeholder: "Pilih supplier",
-
   currency: "Mata Uang",
   currency_placeholder: "Pilih mata uang",
-
   amount: "Nominal",
   amount_placeholder: "Masukkan nominal",
-
   remarks_reference: "Catatan / Referensi (opsional)",
   remarks_reference_placeholder: "Nomor invoice, referensi, atau catatan",
-
   total_actual_cost: "Total Biaya Aktual",
-
-  //actions
   save_draft: "Simpan Draft",
   finalize_actualization: "Finalisasi Biaya",
-
-  //success
   success_draft: "Draft biaya berhasil disimpan.",
-  success_finalize: "Biaya aktual berhasil difinalisasi."
+  success_finalize: "Biaya aktual berhasil difinalisasi.",
+  error_1: "Nomor costing wajib diisi",
+  error_2: "Nomor booking wajib diisi",
+  error_3: "Customer wajib diisi",
+  error_4: "Jenis pengiriman wajib diisi",
+  error_5: "Pelabuhan asal wajib diisi",
+  error_6: "Pelabuhan tujuan wajib diisi",
+  error_7: "Pelabuhan asal dan tujuan wajib diisi",
+  error_8: "Minimal harus ada satu item",
+  error_msg: "Gagal untuk membuat pencatatan biaya",
+  costing_number: "Nomor Pencatatan",
+  costing_number_placeholder: "Masukkan nomor pencatatan",
+  exchange_rate: "Kurs",
+  base_amount: "Jumlah Dasar"
 },
 sales_order: {
   title_create: "Buat Sales Order",
   title_edit: "Edit Sales Order",
   title_view: "Detail Sales Order",
-
   description: "Buat sales order terkonfirmasi untuk memulai eksekusi pengiriman dan perencanaan operasional.",
-
-  //sections
   order_information: "Informasi Order",
   origin_destination: "Asal & Tujuan",
   cargo_details: "Detail Barang",
-
-  //order info
   customer: "Customer",
   customer_placeholder: "Pilih customer",
-
   inquiry_quotation_ref: "Referensi Inquiry / Penawaran",
   inquiry_quotation_ref_placeholder: "Nomor referensi (opsional)",
-
   order_date: "Tanggal Order",
-
   sales_person: "Sales",
   sales_person_placeholder: "Tentukan sales",
-
   service_type: "Jenis Layanan",
   service_type_placeholder: "Pilih jenis layanan",
-
   shipment_mode: "Mode Pengiriman",
   shipment_mode_placeholder: "Pilih mode pengiriman",
-
-  //routing
   origin_port: "Pelabuhan / Negara Asal",
   origin_port_placeholder: "Pilih pelabuhan asal",
-
   destination_port: "Pelabuhan / Negara Tujuan",
   destination_port_placeholder: "Pilih pelabuhan tujuan",
-
-  eta_etd: "ETA / ETD",
-
+  eta: "ETA",
+  etd: "ETD",
   incoterm: "Incoterm",
   incoterm_placeholder: "Pilih incoterm",
-
-  //cargo
   commodity: "Komoditas",
   commodity_placeholder: "Deskripsi barang",
-
   hs_code: "HS Code (opsional)",
   hs_code_placeholder: "contoh: 0901.21.00",
-
-  quantity_packaging: "Jumlah / Kemasan",
-  quantity_packaging_placeholder: "contoh: 120 Karton",
-
+  quantity_packaging: "Jumlah",
+  quantity_packaging_placeholder: "contoh: 120",
   weight_volume: "Berat & Volume",
   weight_volume_placeholder: "contoh: 2,450 KG | 12.4 CBM",
-
   remarks: "Catatan / Instruksi Khusus",
   remarks_placeholder: "Catatan untuk tim operasional atau customer",
-
-  //actions
-  cancel: "Batal",
   save_sales_order: "Simpan Sales Order",
-
-  //status
   draft: "Draft",
   confirmed: "Terkonfirmasi",
   in_progress: "Sedang Berjalan",
   completed: "Selesai",
   cancelled: "Dibatalkan",
-
-  //success
   success_create: "Sales order berhasil dibuat.",
-  success_update: "Sales order berhasil diperbarui."
+  success_update: "Sales order berhasil diperbarui.",
+  error_1: "Nomor sales order wajib diisi",
+  error_2: "Customer wajib diisi",
+  error_3: "Tanggal order wajib diisi",
+  error_4: "Incoterm wajib diisi",
+  error_5: "ETD wajib diisi",
+  error_6: "ETA wajib diisi",
+  error_7: "Minimal harus ada satu item",
+  sales_order_number: "Nomor Sales Order",
+  sales_order_number_placeholder: "Masukkan nomor sales order",
+  tax: "Pajak",
+  tax_placeholder: "Pilih perhitungan pajak",
+  customer_information: "Informasi Customer",
+  product_name: "Nama Produk",
+  product_name_placeholder: "Cari nama produk",
+  no_product: "Produk tidak ditemukan",
+  uom: "Satuan",
+  unit_price: "Harga Satuan",
+  unit_price_placeholder: "Masukkan harga satuan",
+  dpp: "DPP (Sebelum Pajak)",
+  dpp_placeholder: "Masukkan DPP",
+  ppn: "PPN (Pajak)",
+  ppn_placeholder: "Masukkan pajak",
+  total: "Total",
+  total_placeholder: "Masukkan total",
+  notes: "Catatan",
+  notes_placeholder: "Masukkan catatan",
+  add_item: "Tambah Item"
 },
 sales_delivery_order: {
   title_create: "Buat Delivery Order",
   title_edit: "Edit Delivery Order",
   title_view: "Detail Delivery Order",
-
   description: "Terbitkan delivery order untuk mengotorisasi pengeluaran barang serta mengatur proses pengiriman akhir.",
-
-  //sections
   document_information: "Informasi Dokumen",
   currency_exchange: "Mata Uang & Kurs",
   charges_items: "Item / Biaya",
   totals: "Total",
-
-  //document info
   do_number: "Nomor Delivery Order",
   do_number_placeholder: "contoh: DO-2026-0001",
-
   issue_date: "Tanggal Terbit",
-
   reference: "Referensi (Sales Order / Job)",
   reference_placeholder: "Hubungkan ke sales order atau job pengiriman",
-
-  //currency
   currency: "Mata Uang",
   currency_placeholder: "Pilih mata uang",
-
   exchange_rate: "Kurs ke IDR",
   exchange_rate_helper: "Sesuaikan kurs jika berbeda dengan kurs bank atau bea cukai.",
-
-  //items
   description_label: "Deskripsi",
   description_placeholder: "Deskripsi barang atau biaya",
-
   quantity: "Jumlah",
   unit_price: "Harga Satuan",
   line_total: "Total Baris",
-
   add_item: "Tambah Item / Biaya",
   remove: "Hapus",
-
-  //totals
   subtotal_foreign: "Subtotal (Mata Uang Asing)",
   converted_to_idr: "Dikonversi ke IDR menggunakan kurs yang dipilih",
   subtotal_idr: "Subtotal (IDR)",
-
-  //remarks
   remarks: "Catatan",
   remarks_placeholder: "Catatan tambahan atau instruksi pengiriman",
-
-  //actions
   cancel: "Batal",
   save: "Simpan Delivery Order",
-
-  //success
   success_create: "Delivery order berhasil dibuat.",
-  success_update: "Delivery order berhasil diperbarui."
+  success_update: "Delivery order berhasil diperbarui.",
+  customer_name: "Nama Customer",
+  customer_info: "Informasi Customer",
+  delivery_date: "Tanggal Pengiriman",
+  uom: "Satuan",
+  uom_placeholder: "Pilih Satuan",
+  notes: "Catatan",
+  notes_placeholder: "Masukkan catatan",
+  error_1: "Harap masukkan nomor delivery order",
+  error_2: "Harap mengisi tanggal terbit",
+  error_3: "Harap memilih customer",
+  error_4: "Harap mengisi tanggal pengiriman",
+  error_5: "Minimal harus terdapat 1 item",
+  error_6: "Harap memilih sales order",
 },
 sales_profit_summary: {
   title_create: "Buat Ringkasan Profit",

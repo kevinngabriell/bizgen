@@ -27,6 +27,8 @@ export default function CreateProfitSummaryPage() {
   //router authentication
   const router = useRouter();
 
+  //PARAMETER DETAILNYA profit_id
+
   //language state 
   const [lang, setLang] = useState<"en" | "id">("en");
   const t = getLang(lang);

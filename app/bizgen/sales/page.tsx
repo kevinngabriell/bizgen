@@ -4,14 +4,22 @@ import Loading from "@/components/loading";
 import SidebarWithHeader from "@/components/ui/SidebarWithHeader";
 import { DecodedAuthToken, checkAuthOrRedirect, getAuthInfo } from "@/lib/auth/auth";
 import { getLang } from "@/lib/i18n";
+import { GetSalesBookingData, getSalesJobOrder } from "@/lib/sales/booking-confirmation";
+import { getSalesCosting, GetSalesCostingData } from "@/lib/sales/costing";
+import { GetSalesDeliveryItemData, getSalesdeliveryOrder } from "@/lib/sales/delivery-order";
+import { getSalesDocument, GetSalesDocumentItemData } from "@/lib/sales/document";
+import { getSalesInvoice, GetSalesInvoiceItemData } from "@/lib/sales/invoice";
+import { getSalesProfit, GetSalesProfitItemData } from "@/lib/sales/profit";
 import { getSalesQuotations, GetSalesQuotationsData } from "@/lib/sales/quotation";
 import { GetRfq, getSalesRfq } from "@/lib/sales/rfq";
+import { getSalesOrder, GetSalesOrderItemData } from "@/lib/sales/sales-order";
 import { Button, Card, Flex, Heading, Text, SimpleGrid, Badge, Icon } from "@chakra-ui/react";
 import { useRouter } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useState, useEffect, JSX } from "react";
 import { FiFolder, FiFileText, FiCheckSquare, FiClipboard, FiDollarSign, FiShoppingCart, FiTruck, FiTrendingUp } from "react-icons/fi";
 
 export default function Sales (){
+  //set auth, loading, and routing
   const [auth, setAuth] = useState<DecodedAuthToken | null>(null);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
@@ -20,9 +28,18 @@ export default function Sales (){
   const [lang, setLang] = useState<"en" | "id">("en");
   const t = getLang(lang);
 
+  //fetch top data
   const [salesRfqData, setSalesRfqData] = useState<GetRfq[]>([]);
   const [salesQuotationData, setSalesQuotationData] = useState<GetSalesQuotationsData[]>([]);
+  const [salesJobOrderData, setSalesJobOrderData] = useState<GetSalesBookingData[]>([]);
+  const [salesShipmentData, setSalesShipmentData] = useState<GetSalesDocumentItemData[]>([]);
+  const [salesCostingData, setSalesCostingData] = useState<GetSalesCostingData[]>([]);
+  const [salesOrderData, setSalesOrderData] = useState<GetSalesOrderItemData[]>([]);
+  const [salesDeliveryData, setSalesDeliveryData] = useState<GetSalesDeliveryItemData[]>([]);
+  const [salesProfitData, setSalesProfitData] = useState<GetSalesProfitItemData[]>([]);
+  const [salesInvoiceData, setSalesInvoiceData] = useState<GetSalesInvoiceItemData[]>([]);
 
+  //formating date
   const formatDate = (dateStr: string) => {
     const d = new Date(dateStr);
     return d.toLocaleDateString(lang === "id" ? "id-ID" : "en-US", {
@@ -57,6 +74,28 @@ export default function Sales (){
 
       const salesQuotationRes = await getSalesQuotations(1, 3, "");
       setSalesQuotationData(salesQuotationRes.data);
+
+      const salesJobOrderRes = await getSalesJobOrder(1, 3, "");
+      setSalesJobOrderData(salesJobOrderRes.data);
+
+      const salesDocumentRes = await getSalesDocument(1, 3, "");
+      setSalesShipmentData(salesDocumentRes.data);
+
+      const salesCostingRes = await getSalesCosting(1, 3, "");
+      setSalesCostingData(salesCostingRes.data);
+
+      const salesOrderRes = await getSalesOrder(1, 3, "");
+      setSalesOrderData(salesOrderRes.data);
+
+      const salesDeliveryRes = await getSalesdeliveryOrder(1, 3, "");
+      setSalesDeliveryData(salesDeliveryRes.data);
+
+      const salesProfitRes = await getSalesProfit(1, 3, "");
+      setSalesProfitData(salesProfitRes.data);
+
+      const salesInvoiceRes = await getSalesInvoice(1, 3, "");
+      setSalesInvoiceData(salesInvoiceRes.data);
+
     }catch (error: any){
       setSalesRfqData([]);
       setSalesQuotationData([]);
@@ -107,9 +146,69 @@ export default function Sales (){
     router.push(`/bizgen/sales/inquiry?rfq_id=${rfq_id}`);
   }
 
+  const handleDirectToSalesQuotation = (quotation_id: string) => {
+    router.push(`/bizgen/sales/quotation?quotation_id=${quotation_id}`);
+  }
+
+  const handleDirectToSalesBookConfirmation = (booking_id: string) => {
+    router.push(`/bizgen/sales/booking-confirmation?booking_id=${booking_id}`);
+  }
+
+  const handleDirectToSalesShipment = (shipment_id: string) => {
+    router.push(`/bizgen/sales/shipment-process?shipment_id=${shipment_id}`);
+  }
+
+  const handleDirectToCosting = (costing_id: string) => {
+    router.push(`/bizgen/sales/costing-expense?shipment_id=${costing_id}`);
+  }
+
+  const handleDirectToSalesOrderDetail = (sales_order_id: string) => {
+    router.push(`/bizgen/sales/sales-order?shipment_id=${sales_order_id}`);
+  }
+
+  const handleDirectToDeliveryDetail = (delivery_order_id: string) => {
+    router.push(`/bizgen/sales/delivery-order?delivery_order_id=${delivery_order_id}`);
+  }
+
+  const handleDirectToProfitDetail = (profit_id: string) => {
+    router.push(`/bizgen/sales/profit-summary?profit_id=${profit_id}`);
+  }
+
+  const handleDirectToInvoiceDetail = (invoice_id: string) => {
+    router.push(`/bizgen/sales/invoice?invoice_id=${invoice_id}`);
+  }
+
   const handleToSeeAll = () => {
     router.push(`/bizgen/sales/see-all`);
   }
+
+  // Helper function to render lists with empty/placeholder state
+  const renderList = (data: any[], renderItem: (item: any) => JSX.Element) => {
+    if (!data || data.length === 0) {
+      return (
+        <Text fontSize="xs" color="gray.400" fontStyle="italic">
+          No data available
+        </Text>
+      );
+    }
+
+    const filledData = [...data];
+    while (filledData.length < 3) {
+      filledData.push(null);
+    }
+
+    return filledData.map((item, index) => {
+      if (!item) {
+        return (
+          <Flex key={index} justify="space-between" opacity={0.4}>
+            <Text fontSize="xs" color="gray.400">—</Text>
+            <Text fontSize="xs" color="gray.300">—</Text>
+          </Flex>
+        );
+      }
+      return renderItem(item);
+    });
+  };
 
   return (
     <SidebarWithHeader username={auth?.username ?? "Unknown"} daysToExpire={auth?.days_remaining ?? 0}>
@@ -138,16 +237,15 @@ export default function Sales (){
                 
             <Flex direction="column" gap={2} mb="3">
               <Text fontSize="xs" fontWeight="semibold" color="gray.500">{t.sales_module.inquiry.last_records}</Text>
-              {/* Sample data for inquiry */}
+              {/* Data for inquiry */}
               <Flex direction="column" gap={1}>
-                {salesRfqData?.map((rfq) => (
-                  <Flex justify="space-between">
+                {renderList(salesRfqData, (rfq) => (
+                  <Flex key={rfq.sales_rfq_id} justify="space-between">
                     <Text fontSize="xs" color="gray.600" maxLines={1} onClick={() => handleDirectToSalesRfqDetail(rfq.sales_rfq_id)}>{rfq.sales_rfq_number}</Text>
                     <Badge colorScheme="gray" variant="subtle">{formatDate(rfq.created_at)}</Badge>
                   </Flex>
                 ))}
               </Flex>
-              {/* Sample data for inquiry */}
             </Flex>
 
             <Flex justify="space-between">
@@ -157,295 +255,264 @@ export default function Sales (){
           </Card.Body>
         </Card.Root>
         
-            {/* Quotation card */}
-            <Card.Root>
-              <Card.Body>
-                {/* Quotation title and badge */}
-                <Flex align="center" mb="3" gap={2}>
-                  <Icon as={FiFileText} />
-                  <Heading size="md" flex="1">{t.sales_module.quotation.title}</Heading>
-                  <Badge color="gray">{t.sales_module.quotation.badge}</Badge>
-                </Flex>
+        {/* Quotation card */}
+        <Card.Root>
+          <Card.Body>
+            {/* Quotation title and badge */}
+            <Flex align="center" mb="3" gap={2}>
+              <Icon as={FiFileText} />
+              <Heading size="md" flex="1">{t.sales_module.quotation.title}</Heading>
+              <Badge color="gray">{t.sales_module.quotation.badge}</Badge>
+            </Flex>
 
-                <Text fontSize="sm" color="gray.600" mb="4">{t.sales_module.quotation.description}</Text>
+            <Text fontSize="sm" color="gray.600" mb="4">{t.sales_module.quotation.description}</Text>
                 
-                <Flex direction="column" gap={2} mb="3">
-                  <Text fontSize="xs" fontWeight="semibold" color="gray.500">{t.sales_module.quotation.last_records}</Text>
+            <Flex direction="column" gap={2} mb="3">
+              <Text fontSize="xs" fontWeight="semibold" color="gray.500">{t.sales_module.quotation.last_records}</Text>
                   
-                  {/* Sample data for quotation */}
-                  <Flex direction="column" gap={1}>
-                    {salesQuotationData?.map((quotation) => (
-                      <Flex justify="space-between">
-                        <Text fontSize="xs" color="gray.600" maxLines={1}>{quotation.sales_quotation_number}</Text>
-                        <Badge colorScheme="gray" variant="subtle">{formatDate(quotation.created_at)}</Badge>
-                      </Flex>
-                    ))}
+              {/* Sample data for quotation */}
+              <Flex direction="column" gap={1}>
+                {renderList(salesQuotationData, (quotation) => (
+                  <Flex key={quotation.sales_quotation_number} justify="space-between">
+                    <Text fontSize="xs" color="gray.600" maxLines={1} onClick={() => handleDirectToSalesQuotation(quotation.sales_quotation_id)}>{quotation.sales_quotation_number}</Text>
+                    <Badge colorScheme="gray" variant="subtle">{formatDate(quotation.created_at)}</Badge>
                   </Flex>
-                </Flex>
+                ))}
+              </Flex>
+            </Flex>
 
-                <Flex justify="space-between">
-                  <Button size="sm" bg={"transparent"} borderColor={"#E77A1F"} color={"#E77A1F"} cursor={"pointer"}>{t.sales_module.quotation.see_all}</Button>
-                  <Button size="sm" bg={"#E77A1F"} color={"white"} cursor={"pointer"} onClick={handleDirectToDetailQuotation}>{t.sales_module.quotation.create}</Button>
-                </Flex>
-              </Card.Body>
-            </Card.Root>
-            {/* Booking Confirmation card */}
-            <Card.Root>
-              <Card.Body>
-                {/* Booking Confirmation title and badge */}
-                <Flex align="center" mb="3" gap={2}>
-                  <Icon as={FiCheckSquare} />
-                  <Heading size="md" flex="1">{t.sales_module.booking.title}</Heading>
-                  <Badge color="green">{t.sales_module.booking.badge}</Badge>
-                </Flex>
+          <Flex justify="space-between">
+            <Button size="sm" bg={"transparent"} borderColor={"#E77A1F"} color={"#E77A1F"} cursor={"pointer"}>{t.sales_module.quotation.see_all}</Button>
+            <Button size="sm" bg={"#E77A1F"} color={"white"} cursor={"pointer"} onClick={handleDirectToDetailQuotation}>{t.sales_module.quotation.create}</Button>
+          </Flex>
+          </Card.Body>
+        </Card.Root>
 
-                <Text fontSize="sm" color="gray.600" mb="4">{t.sales_module.booking.description}</Text>
+        {/* Booking Confirmation card */}
+        <Card.Root>
+          <Card.Body>
+            {/* Booking Confirmation title and badge */}
+            <Flex align="center" mb="3" gap={2}>
+              <Icon as={FiCheckSquare} />
+              <Heading size="md" flex="1">{t.sales_module.booking.title}</Heading>
+              <Badge color="green">{t.sales_module.booking.badge}</Badge>
+            </Flex>
 
-                <Flex direction="column" gap={2} mb="3">
-                  <Text fontSize="xs" fontWeight="semibold" color="gray.500">{t.sales_module.booking.last_records}</Text>
+            <Text fontSize="sm" color="gray.600" mb="4">{t.sales_module.booking.description}</Text>
 
-                  {/* Sample data for booking confirmation */}
-                  <Flex direction="column" gap={1}>
-                    <Flex justify="space-between">
-                      <Text fontSize="xs" color="gray.600" maxLines={1}>Sample item #1</Text>
-                      <Badge colorScheme="gray" variant="subtle">Today</Badge>
-                    </Flex>
-                    <Flex justify="space-between">
-                      <Text fontSize="xs" color="gray.600" maxLines={1}>Sample item #2</Text>
-                      <Badge colorScheme="gray" variant="subtle">Yesterday</Badge>
-                    </Flex>
-                    <Flex justify="space-between">
-                      <Text fontSize="xs" color="gray.600" maxLines={1}>Sample item #3</Text>
-                      <Badge colorScheme="gray" variant="subtle">2d ago</Badge>
-                    </Flex>
+            <Flex direction="column" gap={2} mb="3">
+              <Text fontSize="xs" fontWeight="semibold" color="gray.500">{t.sales_module.booking.last_records}</Text>
+
+              {/* Sample data for booking confirmation */}
+              <Flex direction="column" gap={1}>
+                {renderList(salesJobOrderData, (job) => (
+                  <Flex key={job.job_order_id} justify="space-between">
+                    <Text fontSize="xs" color="gray.600" maxLines={1} onClick={() => handleDirectToSalesBookConfirmation(job.job_order_id)}>{job.job_order_no}</Text>
+                    <Badge colorScheme="gray" variant="subtle">{formatDate(job.created_at)}</Badge>
                   </Flex>
-                </Flex>
+                ))}
+              </Flex>
+            </Flex>
 
-                <Flex justify="space-between">
-                  <Button size="sm" bg={"transparent"} borderColor={"#E77A1F"} color={"#E77A1F"} cursor={"pointer"}>{t.sales_module.booking.see_all}</Button>
-                  <Button size="sm" bg={"#E77A1F"} color={"white"} cursor={"pointer"} onClick={handleDirectToBooking}>{t.sales_module.booking.create}</Button>
-                </Flex>
-              </Card.Body>
-            </Card.Root>
-            {/* Shipment card */}
-            <Card.Root>
-              <Card.Body>
-                {/* Shipment title and badge */}
-                <Flex align="center" mb="3" gap={2}>
-                  <Icon as={FiClipboard} />
-                  <Heading size="md" flex="1">{t.sales_module.shipment.title}</Heading>
-                  <Badge color="blue">{t.sales_module.shipment.badge}</Badge>
-                </Flex>
+            <Flex justify="space-between">
+              <Button size="sm" bg={"transparent"} borderColor={"#E77A1F"} color={"#E77A1F"} cursor={"pointer"}>{t.sales_module.booking.see_all}</Button>
+              <Button size="sm" bg={"#E77A1F"} color={"white"} cursor={"pointer"} onClick={handleDirectToBooking}>{t.sales_module.booking.create}</Button>
+            </Flex>
+          </Card.Body>
+        </Card.Root>
 
-                <Text fontSize="sm" color="gray.600" mb="4">{t.sales_module.shipment.description}</Text>
+        {/* Shipment card */}
+        <Card.Root>
+          <Card.Body>
+            {/* Shipment title and badge */}
+            <Flex align="center" mb="3" gap={2}>
+              <Icon as={FiClipboard} />
+              <Heading size="md" flex="1">{t.sales_module.shipment.title}</Heading>
+              <Badge color="blue">{t.sales_module.shipment.badge}</Badge>
+            </Flex>
 
-                <Flex direction="column" gap={2} mb="3">
-                  <Text fontSize="xs" fontWeight="semibold" color="gray.500">{t.sales_module.shipment.last_records}</Text>
+            <Text fontSize="sm" color="gray.600" mb="4">{t.sales_module.shipment.description}</Text>
 
-                  {/* Sample data for shipment */}
-                  <Flex direction="column" gap={1}>
-                    <Flex justify="space-between">
-                      <Text fontSize="xs" color="gray.600" maxLines={1}>Sample item #1</Text>
-                      <Badge colorScheme="gray" variant="subtle">Today</Badge>
-                    </Flex>
-                    <Flex justify="space-between">
-                      <Text fontSize="xs" color="gray.600" maxLines={1}>Sample item #2</Text>
-                      <Badge colorScheme="gray" variant="subtle">Yesterday</Badge>
-                    </Flex>
-                    <Flex justify="space-between">
-                      <Text fontSize="xs" color="gray.600" maxLines={1}>Sample item #3</Text>
-                      <Badge colorScheme="gray" variant="subtle">2d ago</Badge>
-                    </Flex>
+            <Flex direction="column" gap={2} mb="3">
+              <Text fontSize="xs" fontWeight="semibold" color="gray.500">{t.sales_module.shipment.last_records}</Text>
+
+              {/* Sample data for shipment */}
+              <Flex direction="column" gap={1}>
+                {renderList(salesShipmentData, (ship) => (
+                  <Flex key={ship.shipment_id} justify="space-between">
+                    <Text fontSize="xs" color="gray.600" maxLines={1} onClick={() => handleDirectToSalesShipment(ship.shipment_id)}>{ship.shipment_no}</Text>
+                    <Badge colorScheme="gray" variant="subtle">{formatDate(ship.created_at)}</Badge>
                   </Flex>
-                </Flex>
+                ))}
+              </Flex>
+            </Flex>
 
-                <Flex justify="space-between">
-                  <Button size="sm" bg={"transparent"} borderColor={"#E77A1F"} color={"#E77A1F"} cursor={"pointer"}>{t.sales_module.shipment.see_all}</Button>
-                  <Button size="sm" bg={"#E77A1F"} color={"white"} cursor={"pointer"} onClick={handleDirectToShipment}>{t.sales_module.shipment.update}</Button>
-                </Flex>
-              </Card.Body>
-            </Card.Root>
-            {/* Costing card */}
-            <Card.Root>
-              <Card.Body>
-                {/* Costing title and badge */}
-                <Flex align="center" mb="3" gap={2}>
-                  <Icon as={FiDollarSign} />
-                  <Heading size="md" flex="1">{t.sales_module.costing.title}</Heading>
-                  <Badge color="orange">{t.sales_module.costing.badge}</Badge>
-                </Flex>
-                <Text fontSize="sm" color="gray.600" mb="4">{t.sales_module.costing.description}</Text>
+            <Flex justify="space-between">
+              <Button size="sm" bg={"transparent"} borderColor={"#E77A1F"} color={"#E77A1F"} cursor={"pointer"}>{t.sales_module.shipment.see_all}</Button>
+              <Button size="sm" bg={"#E77A1F"} color={"white"} cursor={"pointer"} onClick={handleDirectToShipment}>{t.sales_module.shipment.update}</Button>
+            </Flex>
+          </Card.Body>
+        </Card.Root>
 
-                <Flex direction="column" gap={2} mb="3">
-                  <Text fontSize="xs" fontWeight="semibold" color="gray.500">{t.sales_module.costing.last_records}</Text>
-                  {/* Sample data for costing */}
-                  <Flex direction="column" gap={1}>
-                    <Flex justify="space-between">
-                      <Text fontSize="xs" color="gray.600" maxLines={1}>Sample item #1</Text>
-                      <Badge colorScheme="gray" variant="subtle">Today</Badge>
-                    </Flex>
-                    <Flex justify="space-between">
-                      <Text fontSize="xs" color="gray.600" maxLines={1}>Sample item #2</Text>
-                      <Badge colorScheme="gray" variant="subtle">Yesterday</Badge>
-                    </Flex>
-                    <Flex justify="space-between">
-                      <Text fontSize="xs" color="gray.600" maxLines={1}>Sample item #3</Text>
-                      <Badge colorScheme="gray" variant="subtle">2d ago</Badge>
-                    </Flex>
+        {/* Costing card */}
+        <Card.Root>
+          <Card.Body>
+            {/* Costing title and badge */}
+            <Flex align="center" mb="3" gap={2}>
+              <Icon as={FiDollarSign} />
+              <Heading size="md" flex="1">{t.sales_module.costing.title}</Heading>
+              <Badge color="orange">{t.sales_module.costing.badge}</Badge>
+            </Flex>
+            <Text fontSize="sm" color="gray.600" mb="4">{t.sales_module.costing.description}</Text>
+
+            <Flex direction="column" gap={2} mb="3">
+              <Text fontSize="xs" fontWeight="semibold" color="gray.500">{t.sales_module.costing.last_records}</Text>
+              {/* Sample data for costing */}
+              <Flex direction="column" gap={1}>
+                {renderList(salesCostingData, (cost) => (
+                  <Flex key={cost.sales_costing_expense_id} justify="space-between">
+                    <Text fontSize="xs" color="gray.600" maxLines={1} onClick={() => handleDirectToCosting(cost.sales_costing_expense_id)}>
+                      {cost.sales_costing_no}
+                    </Text>
+                    <Badge colorScheme="gray" variant="subtle">
+                      {formatDate(cost.created_at)}
+                    </Badge>
                   </Flex>
-                </Flex>
+                ))}
+              </Flex>
+            </Flex>
 
-                <Flex justify="space-between">
-                  <Button size="sm" bg={"transparent"} borderColor={"#E77A1F"} color={"#E77A1F"} cursor={"pointer"}>{t.sales_module.costing.see_all}</Button>
-                  <Button size="sm" bg={"#E77A1F"} color={"white"} cursor={"pointer"} onClick={handleDriectToCostingExpense}>{t.sales_module.costing.record}</Button>
-                </Flex>
-              </Card.Body>
-            </Card.Root>
-            {/* Sales Order card */}
-            <Card.Root>
-              <Card.Body>
-                {/* Sales order title and badge */}
-                <Flex align="center" mb="3" gap={2}>
-                  <Icon as={FiShoppingCart} />
-                  <Heading size="md" flex="1">{t.sales_module.sales_order.title}</Heading>
-                  <Badge color="teal">{t.sales_module.sales_order.badge}</Badge>
-                </Flex>
-                <Text fontSize="sm" color="gray.600" mb="4">{t.sales_module.sales_order.description}</Text>
+            <Flex justify="space-between">
+              <Button size="sm" bg={"transparent"} borderColor={"#E77A1F"} color={"#E77A1F"} cursor={"pointer"}>{t.sales_module.costing.see_all}</Button>
+              <Button size="sm" bg={"#E77A1F"} color={"white"} cursor={"pointer"} onClick={handleDriectToCostingExpense}>{t.sales_module.costing.record}</Button>
+            </Flex>
+          </Card.Body>
+        </Card.Root>
 
-                <Flex direction="column" gap={2} mb="3">
-                  <Text fontSize="xs" fontWeight="semibold" color="gray.500">{t.sales_module.sales_order.last_records}</Text>
-                  {/* Sample data for sales order */}
-                  <Flex direction="column" gap={1}>
-                    <Flex justify="space-between">
-                      <Text fontSize="xs" color="gray.600" maxLines={1}>Sample item #1</Text>
-                      <Badge colorScheme="gray" variant="subtle">Today</Badge>
-                    </Flex>
-                    <Flex justify="space-between">
-                      <Text fontSize="xs" color="gray.600" maxLines={1}>Sample item #2</Text>
-                      <Badge colorScheme="gray" variant="subtle">Yesterday</Badge>
-                    </Flex>
-                    <Flex justify="space-between">
-                      <Text fontSize="xs" color="gray.600" maxLines={1}>Sample item #3</Text>
-                      <Badge colorScheme="gray" variant="subtle">2d ago</Badge>
-                    </Flex>
+        {/* Sales Order card */}
+        <Card.Root>
+          <Card.Body>
+            {/* Sales order title and badge */}
+            <Flex align="center" mb="3" gap={2}>
+              <Icon as={FiShoppingCart} />
+              <Heading size="md" flex="1">{t.sales_module.sales_order.title}</Heading>
+              <Badge color="teal">{t.sales_module.sales_order.badge}</Badge>
+            </Flex>
+            <Text fontSize="sm" color="gray.600" mb="4">{t.sales_module.sales_order.description}</Text>
+
+            <Flex direction="column" gap={2} mb="3">
+              <Text fontSize="xs" fontWeight="semibold" color="gray.500">{t.sales_module.sales_order.last_records}</Text>
+              {/* Sample data for sales order */}
+              <Flex direction="column" gap={1}>
+                {renderList(salesOrderData, (so) => (
+                  <Flex key={so.sales_order_id} justify="space-between">
+                    <Text fontSize="xs" color="gray.600" maxLines={1} onClick={() => handleDirectToSalesOrderDetail(so.sales_order_id)}>{so.sales_order_no}</Text>
+                    <Badge colorScheme="gray" variant="subtle">{formatDate(so.created_at)}</Badge>
                   </Flex>
-                </Flex>
+                ))}
+              </Flex>
+            </Flex>
 
-                <Flex justify="space-between">
-                  <Button size="sm" bg={"transparent"} borderColor={"#E77A1F"} color={"#E77A1F"} cursor={"pointer"}>{t.sales_module.sales_order.see_all}</Button>
-                  <Button size="sm" bg={"#E77A1F"} color={"white"} cursor={"pointer"} onClick={handleDirectToSalesOrder}>{t.sales_module.sales_order.generate}</Button>
-                </Flex>
-              </Card.Body>
-            </Card.Root>
-            {/* Delivery card */}
-            <Card.Root>
-              <Card.Body>
-                {/* Delivery title and badge */}
-                <Flex align="center" mb="3" gap={2}>
-                  <Icon as={FiTruck} />
-                  <Heading size="md" flex="1">{t.sales_module.delivery.title}</Heading>
-                  <Badge color="cyan">{t.sales_module.delivery.badge}</Badge>
-                </Flex>
-                <Text fontSize="sm" color="gray.600" mb="4">{t.sales_module.delivery.description}</Text>
+            <Flex justify="space-between">
+              <Button size="sm" bg={"transparent"} borderColor={"#E77A1F"} color={"#E77A1F"} cursor={"pointer"}>{t.sales_module.sales_order.see_all}</Button>
+              <Button size="sm" bg={"#E77A1F"} color={"white"} cursor={"pointer"} onClick={handleDirectToSalesOrder}>{t.sales_module.sales_order.generate}</Button>
+            </Flex>
+          </Card.Body>
+        </Card.Root>
 
-                <Flex direction="column" gap={2} mb="3">
-                  <Text fontSize="xs" fontWeight="semibold" color="gray.500">{t.sales_module.delivery.last_records}</Text>
-                  {/* Sample data for delivery */}
-                  <Flex direction="column" gap={1}>
-                    <Flex justify="space-between">
-                      <Text fontSize="xs" color="gray.600" maxLines={1}>Sample item #1</Text>
-                      <Badge colorScheme="gray" variant="subtle">Today</Badge>
-                    </Flex>
-                    <Flex justify="space-between">
-                      <Text fontSize="xs" color="gray.600" maxLines={1}>Sample item #2</Text>
-                      <Badge colorScheme="gray" variant="subtle">Yesterday</Badge>
-                    </Flex>
-                    <Flex justify="space-between">
-                      <Text fontSize="xs" color="gray.600" maxLines={1}>Sample item #3</Text>
-                      <Badge colorScheme="gray" variant="subtle">2d ago</Badge>
-                    </Flex>
+        {/* Delivery card */}
+        <Card.Root>
+          <Card.Body>
+            {/* Delivery title and badge */}
+            <Flex align="center" mb="3" gap={2}>
+              <Icon as={FiTruck} />
+              <Heading size="md" flex="1">{t.sales_module.delivery.title}</Heading>
+              <Badge color="cyan">{t.sales_module.delivery.badge}</Badge>
+            </Flex>
+            <Text fontSize="sm" color="gray.600" mb="4">{t.sales_module.delivery.description}</Text>
+
+            <Flex direction="column" gap={2} mb="3">
+              <Text fontSize="xs" fontWeight="semibold" color="gray.500">{t.sales_module.delivery.last_records}</Text>
+              {/* Sample data for delivery */}
+              <Flex direction="column" gap={1}>
+                {renderList(salesDeliveryData, (sdo) => (
+                  <Flex key={sdo.delivery_order_id} justify="space-between">
+                    <Text fontSize="xs" color="gray.600" maxLines={1} onClick={() => handleDirectToDeliveryDetail(sdo.delivery_order_id)}>{sdo.do_number}</Text>
+                    <Badge colorScheme="gray" variant="subtle">{formatDate(sdo.created_at)}</Badge>
                   </Flex>
-                </Flex>
+                ))}
+              </Flex>
+            </Flex>
 
-                <Flex justify="space-between">
-                  <Button size="sm" bg={"transparent"} borderColor={"#E77A1F"} color={"#E77A1F"} cursor={"pointer"}>{t.sales_module.delivery.see_all}</Button>
-                  <Button size="sm" bg={"#E77A1F"} color={"white"} cursor={"pointer"} onClick={handleDirectToDeliveryOrder}>{t.sales_module.delivery.issue}</Button>
-                </Flex>
-              </Card.Body>
-            </Card.Root>
-            {/* Profit card */}
-            <Card.Root>
-              <Card.Body>
-                {/* Profit title and badge */}
-                <Flex align="center" mb="3" gap={2}>
-                  <Icon as={FiTrendingUp} />
-                  <Heading size="md" flex="1">{t.sales_module.profit.title}</Heading>
-                  <Badge color="pink">{t.sales_module.profit.badge}</Badge>
-                </Flex>
-                <Text fontSize="sm" color="gray.600" mb="4">{t.sales_module.profit.description}</Text>
+            <Flex justify="space-between">
+              <Button size="sm" bg={"transparent"} borderColor={"#E77A1F"} color={"#E77A1F"} cursor={"pointer"}>{t.sales_module.delivery.see_all}</Button>
+              <Button size="sm" bg={"#E77A1F"} color={"white"} cursor={"pointer"} onClick={handleDirectToDeliveryOrder}>{t.sales_module.delivery.issue}</Button>
+            </Flex>
+          </Card.Body>
+        </Card.Root>
 
-                <Flex direction="column" gap={2} mb="3">
-                  <Text fontSize="xs" fontWeight="semibold" color="gray.500">{t.sales_module.profit.last_records}</Text>
-                  {/* Sample data for profit */}
-                  <Flex direction="column" gap={1}>
-                    <Flex justify="space-between">
-                      <Text fontSize="xs" color="gray.600" maxLines={1}>Sample item #1</Text>
-                      <Badge colorScheme="gray" variant="subtle">Today</Badge>
-                    </Flex>
-                    <Flex justify="space-between">
-                      <Text fontSize="xs" color="gray.600" maxLines={1}>Sample item #2</Text>
-                      <Badge colorScheme="gray" variant="subtle">Yesterday</Badge>
-                    </Flex>
-                    <Flex justify="space-between">
-                      <Text fontSize="xs" color="gray.600" maxLines={1}>Sample item #3</Text>
-                      <Badge colorScheme="gray" variant="subtle">2d ago</Badge>
-                    </Flex>
+        {/* Profit card */}
+        <Card.Root>
+          <Card.Body>
+            {/* Profit title and badge */}
+            <Flex align="center" mb="3" gap={2}>
+              <Icon as={FiTrendingUp} />
+              <Heading size="md" flex="1">{t.sales_module.profit.title}</Heading>
+              <Badge color="pink">{t.sales_module.profit.badge}</Badge>
+            </Flex>
+            <Text fontSize="sm" color="gray.600" mb="4">{t.sales_module.profit.description}</Text>
+
+            <Flex direction="column" gap={2} mb="3">
+              <Text fontSize="xs" fontWeight="semibold" color="gray.500">{t.sales_module.profit.last_records}</Text>
+              {/* Sample data for profit */}
+              <Flex direction="column" gap={1}>
+                {renderList(salesProfitData, (spo) => (
+                  <Flex key={spo.profit_summary_id} justify="space-between">
+                    <Text fontSize="xs" color="gray.600" maxLines={1} onClick={() => handleDirectToProfitDetail(spo.profit_summary_id)}>{spo.sales_profit_no}</Text>
+                    <Badge colorScheme="gray" variant="subtle">{formatDate(spo.created_at)}</Badge>
                   </Flex>
-                </Flex>
+                ))}
+              </Flex>
+            </Flex>
 
-                <Flex justify="space-between">
-                  <Button size="sm" bg={"transparent"} borderColor={"#E77A1F"} color={"#E77A1F"} cursor={"pointer"}>{t.sales_module.profit.see_all}</Button>
-                  <Button size="sm" bg={"#E77A1F"} color={"white"} cursor={"pointer"} onClick={handleDirectToProfitSummary}>{t.sales_module.profit.view}</Button>
-                </Flex>
-              </Card.Body>
-            </Card.Root>
-            {/* Invoice card */}
-            <Card.Root>
-              <Card.Body>
-                {/* Invoice title and badge */}
-                <Flex align="center" mb="3" gap={2}>
-                  <Icon as={FiFileText} />
-                  <Heading size="md" flex="1">{t.sales_module.invoice.title}</Heading>
-                  <Badge colorScheme="purple">{t.sales_module.invoice.badge}</Badge>
-                </Flex>
-                <Text fontSize="sm" color="gray.600" mb="4">{t.sales_module.invoice.description}</Text>
+            <Flex justify="space-between">
+              <Button size="sm" bg={"transparent"} borderColor={"#E77A1F"} color={"#E77A1F"} cursor={"pointer"}>{t.sales_module.profit.see_all}</Button>
+              <Button size="sm" bg={"#E77A1F"} color={"white"} cursor={"pointer"} onClick={handleDirectToProfitSummary}>{t.sales_module.profit.view}</Button>
+            </Flex>
+          </Card.Body>
+        </Card.Root>
 
-                <Flex direction="column" gap={2} mb="3">
-                  <Text fontSize="xs" fontWeight="semibold" color="gray.500">{t.sales_module.invoice.last_records}</Text>
-                  {/* Sample data for invoice */}
-                  <Flex direction="column" gap={1}>
-                    <Flex justify="space-between">
-                      <Text fontSize="xs" color="gray.600" maxLines={1}>Sample item #1</Text>
-                      <Badge colorScheme="gray" variant="subtle">Today</Badge>
-                    </Flex>
-                    <Flex justify="space-between">
-                      <Text fontSize="xs" color="gray.600" maxLines={1}>Sample item #2</Text>
-                      <Badge colorScheme="gray" variant="subtle">Yesterday</Badge>
-                    </Flex>
-                    <Flex justify="space-between">
-                      <Text fontSize="xs" color="gray.600" maxLines={1}>Sample item #3</Text>
-                      <Badge colorScheme="gray" variant="subtle">2d ago</Badge>
-                    </Flex>
+        {/* Invoice card */}
+        <Card.Root>
+          <Card.Body>
+            {/* Invoice title and badge */}
+            <Flex align="center" mb="3" gap={2}>
+              <Icon as={FiFileText} />
+              <Heading size="md" flex="1">{t.sales_module.invoice.title}</Heading>
+              <Badge colorScheme="purple">{t.sales_module.invoice.badge}</Badge>
+            </Flex>
+            <Text fontSize="sm" color="gray.600" mb="4">{t.sales_module.invoice.description}</Text>
+
+            <Flex direction="column" gap={2} mb="3">
+              <Text fontSize="xs" fontWeight="semibold" color="gray.500">{t.sales_module.invoice.last_records}</Text>
+              {/* Sample data for invoice */}
+              <Flex direction="column" gap={1}>
+                {renderList(salesInvoiceData, (sio) => (
+                  <Flex key={sio.invoice_id} justify="space-between">
+                    <Text fontSize="xs" color="gray.600" maxLines={1} onClick={() => handleDirectToSalesRfqDetail(sio.invoice_id)}>{sio.invoice_number}</Text>
+                    <Badge colorScheme="gray" variant="subtle">{formatDate(sio.created_at)}</Badge>
                   </Flex>
-                </Flex>
+                ))}
+              </Flex>
+            </Flex>
 
-                <Flex justify="space-between">
-                  <Button size="sm" bg={"transparent"} borderColor={"#E77A1F"} color={"#E77A1F"} cursor={"pointer"}>{t.sales_module.invoice.see_all}</Button>
-                  <Button size="sm" bg={"#E77A1F"} color={"white"} cursor={"pointer"} onClick={handleDirectToInvoice}>{t.sales_module.invoice.create}</Button>
-                </Flex>
-              </Card.Body>
-            </Card.Root>
-          </SimpleGrid>
-      </SidebarWithHeader>
-    );
+            <Flex justify="space-between">
+              <Button size="sm" bg={"transparent"} borderColor={"#E77A1F"} color={"#E77A1F"} cursor={"pointer"}>{t.sales_module.invoice.see_all}</Button>
+              <Button size="sm" bg={"#E77A1F"} color={"white"} cursor={"pointer"} onClick={handleDirectToInvoice}>{t.sales_module.invoice.create}</Button>
+            </Flex>
+          </Card.Body>
+        </Card.Root>
+      </SimpleGrid>
+    </SidebarWithHeader>
+  );
 }

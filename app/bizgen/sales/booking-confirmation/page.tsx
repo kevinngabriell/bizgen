@@ -1,6 +1,7 @@
 'use client';
 
 import Loading from '@/components/loading';
+import InquiryLookup from "@/components/lookup/SalesInquiryLookup";
 import { AlertMessage } from '@/components/ui/alert';
 import SidebarWithHeader from '@/components/ui/SidebarWithHeader';
 import { DecodedAuthToken, checkAuthOrRedirect, getAuthInfo } from '@/lib/auth/auth';
@@ -13,6 +14,7 @@ import { Button, Card, Flex, Heading, Icon, Input, Stack, Text, Textarea, Simple
 import { useSearchParams } from 'next/navigation';
 import { useEffect, useState, ChangeEvent, Suspense } from 'react';
 import { FiFileText } from 'react-icons/fi';
+import { GetRfq, getDetailSalesRfq } from "@/lib/sales/rfq";
 
 type BookMode = "create" | "view" | "edit";
 
@@ -39,6 +41,7 @@ function BookingConfirmationContent() {
   const [bookingStatus, setBookingStatus] = useState<string>();
   const [lastUpdatedBy, setLastUpdatedBy] = useState<string>();
   const [lastUpdatedAt, setLastUpdatedAt] = useState<string>();
+  const [linkedInquiry, setLinkedInquiry] = useState("");
 
   const [mode, setMode] = useState<BookMode>("create");
   const isReadOnly = mode === "view" && bookingStatus !== "draft" && bookingStatus !== "rejected";
@@ -78,6 +81,10 @@ function BookingConfirmationContent() {
     })),
   });
 
+  const [inquiryModalOpen, setInquiryModalOpen] = useState(false);
+  const [selectedInquiry, setSelectedInquiry] = useState<GetRfq | null>(null);
+  const [linkedInquiryID, setLinkedInquiryID] = useState("");
+
   //alert & success variable
   const [showAlert, setShowAlert] = useState(false);
   const [titlePopup, setTitlePopup] = useState('');
@@ -112,7 +119,7 @@ function BookingConfirmationContent() {
     }
 
     const loadGeneratedNumber = async () => {
-      if (bookingID) return; // kalau ada rfqId, jangan generate (view/edit mode)
+      if (bookingID) return;
     
       try {
         const res = await generateSalesBookingNumber();
@@ -121,7 +128,7 @@ function BookingConfirmationContent() {
           booking_no: res.number,
         }));
       } catch (err) {
-        console.error("Failed to generate RFQ number", err);
+        console.error("Failed to generate job order number", err);
       }
     };
 
@@ -182,39 +189,53 @@ function BookingConfirmationContent() {
     }));
   };
 
+  const handleChooseInquiry = async (rfq: GetRfq) => {
+    try {
+      setLoading(true);
+      setSelectedInquiry(rfq);
+      setLinkedInquiry(rfq.sales_rfq_number);
+      setLinkedInquiryID(rfq.sales_rfq_id);
+    } catch (error) {
+      console.error("Failed to bind inquiry items", error);
+    } finally {
+      setLoading(false);
+      setInquiryModalOpen(false);
+    }
+  };
+
   const handleSave = async () => {
     try {
       if (!form.booking_no) {
-        throw new Error("Booking number is required");
+        throw new Error(t.booking_confirmation.error_1);
       }
       if (!jobTypeSelected) {
-        throw new Error("Job type is required");
+        throw new Error(t.booking_confirmation.error_2);
       }
       if (!shipmentTypeSelected) {
-        throw new Error("Service / shipment type is required");
+        throw new Error(t.booking_confirmation.error_3);
       }
       if (!originSelected) {
-        throw new Error("Origin port is required");
+        throw new Error(t.booking_confirmation.error_4);
       }
       if (!destinationSelected) {
-        throw new Error("Destination port is required");
+        throw new Error(t.booking_confirmation.error_5);
       }
       if (!termSelected) {
-        throw new Error("Term is required");
+        throw new Error(t.booking_confirmation.error_6);
       }
       if (originSelected === destinationSelected) {
-        throw new Error("Origin and destination port cannot be the same");
+        throw new Error(t.booking_confirmation.error_7);
       }
       const grossWeight = Number(form.gross_weight) || 0;
       const cbm = Number(form.cbm) || 0;
       if (grossWeight <= 0 && cbm <= 0) {
-        throw new Error("Either Gross Weight or CBM must be greater than 0");
+        throw new Error(t.booking_confirmation.error_8);
       }
       if (Number(form.total_packages) < 0) {
-        throw new Error("Total packages cannot be negative");
+        throw new Error(t.booking_confirmation.error_9);
       }
       if (Number(form.freight_charge) < 0 || Number(form.local_charge) < 0 || Number(form.other_charge) < 0) {
-        throw new Error("Charges cannot be negative");
+        throw new Error(t.booking_confirmation.error_10);
       }
 
       setLoading(true);
@@ -242,45 +263,31 @@ function BookingConfirmationContent() {
         local_charge: form.local_charge,
         other_charge: form.other_charge,
         remarks: form.remarks,
+        inquiry_id: linkedInquiryID
       }
 
       const res = await createSalesJobOrder(payload);
 
       setShowAlert(true);
       setIsSuccess(true);
-      setTitlePopup("Success");
-      setMessagePopup("Sales job order created successfully");
+      setTitlePopup(t.master.success);
+      setMessagePopup(t.booking_confirmation.success_draft);
       setTimeout(() => setShowAlert(false), 6000);
-      setForm({
-        booking_no: "",
-        estimated_departure: "",
-        estimated_arrival: "",
-        shipper_company: "",
-        shipper_contact: "",
-        shipper_address: "",
-        consignee_company: "",
-        consignee_contact: "",
-        consignee_address: "",
-        package_type: "",
-        total_packages: "",
-        gross_weight: "",
-        cbm: "",
-        freight_charge: "",
-        local_charge: "",
-        other_charge: "",
-        remarks: ""
-      });
+
+      setForm({booking_no: "", estimated_departure: "", estimated_arrival: "", shipper_company: "", shipper_contact: "", shipper_address: "", consignee_company: "", consignee_contact: "", consignee_address: "", package_type: "", total_packages: "", gross_weight: "", cbm: "", freight_charge: "", local_charge: "", other_charge: "", remarks: ""});
       setJobTypeSelected(undefined);
       setShipmentTypeSelected(undefined);
       setOriginSelected(undefined);
       setDestinationSelected(undefined);
       setTermSelected(undefined);
+      setLinkedInquiry("");
+      setLinkedInquiryID("");
 
     } catch (err: any) {
       setShowAlert(true);
       setIsSuccess(false);
       setTitlePopup("Error");
-      setMessagePopup(err.message || "Failed to create booking order");
+      setMessagePopup(err.message || t.booking_confirmation.error_msg);
       setTimeout(() => setShowAlert(false), 6000);
     } finally {
       setLoading(false);
@@ -301,6 +308,7 @@ function BookingConfirmationContent() {
       </Flex>
 
       {showAlert && <AlertMessage title={titlePopup} description={messagePopup} isSuccess={isSuccess}/>}
+      <InquiryLookup isOpen={inquiryModalOpen} onClose={() => setInquiryModalOpen(false)} onChoose={handleChooseInquiry}/>
 
       <Stack gap={6} mt={4}>
         {/* Job Meta */}
@@ -316,9 +324,7 @@ function BookingConfirmationContent() {
               </Field.Root>
               <Field.Root required>
                 <Field.Label fontSize="sm">{t.booking_confirmation.job_type}<Field.RequiredIndicator/></Field.Label>
-                <Select.Root collection={jobTypeOptions} value={jobTypeSelected ? [jobTypeSelected] : []}
-                  onValueChange={(details) => setJobTypeSelected(details.value[0])}
-                >
+                <Select.Root collection={jobTypeOptions} value={jobTypeSelected ? [jobTypeSelected] : []} onValueChange={(details) => setJobTypeSelected(details.value[0])}>
                   <Select.HiddenSelect />
                   <Select.Control>
                     <Select.Trigger>
@@ -344,11 +350,7 @@ function BookingConfirmationContent() {
               </Field.Root>
               <Field.Root required>
                 <Field.Label fontSize="sm">{t.booking_confirmation.service}<Field.RequiredIndicator/></Field.Label>
-                <Select.Root
-                  collection={shipmentTypeCollection}
-                  value={shipmentTypeSelected ? [shipmentTypeSelected] : []}
-                  onValueChange={(details) => setShipmentTypeSelected(details.value[0])}
-                >
+                <Select.Root collection={shipmentTypeCollection} value={shipmentTypeSelected ? [shipmentTypeSelected] : []} onValueChange={(details) => setShipmentTypeSelected(details.value[0])}>
                   <Select.HiddenSelect />
                   <Select.Control>
                     <Select.Trigger>
@@ -380,8 +382,9 @@ function BookingConfirmationContent() {
                 <Field.Label fontSize="sm">{t.booking_confirmation.estimated_arrival}</Field.Label>
                 <Input type="date" name="estimated_arrival" value={form.estimated_arrival} onChange={handleInputChange}/>
               </Field.Root>
-              <Field.Root>
-                <Field.Label fontSize="sm">Inquiry No</Field.Label>
+              <Field.Root required>
+                <Field.Label fontSize="sm">{t.booking_confirmation.inquiry_no}<Field.RequiredIndicator/></Field.Label>
+                <Input placeholder={t.sales_quotation.linked_inquiry_placeholder} value={linkedInquiry} readOnly cursor="pointer" onClick={() => setInquiryModalOpen(true)}/>
               </Field.Root>
             </SimpleGrid>
           </Card.Body>
@@ -397,17 +400,39 @@ function BookingConfirmationContent() {
               <Field.Root>
                 <Field.Label>{t.booking_confirmation.shipper}</Field.Label>
                 <Stack gap={2} w={"100%"}>
-                  <Input name="shipper_company" value={form.shipper_company} onChange={handleInputChange} placeholder={t.booking_confirmation.company_name_placeholder}/>
-                  <Input name="shipper_contact" value={form.shipper_contact} onChange={handleInputChange} placeholder={t.booking_confirmation.contact_person_placeholder}/>
-                  <Textarea name="shipper_address" value={form.shipper_address} onChange={handleInputChange} rows={3} placeholder={t.booking_confirmation.address_placeholder}/>
+                  <SimpleGrid columns={{base: 1, md : 2}} gap={6} mt={3}>
+                    <Field.Root>
+                      <Field.Label>{t.booking_confirmation.company_name}</Field.Label>
+                      <Input name="shipper_company" value={form.shipper_company} onChange={handleInputChange} placeholder={t.booking_confirmation.company_name_placeholder}/>
+                    </Field.Root>
+                    <Field.Root>
+                      <Field.Label>{t.booking_confirmation.contact_person}</Field.Label>
+                      <Input name="shipper_contact" value={form.shipper_contact} onChange={handleInputChange} placeholder={t.booking_confirmation.contact_person_placeholder}/>
+                    </Field.Root>
+                  </SimpleGrid>
+                  <Field.Root>
+                    <Field.Label>{t.booking_confirmation.address}</Field.Label>
+                    <Textarea name="shipper_address" value={form.shipper_address} onChange={handleInputChange} rows={3} placeholder={t.booking_confirmation.address_placeholder}/>
+                  </Field.Root>
                 </Stack>
               </Field.Root>
               <Field.Root>
                 <Field.Label> {t.booking_confirmation.consignee} </Field.Label>
                 <Stack gap={2} w={"100%"}>
-                  <Input name="consignee_company" value={form.consignee_company} onChange={handleInputChange} placeholder={t.booking_confirmation.company_name_placeholder}/>
-                  <Input name="consignee_contact" value={form.consignee_contact} onChange={handleInputChange} placeholder={t.booking_confirmation.contact_person_placeholder}/>
-                  <Textarea name="consignee_address" value={form.consignee_address} onChange={handleInputChange} rows={3} placeholder={t.booking_confirmation.address_placeholder}/>
+                  <SimpleGrid columns={{base: 1, md : 2}} gap={6} mt={3}>
+                    <Field.Root>
+                      <Field.Label>{t.booking_confirmation.company_name}</Field.Label>
+                      <Input name="consignee_company" value={form.consignee_company} onChange={handleInputChange} placeholder={t.booking_confirmation.company_name_placeholder}/>
+                    </Field.Root>
+                    <Field.Root>
+                      <Field.Label>{t.booking_confirmation.contact_person}</Field.Label>
+                      <Input name="consignee_contact" value={form.consignee_contact} onChange={handleInputChange} placeholder={t.booking_confirmation.contact_person_placeholder}/>
+                    </Field.Root>
+                  </SimpleGrid>
+                  <Field.Root>
+                    <Field.Label>{t.booking_confirmation.address}</Field.Label>
+                    <Textarea name="consignee_address" value={form.consignee_address} onChange={handleInputChange} rows={3} placeholder={t.booking_confirmation.address_placeholder}/>
+                  </Field.Root>
                 </Stack>
               </Field.Root>
             </SimpleGrid>
@@ -423,7 +448,7 @@ function BookingConfirmationContent() {
             <SimpleGrid columns={{ base: 1, md: 3 }} gap={4}>
               <Field.Root required>
                 <Field.Label fontSize="sm">{t.booking_confirmation.origin_port} <Field.RequiredIndicator/> </Field.Label>
-                <Select.Root collection={portCollection} value={originSelected ? [originSelected] : []} onValueChange={(details) => setOriginSelected(details.value[0])} size="sm" width="100%">
+                <Select.Root collection={portCollection} value={originSelected ? [originSelected] : []} onValueChange={(details) => setOriginSelected(details.value[0])} width="100%">
                   <Select.HiddenSelect />
                     <Select.Control>
                       <Select.Trigger>
@@ -446,7 +471,7 @@ function BookingConfirmationContent() {
               </Field.Root>
               <Field.Root required>
                 <Field.Label fontSize="sm"> {t.booking_confirmation.destination_port} <Field.RequiredIndicator/></Field.Label>
-                <Select.Root collection={portCollection} value={destinationSelected ? [destinationSelected] : []} onValueChange={(details) => setDestinationSelected(details.value[0])} size="sm" width="100%">
+                <Select.Root collection={portCollection} value={destinationSelected ? [destinationSelected] : []} onValueChange={(details) => setDestinationSelected(details.value[0])} width="100%">
                   <Select.HiddenSelect />
                   <Select.Control>
                   <Select.Trigger>
@@ -469,7 +494,7 @@ function BookingConfirmationContent() {
               </Field.Root>
               <Field.Root required>
                 <Field.Label fontSize="sm"> {t.booking_confirmation.incoterm}<Field.RequiredIndicator/> </Field.Label>
-                <Select.Root collection={termCollection} value={termSelected ? [termSelected] : []} onValueChange={(details) => setTermSelected(details.value[0])} size="sm" width="100%">
+                <Select.Root collection={termCollection} value={termSelected ? [termSelected] : []} onValueChange={(details) => setTermSelected(details.value[0])} width="100%">
                   <Select.HiddenSelect />
                   <Select.Control>
                     <Select.Trigger>
