@@ -147,8 +147,6 @@ export default function CreatePurchaseImportPage() {
     }
   }
     
-  
-
   const [items, setItems] = useState<ItemRow[]>([
     { sku: "", description: "", qty: 1, unitPrice: 0 },
   ]);

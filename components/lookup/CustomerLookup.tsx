@@ -117,7 +117,7 @@ export default function CustomerLookup({
 
                         <Dialog.Footer>
                             <Dialog.ActionTrigger asChild>
-                                <Button variant="outline">Cancel</Button>
+                                <Button variant="outline">{t.master.cancel}</Button>
                             </Dialog.ActionTrigger>
                         </Dialog.Footer>
 

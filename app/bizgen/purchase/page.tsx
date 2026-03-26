@@ -155,60 +155,60 @@ export default function Purchase (){
         {/* Request for Quotation */}
         <Card.Root>
           <Card.Body>
-              <Flex>
-                <Heading size="md" flex="1">{t.purchaseModule.request_quotation.title}</Heading>
-                <Text fontSize="sm" cursor="pointer">{t.master.see_all}</Text>
-              </Flex>
+            <Flex mb={3}><Heading size="md" flex="1">{t.purchaseModule.request_quotation.title}</Heading><Text fontSize="sm" cursor="pointer">{t.master.see_all}</Text></Flex>
+            <Flex justify="space-between"><Text fontSize="sm">RQ-0001</Text><Text fontSize="xs" color="gray.500">2026-03-20</Text></Flex>
+            <Flex justify="space-between"><Text fontSize="sm">RQ-0002</Text><Text fontSize="xs" color="gray.500">2026-03-19</Text></Flex>
+            <Flex justify="space-between"><Text fontSize="sm">RQ-0003</Text><Text fontSize="xs" color="gray.500">2026-03-18</Text></Flex>
           </Card.Body>
         </Card.Root>
 
         {/* Purchase Requisition */}
         <Card.Root>
           <Card.Body>
-              <Flex>
-                <Heading size="md" flex="1">{t.purchaseModule.purchase_requisition.title}</Heading>
-                <Text fontSize="sm" cursor="pointer">{t.master.see_all}</Text>
-              </Flex>
+            <Flex mb={3}><Heading size="md" flex="1">{t.purchaseModule.purchase_requisition.title}</Heading><Text fontSize="sm" cursor="pointer">{t.master.see_all}</Text></Flex>
+            <Flex justify="space-between"><Text fontSize="sm">PR-0001</Text><Text fontSize="xs" color="gray.500">2026-03-20</Text></Flex>
+            <Flex justify="space-between"><Text fontSize="sm">PR-0002</Text><Text fontSize="xs" color="gray.500">2026-03-19</Text></Flex>
+            <Flex justify="space-between"><Text fontSize="sm">PR-0003</Text><Text fontSize="xs" color="gray.500">2026-03-18</Text></Flex>
           </Card.Body>
         </Card.Root>
 
         {/* Purchase Local */}
         <Card.Root>
           <Card.Body>
-              <Flex>
-                <Heading size="md" flex="1">{t.purchaseModule.purchase_local.title}</Heading>
-                <Text fontSize="sm" cursor="pointer">{t.master.see_all}</Text>
-              </Flex>
+            <Flex mb={3}><Heading size="md" flex="1">{t.purchaseModule.purchase_local.title}</Heading><Text fontSize="sm" cursor="pointer">{t.master.see_all}</Text></Flex>
+            <Flex justify="space-between"><Text fontSize="sm">PL-0001</Text><Text fontSize="xs" color="gray.500">2026-03-20</Text></Flex>
+            <Flex justify="space-between"><Text fontSize="sm">PL-0002</Text><Text fontSize="xs" color="gray.500">2026-03-19</Text></Flex>
+            <Flex justify="space-between"><Text fontSize="sm">PL-0003</Text><Text fontSize="xs" color="gray.500">2026-03-18</Text></Flex>
           </Card.Body>
         </Card.Root>
 
         {/* Purchase Import */}
         <Card.Root>
           <Card.Body>
-              <Flex>
-                <Heading size="md" flex="1">{t.purchaseModule.purchase_import.title}</Heading>
-                <Text fontSize="sm" cursor="pointer">{t.master.see_all}</Text>
-              </Flex>
+            <Flex mb={3}><Heading size="md" flex="1">{t.purchaseModule.purchase_import.title}</Heading><Text fontSize="sm" cursor="pointer">{t.master.see_all}</Text></Flex>
+            <Flex justify="space-between"><Text fontSize="sm">PI-0001</Text><Text fontSize="xs" color="gray.500">2026-03-20</Text></Flex>
+            <Flex justify="space-between"><Text fontSize="sm">PI-0002</Text><Text fontSize="xs" color="gray.500">2026-03-19</Text></Flex>
+            <Flex justify="space-between"><Text fontSize="sm">PI-0003</Text><Text fontSize="xs" color="gray.500">2026-03-18</Text></Flex>
           </Card.Body>
         </Card.Root>
 
         {/* Receiving Items */}
         <Card.Root>
           <Card.Body>
-              <Flex>
-                <Heading size="md" flex="1">{t.purchaseModule.receiving_items.title}</Heading>
-                <Text fontSize="sm" cursor="pointer">{t.master.see_all}</Text>
-              </Flex>
+            <Flex mb={3}><Heading size="md" flex="1">{t.purchaseModule.receiving_items.title}</Heading><Text fontSize="sm" cursor="pointer">{t.master.see_all}</Text></Flex>
+            <Flex justify="space-between"><Text fontSize="sm">RI-0001</Text><Text fontSize="xs" color="gray.500">2026-03-20</Text></Flex>
+            <Flex justify="space-between"><Text fontSize="sm">RI-0002</Text><Text fontSize="xs" color="gray.500">2026-03-19</Text></Flex>
+            <Flex justify="space-between"><Text fontSize="sm">RI-0003</Text><Text fontSize="xs" color="gray.500">2026-03-18</Text></Flex>
           </Card.Body>
         </Card.Root>
 
         {/* Purchase Invoice */}
         <Card.Root>
           <Card.Body>
-              <Flex>
-                <Heading size="md" flex="1">{t.purchaseModule.purchase_invoice.title}</Heading>
-                <Text fontSize="sm" cursor="pointer">{t.master.see_all}</Text>
-              </Flex>
+            <Flex mb={3}><Heading size="md" flex="1">{t.purchaseModule.purchase_invoice.title}</Heading><Text fontSize="sm" cursor="pointer">{t.master.see_all}</Text></Flex>
+            <Flex justify="space-between"><Text fontSize="sm">INV-0001</Text><Text fontSize="xs" color="gray.500">2026-03-20</Text></Flex>
+            <Flex justify="space-between"><Text fontSize="sm">INV-0002</Text><Text fontSize="xs" color="gray.500">2026-03-19</Text></Flex>
+            <Flex justify="space-between"><Text fontSize="sm">INV-0003</Text><Text fontSize="xs" color="gray.500">2026-03-18</Text></Flex>
           </Card.Body>
         </Card.Root>
 

@@ -1031,7 +1031,17 @@ sales_profit_summary: {
 
   //success
   success_create: "Profit summary successfully saved.",
-  success_update: "Profit summary successfully updated."
+  success_update: "Profit summary successfully updated.",
+  items_section: "Items",
+  add_item: "Add Item",
+  product_services: "Product / Services",
+  product_services_placeholder: "Enter product or service name",
+  qty: "Qty",
+  selling_price: "Selling Price",
+  landed_cost: "Landed Cost",
+  profit: "Profit",
+  delete: "Delete",
+  margin: "Margin (%)",
 },
 sales_invoice: {
   title_create: "Create Sales Invoice",
@@ -1058,6 +1068,12 @@ sales_invoice: {
 
   job_reference: "Job / Shipment Reference",
   job_reference_placeholder: "Link to shipment, job, or sales order",
+
+  sales_order_no: "Sales Order No",
+  sales_order_no_placeholder: "e.g. SO-2026-001",
+
+  delivery_order_no: "Delivery Order No",
+  delivery_order_no_placeholder: "e.g. DO-2026-001",
 
   currency: "Currency",
   currency_placeholder: "Select currency",
@@ -1219,5 +1235,119 @@ warehouse_stock_in: {
       lotPlaceholder: "e.g. LOT-2026-0001",
       binPlaceholder: "Rack A-01",
       notesPlaceholder: "Additional remarks…"
+},
+purchase_request_quotation: {
+  title_create: "Create Request for Quotation",
+
+  request_details: "Request Details",
+  line_items: "Goods / Item Details",
+
+  quotation_number: "Quotation Number",
+  quotation_number_placeholder: "e.g. RFQ-2026-0001",
+  customer: "Customer / Buyer",
+  customer_placeholder: "Select customer",
+  shipment_type: "Shipment Type",
+  shipment_type_placeholder: "Select shipment type",
+  service_type: "Service Type",
+  service_type_placeholder: "Select service type",
+  service_import: "Import",
+  service_export: "Export",
+  service_domestic: "Domestic",
+  origin: "Origin",
+  origin_placeholder: "City / Port of loading",
+  destination: "Destination",
+  destination_placeholder: "City / Port of discharge",
+  notes: "Additional Notes",
+  notes_placeholder: "Add shipment context, special handling, etc.",
+
+  description: "Description",
+  description_placeholder: "Product description",
+  hs_code: "HS Code",
+  hs_code_placeholder: "e.g. 09012120",
+  quantity: "Qty",
+  uom: "UOM",
+  uom_placeholder: "Select UOM",
+  unit_price: "Unit Price",
+  currency: "Currency",
+  currency_placeholder: "Select currency",
+  total_price: "Total Price",
+  add_item: "Add Item",
+
+  save_draft: "Save as Draft",
+  submit: "Submit Request",
+  cancel: "Cancel",
+
+  success_create: "Request for quotation successfully submitted.",
+},
+lookup: {
+  search: "Search",
+
+  // Customer
+  customer_title: "Choose Customer",
+  customer_search_placeholder: "Search by customer name...",
+  customer_name: "Customer Name",
+  customer_phone: "Phone",
+  customer_pic: "PIC",
+  no_customer: "No customer found",
+
+  // Supplier
+  supplier_title: "Choose Supplier",
+  supplier_search_placeholder: "Search by supplier name...",
+  supplier_name: "Supplier Name",
+  no_supplier: "No supplier found",
+
+  // Sales Inquiry
+  inquiry_title: "Sales Inquiry",
+  inquiry_search_placeholder: "Search by inquiry number...",
+  inquiry_no: "RFQ No",
+  inquiry_customer: "Customer",
+  inquiry_date: "Date",
+  no_inquiry: "No inquiry found",
+
+  // Sales Job Order
+  job_order_title: "Sales Job Order",
+  job_order_search_placeholder: "Search by job order number...",
+  job_order_no: "Job Order No",
+  job_order_date: "Date",
+  no_job_order: "No job order found",
+
+  // Sales Order
+  sales_order_title: "Sales Order",
+  sales_order_search_placeholder: "Search by sales order number...",
+  sales_order_no: "Sales Order No",
+  sales_order_customer: "Customer",
+  sales_order_date: "Date",
+  no_sales_order: "No sales order found",
+
+  // Delivery Order
+  delivery_order_title: "Delivery Order",
+  delivery_order_search_placeholder: "Search by DO number...",
+  delivery_order_no: "DO Number",
+  delivery_order_date: "Date",
+  no_delivery_order: "No delivery order found",
+},
+profile: {
+  title: "My Profile",
+  account_info: "Account Information",
+  username: "Username",
+  username_placeholder: "Enter username",
+  phone_number: "Phone Number",
+  phone_number_placeholder: "e.g. +62 812 3456 7890",
+  change_password: "Change Password",
+  current_password: "Current Password",
+  current_password_placeholder: "Enter current password",
+  new_password: "New Password",
+  new_password_placeholder: "Enter new password",
+  confirm_password: "Confirm New Password",
+  confirm_password_placeholder: "Repeat new password",
+  language: "Language",
+  language_en: "English",
+  language_id: "Bahasa Indonesia",
+  save_changes: "Save Changes",
+  privacy_policy: "Privacy Policy",
+  version: "Version",
+  success_update: "Profile updated successfully.",
+  error_password_mismatch: "New password and confirmation do not match.",
+  error_current_password_required: "Current password is required to set a new password.",
 }
 };

@@ -70,14 +70,14 @@ export default function SalesOrderLookup({
         <Dialog.Positioner>
           <Dialog.Content minW={"60vw"}>
             <Dialog.Header>
-              <Dialog.Title>{t.sales_quotation.linked_inquiry}</Dialog.Title>
+              <Dialog.Title>{t.lookup.sales_order_title}</Dialog.Title>
             </Dialog.Header>
 
             <Dialog.Body>
               <Field.Root>
-                <Field.Label>Search</Field.Label>
+                <Field.Label>{t.lookup.search}</Field.Label>
                 <InputGroup startElement={<LuSearch />} mb={5}>
-                  <Input placeholder={t.sales_quotation.linked_inquiry_placeholder} value={search} onChange={(e) => setSearch(e.target.value)}/>
+                  <Input placeholder={t.lookup.sales_order_search_placeholder} value={search} onChange={(e) => setSearch(e.target.value)}/>
                 </InputGroup>
               </Field.Root>
               
@@ -85,14 +85,14 @@ export default function SalesOrderLookup({
               {loading ? (
                 <Loading />
               ) : salesOrder.length === 0 ? (
-                <Text>No inquiry found</Text>
+                <Text>{t.lookup.no_sales_order}</Text>
               ) : (
                 <Table.Root>
                   <Table.Header>
                     <Table.Row bg="bg.panel">
-                      <Table.ColumnHeader textAlign="center">Nomor Sales Order</Table.ColumnHeader>
-                      <Table.ColumnHeader textAlign="center">Customer</Table.ColumnHeader>
-                      <Table.ColumnHeader textAlign="center">Date</Table.ColumnHeader>
+                      <Table.ColumnHeader textAlign="center">{t.lookup.sales_order_no}</Table.ColumnHeader>
+                      <Table.ColumnHeader textAlign="center">{t.lookup.sales_order_customer}</Table.ColumnHeader>
+                      <Table.ColumnHeader textAlign="center">{t.lookup.sales_order_date}</Table.ColumnHeader>
                       <Table.ColumnHeader textAlign="center">{t.master.action}</Table.ColumnHeader>
                     </Table.Row>
                   </Table.Header>

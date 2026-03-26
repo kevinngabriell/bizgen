@@ -991,65 +991,71 @@ sales_delivery_order: {
   error_6: "Harap memilih sales order",
 },
 sales_profit_summary: {
-  title_create: "Buat Ringkasan Profit",
-  title_edit: "Edit Ringkasan Profit",
-  title_view: "Detail Ringkasan Profit",
-
-  description: "Analisis profit pengiriman dengan membandingkan pendapatan terhadap biaya operasional aktual.",
-
-  badge: "Sales & Costing",
-
-  //header
-  header_information: "Informasi Utama",
-
+  title_create: "Buat Ringkasan Keuntungan",
+  title_edit: "Edit Ringkasan Keuntungan",
+  title_view: "Detail Ringkasan Keuntungan",
+ 
+  description: "Analisis profitabilitas pengiriman dengan membandingkan pendapatan terhadap biaya operasional aktual.",
+ 
+  badge: "Penjualan & Biaya",
+ 
+  header_information: "Informasi Header",
+ 
   reference_no: "Nomor Referensi",
-  reference_no_placeholder: "contoh: PS-2026-001",
+  reference_no_placeholder: "cth. PS-2026-001",
 
-  job_order_booking: "Nomor Job / Booking",
-  job_order_booking_placeholder: "Masukkan nomor job atau booking",
+  job_order_booking: "Nomor Job Order / Booking",
+  job_order_booking_placeholder: "Masukkan nomor job order atau booking",
 
-  customer: "Customer",
-  customer_placeholder: "Pilih customer",
-
+  customer: "Pelanggan",
+  customer_placeholder: "Pilih pelanggan",
+ 
   currency: "Mata Uang",
   currency_placeholder: "Pilih mata uang",
-
+ 
   exchange_rate: "Kurs ke IDR",
-  exchange_rate_helper: "Digunakan untuk konversi profit dan laporan keuangan.",
-
-  //revenue
+  exchange_rate_helper: "Digunakan untuk konversi keuntungan dan pelaporan keuangan.",
+ 
   revenue_section: "Pendapatan",
-  add_revenue: "Tambah Pendapatan",
-
+  add_revenue: "Tambah Baris Pendapatan",
+ 
   description_label: "Deskripsi",
-  description_placeholder: "Biaya freight, handling, dokumentasi, dll.",
-
-  amount: "Nominal",
-
+  description_placeholder: "Biaya pengiriman, handling, dokumentasi, dll.",
+ 
+  amount: "Jumlah",
+ 
   revenue_total: "Total Pendapatan",
-
-  //cost
+ 
   cost_section: "Biaya / Pengeluaran",
-  add_cost: "Tambah Biaya",
-
+  add_cost: "Tambah Baris Biaya",
+ 
   cost_total: "Total Biaya",
-
-  //profit
-  result_section: "Hasil Ringkasan Profit",
-
-  gross_profit: "Profit Kotor",
-  gross_profit_idr: "Profit Kotor (IDR)",
-
+ 
+  result_section: "Hasil Ringkasan Keuntungan",
+ 
+  gross_profit: "Keuntungan Kotor",
+  gross_profit_idr: "Keuntungan Kotor (IDR)",
+ 
   profit_indicator_positive: "Pengiriman Menguntungkan",
-  profit_indicator_negative: "Pengiriman Rugi",
-
-  //actions
+  profit_indicator_negative: "Pengiriman Merugi",
+ 
+  // NEW KEYS
+  items_section: "Item",
+  add_item: "Tambah Item",
+  product_services: "Produk / Layanan",
+  product_services_placeholder: "Masukkan nama produk atau layanan",
+  qty: "Qty",
+  selling_price: "Harga Jual",
+  landed_cost: "Harga Modal",
+  profit: "Keuntungan",
+  delete: "Hapus",
+  margin: "Margin (%)",
+ 
   cancel: "Batal",
-  save: "Simpan Ringkasan Profit",
-
-  //success
-  success_create: "Ringkasan profit berhasil disimpan.",
-  success_update: "Ringkasan profit berhasil diperbarui."
+  save: "Simpan Ringkasan Keuntungan",
+ 
+  success_create: "Ringkasan keuntungan berhasil disimpan.",
+  success_update: "Ringkasan keuntungan berhasil diperbarui.",
 },
 sales_invoice: {
   title_create: "Buat Invoice Penjualan",
@@ -1076,6 +1082,12 @@ sales_invoice: {
 
   job_reference: "Referensi Job / Pengiriman",
   job_reference_placeholder: "Hubungkan ke shipment, job, atau sales order",
+
+  sales_order_no: "Nomor Sales Order",
+  sales_order_no_placeholder: "cth. SO-2026-001",
+
+  delivery_order_no: "Nomor Delivery Order",
+  delivery_order_no_placeholder: "cth. DO-2026-001",
 
   currency: "Mata Uang",
   currency_placeholder: "Pilih mata uang",
@@ -1222,4 +1234,118 @@ warehouse: {
     button: "Cari Stock"
   }
 },
+purchase_request_quotation: {
+  title_create: "Buat Permintaan Penawaran",
+
+  request_details: "Detail Permintaan",
+  line_items: "Detail Barang / Item",
+
+  quotation_number: "Nomor Penawaran",
+  quotation_number_placeholder: "mis. RFQ-2026-0001",
+  customer: "Pelanggan / Pembeli",
+  customer_placeholder: "Pilih pelanggan",
+  shipment_type: "Jenis Pengiriman",
+  shipment_type_placeholder: "Pilih jenis pengiriman",
+  service_type: "Jenis Layanan",
+  service_type_placeholder: "Pilih jenis layanan",
+  service_import: "Impor",
+  service_export: "Ekspor",
+  service_domestic: "Domestik",
+  origin: "Asal",
+  origin_placeholder: "Kota / Pelabuhan Muat",
+  destination: "Tujuan",
+  destination_placeholder: "Kota / Pelabuhan Bongkar",
+  notes: "Catatan Tambahan",
+  notes_placeholder: "Tambahkan konteks pengiriman, penanganan khusus, dll.",
+
+  description: "Deskripsi",
+  description_placeholder: "Deskripsi produk",
+  hs_code: "Kode HS",
+  hs_code_placeholder: "mis. 09012120",
+  quantity: "Qty",
+  uom: "Satuan",
+  uom_placeholder: "Pilih satuan",
+  unit_price: "Harga Satuan",
+  currency: "Mata Uang",
+  currency_placeholder: "Pilih mata uang",
+  total_price: "Total Harga",
+  add_item: "Tambah Item",
+
+  save_draft: "Simpan Draf",
+  submit: "Kirim Permintaan",
+  cancel: "Batal",
+
+  success_create: "Permintaan penawaran berhasil dikirim.",
+},
+lookup: {
+  search: "Cari",
+
+  // Customer
+  customer_title: "Pilih Pelanggan",
+  customer_search_placeholder: "Cari berdasarkan nama pelanggan...",
+  customer_name: "Nama Pelanggan",
+  customer_phone: "Telepon",
+  customer_pic: "PIC",
+  no_customer: "Pelanggan tidak ditemukan",
+
+  // Supplier
+  supplier_title: "Pilih Supplier",
+  supplier_search_placeholder: "Cari berdasarkan nama supplier...",
+  supplier_name: "Nama Supplier",
+  no_supplier: "Supplier tidak ditemukan",
+
+  // Sales Inquiry
+  inquiry_title: "Penawaran Penjualan",
+  inquiry_search_placeholder: "Cari berdasarkan nomor penawaran...",
+  inquiry_no: "Nomor RFQ",
+  inquiry_customer: "Pelanggan",
+  inquiry_date: "Tanggal",
+  no_inquiry: "Penawaran tidak ditemukan",
+
+  // Sales Job Order
+  job_order_title: "Job Order Penjualan",
+  job_order_search_placeholder: "Cari berdasarkan nomor job order...",
+  job_order_no: "Nomor Job Order",
+  job_order_date: "Tanggal",
+  no_job_order: "Job order tidak ditemukan",
+
+  // Sales Order
+  sales_order_title: "Sales Order",
+  sales_order_search_placeholder: "Cari berdasarkan nomor sales order...",
+  sales_order_no: "Nomor Sales Order",
+  sales_order_customer: "Pelanggan",
+  sales_order_date: "Tanggal",
+  no_sales_order: "Sales order tidak ditemukan",
+
+  // Delivery Order
+  delivery_order_title: "Delivery Order",
+  delivery_order_search_placeholder: "Cari berdasarkan nomor DO...",
+  delivery_order_no: "Nomor DO",
+  delivery_order_date: "Tanggal",
+  no_delivery_order: "Delivery order tidak ditemukan",
+},
+profile: {
+  title: "Profil Saya",
+  account_info: "Informasi Akun",
+  username: "Nama Pengguna",
+  username_placeholder: "Masukkan nama pengguna",
+  phone_number: "Nomor Telepon",
+  phone_number_placeholder: "mis. +62 812 3456 7890",
+  change_password: "Ubah Kata Sandi",
+  current_password: "Kata Sandi Saat Ini",
+  current_password_placeholder: "Masukkan kata sandi saat ini",
+  new_password: "Kata Sandi Baru",
+  new_password_placeholder: "Masukkan kata sandi baru",
+  confirm_password: "Konfirmasi Kata Sandi Baru",
+  confirm_password_placeholder: "Ulangi kata sandi baru",
+  language: "Bahasa",
+  language_en: "English",
+  language_id: "Bahasa Indonesia",
+  save_changes: "Simpan Perubahan",
+  privacy_policy: "Kebijakan Privasi",
+  version: "Versi",
+  success_update: "Profil berhasil diperbarui.",
+  error_password_mismatch: "Kata sandi baru dan konfirmasi tidak cocok.",
+  error_current_password_required: "Kata sandi saat ini diperlukan untuk menetapkan kata sandi baru.",
+}
 };

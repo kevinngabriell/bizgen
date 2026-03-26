@@ -71,14 +71,14 @@ export default function InquiryLookup({
         <Dialog.Positioner>
           <Dialog.Content minW={"60vw"}>
             <Dialog.Header>
-              <Dialog.Title>{t.sales_quotation.linked_inquiry}</Dialog.Title>
+              <Dialog.Title>{t.lookup.inquiry_title}</Dialog.Title>
             </Dialog.Header>
 
             <Dialog.Body>
               <Field.Root>
-                <Field.Label>Search</Field.Label>
+                <Field.Label>{t.lookup.search}</Field.Label>
                 <InputGroup startElement={<LuSearch />} mb={5}>
-                  <Input placeholder={t.sales_quotation.linked_inquiry_placeholder} value={search} onChange={(e) => setSearch(e.target.value)}/>
+                  <Input placeholder={t.lookup.inquiry_search_placeholder} value={search} onChange={(e) => setSearch(e.target.value)}/>
                 </InputGroup>
               </Field.Root>
               
@@ -86,14 +86,14 @@ export default function InquiryLookup({
               {loading ? (
                 <Loading />
               ) : rfq.length === 0 ? (
-                <Text>No inquiry found</Text>
+                <Text>{t.lookup.no_inquiry}</Text>
               ) : (
                 <Table.Root>
                   <Table.Header>
                     <Table.Row bg="bg.panel">
-                      <Table.ColumnHeader textAlign="center">RFQ No</Table.ColumnHeader>
-                      <Table.ColumnHeader textAlign="center">Customer</Table.ColumnHeader>
-                      <Table.ColumnHeader textAlign="center">Date</Table.ColumnHeader>
+                      <Table.ColumnHeader textAlign="center">{t.lookup.inquiry_no}</Table.ColumnHeader>
+                      <Table.ColumnHeader textAlign="center">{t.lookup.inquiry_customer}</Table.ColumnHeader>
+                      <Table.ColumnHeader textAlign="center">{t.lookup.inquiry_date}</Table.ColumnHeader>
                       <Table.ColumnHeader textAlign="center">{t.master.action}</Table.ColumnHeader>
                     </Table.Row>
                   </Table.Header>

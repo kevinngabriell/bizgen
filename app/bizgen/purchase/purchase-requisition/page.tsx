@@ -45,7 +45,7 @@ export default function PurchaseRequisitionCreatePage() {
     }
   }
     
-  if (loading) return <Loading/>;
+  
   
   const [form, setForm] = useState({
     prNumber: "",
@@ -100,6 +100,8 @@ export default function PurchaseRequisitionCreatePage() {
     // TODO: integrate with API
     console.log("PURCHASE REQUISITION", { mode, form, items });
   };
+  
+  if (loading) return <Loading/>;
 
   return (
     <SidebarWithHeader username={auth?.username ?? "Unknown"} daysToExpire={auth?.days_remaining ?? 0}>

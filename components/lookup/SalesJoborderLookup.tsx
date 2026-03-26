@@ -71,14 +71,14 @@ export default function SalesBookingLookup({
                 <Dialog.Positioner>
                     <Dialog.Content minW={"60vw"}>
                         <Dialog.Header>
-                            <Dialog.Title>{t.sales_quotation.linked_inquiry}</Dialog.Title>
+                            <Dialog.Title>{t.lookup.job_order_title}</Dialog.Title>
                         </Dialog.Header>
 
                         <Dialog.Body>
                         <Field.Root>
-                            <Field.Label>Search</Field.Label>
+                            <Field.Label>{t.lookup.search}</Field.Label>
                             <InputGroup startElement={<LuSearch />} mb={5}>
-                            <Input placeholder={t.sales_quotation.linked_inquiry_placeholder} value={search} onChange={(e) => setSearch(e.target.value)}/>
+                            <Input placeholder={t.lookup.job_order_search_placeholder} value={search} onChange={(e) => setSearch(e.target.value)}/>
                             </InputGroup>
                         </Field.Root>
                         
@@ -86,13 +86,13 @@ export default function SalesBookingLookup({
                         {loading ? (
                             <Loading />
                         ) : jobBooking.length === 0 ? (
-                            <Text>No inquiry found</Text>
+                            <Text>{t.lookup.no_job_order}</Text>
                         ) : (
                             <Table.Root>
                             <Table.Header>
                                 <Table.Row bg="bg.panel">
-                                <Table.ColumnHeader textAlign="center">Job Order No</Table.ColumnHeader>
-                                <Table.ColumnHeader textAlign="center">Date</Table.ColumnHeader>
+                                <Table.ColumnHeader textAlign="center">{t.lookup.job_order_no}</Table.ColumnHeader>
+                                <Table.ColumnHeader textAlign="center">{t.lookup.job_order_date}</Table.ColumnHeader>
                                 <Table.ColumnHeader textAlign="center">{t.master.action}</Table.ColumnHeader>
                                 </Table.Row>
                             </Table.Header>

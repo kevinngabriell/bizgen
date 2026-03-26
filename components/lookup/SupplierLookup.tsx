@@ -72,18 +72,18 @@ export default function SupplierLookup({
                 <Dialog.Positioner>
                     <Dialog.Content minW={"60vw"}>
                         <Dialog.Header>
-                            <Dialog.Title>Choose Supplier</Dialog.Title>
+                            <Dialog.Title>{t.lookup.supplier_title}</Dialog.Title>
                         </Dialog.Header>
 
                         <Dialog.Body>
                             <InputGroup startElement={<LuSearch/>} mb={5}>
-                                <Input placeholder="Enter customer name....." value={search} onChange={(e) => setSearch(e.target.value)}/>
+                                <Input placeholder={t.lookup.supplier_search_placeholder} value={search} onChange={(e) => setSearch(e.target.value)}/>
                             </InputGroup>                
                             
                             {loading ? (
                                 <Loading/>
                             ) : supplier.length === 0 ? (
-                                <Text>No supplier found</Text>
+                                <Text>{t.lookup.no_supplier}</Text>
                             ) : (
                                 <Table.Root>
                                     <Table.Header>
@@ -113,7 +113,7 @@ export default function SupplierLookup({
 
                         <Dialog.Footer>
                             <Dialog.ActionTrigger asChild>
-                                <Button variant="outline">Cancel</Button>
+                                <Button variant="outline">{t.master.cancel}</Button>
                             </Dialog.ActionTrigger>
                         </Dialog.Footer>
                         

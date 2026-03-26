@@ -1,41 +1,53 @@
 "use client";
 
-import {Box, Button, Card, Separator, Flex, Field, Grid, GridItem, HStack, IconButton, Input, Select, Stack, Text, Textarea, Heading, SimpleGrid, NumberInput, createListCollection, Portal} from "@chakra-ui/react";
-import { useState, useMemo, useEffect } from "react";
-import dayjs from "dayjs";
-import SidebarWithHeader from "@/components/ui/SidebarWithHeader";
-import { FaTrash } from "react-icons/fa";
 import Loading from "@/components/loading";
+import CustomerLookup from "@/components/lookup/CustomerLookup";
+import DeliveryOrderLookup from "@/components/lookup/DeliveryOrderLookup";
+import SalesOrderLookup from "@/components/lookup/SalesOrderLookup";
+import SidebarWithHeader from "@/components/ui/SidebarWithHeader";
+import { AlertMessage } from "@/components/ui/alert";
 import { DecodedAuthToken, checkAuthOrRedirect, getAuthInfo } from "@/lib/auth/auth";
-import { useRouter } from "next/navigation";
 import { getLang } from "@/lib/i18n";
 import { getAllCurrency, GetCurrencyData } from "@/lib/master/currency";
 import { GetCustomerData } from "@/lib/master/customer";
-import CustomerLookup from "@/components/lookup/CustomerLookup";
+import { getAllItem, GetItemData } from "@/lib/master/item";
+import { createSalesInvoice, generateSalesInvoiceNumber } from "@/lib/sales/invoice";
+import { GetSalesDeliveryItemData } from "@/lib/sales/delivery-order";
+import { GetSalesOrderItemData } from "@/lib/sales/sales-order";
+import { Badge, Box, Button, Card, Combobox, createListCollection, Field, Flex, Heading, IconButton, Input, Portal, Select, Separator, SimpleGrid, Text, Textarea, useFilter, useListCollection } from "@chakra-ui/react";
+import { useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useMemo, useState } from "react";
+import { FaTrash } from "react-icons/fa";
 
-type LineItem = {
-  id: string;
-  description: string;
-  quantity: number;
-  unitPrice: number;
-  taxPercent: number;
-};
+type InvoiceMode = "create" | "view" | "edit";
 
 export default function CreateInvoicePage() {
+  return (
+    <Suspense fallback={<Loading />}>
+      <InvoiceContent />
+    </Suspense>
+  );
+}
+
+function InvoiceContent() {
   const [auth, setAuth] = useState<DecodedAuthToken | null>(null);
   const [loading, setLoading] = useState(false);
-
-  //router authentication
-  const router = useRouter();
-
-  //PARAMETER DETAILNYA invoice_id
-
-  //language state 
   const [lang, setLang] = useState<"en" | "id">("en");
   const t = getLang(lang);
 
-  //currency option
-  const [currencySelected, setSelected] = useState<string>();
+  const searchParams = useSearchParams();
+  const invoiceID = searchParams.get("invoice_id");
+
+  const [mode, setMode] = useState<InvoiceMode>("create");
+
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const [showAlert, setShowAlert] = useState(false);
+  const [titlePopup, setTitlePopup] = useState("");
+  const [messagePopup, setMessagePopup] = useState("");
+  const [isSuccess, setIsSuccess] = useState(false);
+
+  const [currencySelected, setCurrencySelected] = useState<string>();
   const [currencyOptions, setCurrencyOptions] = useState<GetCurrencyData[]>([]);
 
   const currencyCollection = createListCollection({
@@ -45,307 +57,441 @@ export default function CreateInvoicePage() {
     })),
   });
 
-  //to open customer popup
-  const [customerModalOpen, setCustomerModalOpen] = useState(false);
-    
-  useEffect(() => {
-    init();
+  const [itemCollections, setItemCollections] = useState<GetItemData[]>([]);
+  const { contains } = useFilter({ sensitivity: "base" });
+  const { collection: itemCollection, set: setItemCollection } = useListCollection<GetItemData>({
+    initialItems: [],
+    itemToString: (item) => `${item.item_code} - ${item.item_name}`,
+    itemToValue: (item) => item.item_id,
+  });
 
-    const fetchCurrency = async () => {
+  const [customerModalOpen, setCustomerModalOpen] = useState(false);
+  const [salesOrderModalOpen, setSalesOrderModalOpen] = useState(false);
+  const [deliveryOrderModalOpen, setDeliveryOrderModalOpen] = useState(false);
+
+  const [customer, setCustomer] = useState("");
+  const [customerId, setCustomerId] = useState("");
+  const [invoiceNo, setInvoiceNo] = useState("");
+  const [invoiceDate, setInvoiceDate] = useState("");
+  const [dueDate, setDueDate] = useState("");
+  const [jobReference, setJobReference] = useState("");
+  const [salesOrderNo, setSalesOrderNo] = useState("");
+  const [salesOrderId, setSalesOrderId] = useState("");
+  const [deliveryOrderNo, setDeliveryOrderNo] = useState("");
+  const [deliveryOrderId, setDeliveryOrderId] = useState("");
+  const [exchangeRate, setExchangeRate] = useState(15000);
+  const [exchangeRateInput, setExchangeRateInput] = useState("15,000");
+  const [notes, setNotes] = useState("");
+
+  const selectedCurrencyData = currencyOptions.find((c) => c.currency_id === currencySelected);
+  const currencySymbol = selectedCurrencyData?.currency_symbol ?? "USD";
+  const isIDR = selectedCurrencyData?.currency_symbol === "IDR" || selectedCurrencyData?.currency_code === "IDR";
+
+  const [items, setItems] = useState([
+    { id: crypto.randomUUID(), itemId: "", quantity: 1, unitPrice: 0, unitPriceInput: "", taxPercent: 0 },
+  ]);
+
+  useEffect(() => {
+    const init = async () => {
+      const valid = await checkAuthOrRedirect();
+      if (!valid) return;
+      const info = getAuthInfo();
+      setAuth(info);
+      const language = info?.language === "id" ? "id" : "en";
+      setLang(language);
+    };
+
+    const loadMaster = async () => {
+      const [currencyRes, itemRes] = await Promise.all([
+        getAllCurrency(1, 1000),
+        getAllItem(1, 10000),
+      ]);
+      setCurrencyOptions(currencyRes?.data ?? []);
+      const itemData = itemRes?.data ?? [];
+      setItemCollection(itemData);
+      setItemCollections(itemData);
+    };
+
+    const loadGeneratedNumber = async () => {
+      if (invoiceID) return;
+      const res = await generateSalesInvoiceNumber();
+      setInvoiceNo(res.number);
+    };
+
+    const loadAll = async () => {
       try {
         setLoading(true);
-        const currencyRes = await getAllCurrency(1, 1000);
-        setCurrencyOptions(currencyRes?.data ?? []);
-      } catch (error) {
-        console.error(error);
-        setCurrencyOptions([]);
+        await init();
+        await loadMaster();
+        await loadGeneratedNumber();
+      } catch (err) {
+        console.error(err);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchCurrency();
+    loadAll();
+  }, [invoiceID]);
 
-  }, []);
-
-  const init = async () => {
-    setLoading(true);
-
-    //check authentication redirect
-    const valid = await checkAuthOrRedirect();
-    if(!valid) return;
-
-    //get info from authentication
-    const info = getAuthInfo();
-    setAuth(info);
-
-    //set language from token authentication
-    const language = info?.language === "id" ? "id" : "en";
-    setLang(language);
-
-    setLoading(false);
-  }
-    
-  const [form, setForm] = useState({
-    invoiceNo: "",
-    invoiceDate: dayjs().format("YYYY-MM-DD"),
-    customer: "",
-    jobRef: "",
-    salesOrderNo: "",
-    deliveryOrderNo: "",
-    currency: "IDR",
-    rate: 1,
-    dueDate: "",
-    notes: "",
-  });
-
-  const [items, setItems] = useState<LineItem[]>([
-    { id: crypto.randomUUID(), description: "", quantity: 1, unitPrice: 0, taxPercent: 0 },
-  ]);
-
-  const [taxPercent, setTaxPercent] = useState(0);
-
-  const subTotal = useMemo(
-    () =>
-      items.reduce(
-        (sum, it) => sum + (it.quantity || 0) * (it.unitPrice || 0),
-        0
-      ),
-    [items]
-  );
-
-  const taxAmount = useMemo(
-    () => items.reduce((sum, it) => {
-      const base = (it.quantity || 0) * (it.unitPrice || 0);
-      return sum + (base * (it.taxPercent || 0)) / 100;
-    }, 0),
-    [items]
-  );
-
-  const grandTotal = useMemo(() => subTotal + taxAmount, [subTotal, taxAmount]);
-
-  const handleChange =
-    (key: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) => {
-      setForm((p) => ({ ...p, [key]: e.target.value }));
-    };
-
-  const handleNumChange =
-    (key: keyof typeof form) => (_: string, v: number) => {
-      setForm((p) => ({ ...p, [key]: isNaN(v) ? 0 : v }));
-    };
-
-  const updateItem = (id: string, patch: Partial<LineItem>) => {
-    setItems((prev) =>
-      prev.map((it) => (it.id === id ? { ...it, ...patch } : it))
-    );
-  };
+  const clearAmountErrors = () =>
+    setErrors((prev) => { const e = { ...prev }; delete e.subtotal_amount; delete e.grand_total; delete e.items; return e; });
 
   const addItem = () => {
-    setItems((p) => [
-      ...p,
-      { id: crypto.randomUUID(), description: "", quantity: 1, unitPrice: 0, taxPercent: 0 },
-    ]);
+    setItems((prev) => [...prev, { id: crypto.randomUUID(), itemId: "", quantity: 1, unitPrice: 0, unitPriceInput: "", taxPercent: 0 }]);
+    clearAmountErrors();
   };
 
-  const removeItem = (id: string) => {
-    setItems((p) => (p.length === 1 ? p : p.filter((it) => it.id !== id)));
+  const removeItem = (id: string) =>
+    setItems((prev) => (prev.length > 1 ? prev.filter((i) => i.id !== id) : prev));
+
+  const updateItem = (id: string, key: string, value: string | number) => {
+    setItems((prev) => prev.map((i) => (i.id === id ? { ...i, [key]: value } : i)));
+    clearAmountErrors();
+  };
+
+  const updateUnitPrice = (id: string, raw: string) => {
+    const numeric = parseFloat(raw.replace(/[^0-9.]/g, "")) || 0;
+    setItems((prev) => prev.map((i) => i.id === id ? { ...i, unitPrice: numeric, unitPriceInput: raw } : i));
+    clearAmountErrors();
+  };
+
+  const blurUnitPrice = (id: string) =>
+    setItems((prev) => prev.map((i) => i.id === id ? { ...i, unitPriceInput: i.unitPrice === 0 ? "" : i.unitPrice.toLocaleString() } : i));
+
+  const focusUnitPrice = (id: string) =>
+    setItems((prev) => prev.map((i) => i.id === id ? { ...i, unitPriceInput: i.unitPrice === 0 ? "" : String(i.unitPrice) } : i));
+
+  const subTotal = useMemo(() => items.reduce((sum, i) => sum + i.quantity * i.unitPrice, 0), [items]);
+  const taxAmount = useMemo(() => items.reduce((sum, i) => sum + i.quantity * i.unitPrice * (i.taxPercent / 100), 0), [items]);
+  const grandTotal = useMemo(() => subTotal + taxAmount, [subTotal, taxAmount]);
+  const grandTotalIdr = isIDR ? grandTotal : grandTotal * exchangeRate;
+  const overallTaxPercent = subTotal > 0 ? ((taxAmount / subTotal) * 100).toFixed(2) : "0";
+
+  const handleChooseCustomer = (selectedCustomer: GetCustomerData) => {
+    setCustomer(selectedCustomer.customer_name);
+    setCustomerId(selectedCustomer.customer_id);
+    setErrors((prev) => { const e = { ...prev }; delete e.customer_id; return e; });
+    setCustomerModalOpen(false);
+  };
+
+  const handleChooseSalesOrder = (selectedSO: GetSalesOrderItemData) => {
+    setSalesOrderNo(selectedSO.sales_order_no);
+    setSalesOrderId(selectedSO.sales_order_id);
+    setErrors((prev) => { const e = { ...prev }; delete e.sales_order_id; return e; });
+    setSalesOrderModalOpen(false);
+  };
+
+  const handleChooseDeliveryOrder = (selectedDO: GetSalesDeliveryItemData) => {
+    setDeliveryOrderNo(selectedDO.do_number);
+    setDeliveryOrderId(selectedDO.delivery_order_id);
+    setErrors((prev) => { const e = { ...prev }; delete e.delivery_order_id; return e; });
+    setDeliveryOrderModalOpen(false);
   };
 
   const handleSubmit = async () => {
-    const payload = {
-      ...form,
-      items,
-      taxPercent,
-      subTotal,
-      taxAmount,
-      grandTotal,
-    };
+    const newErrors: Record<string, string> = {};
+    if (!invoiceNo.trim()) newErrors.invoice_number = "Required";
+    if (!customerId) newErrors.customer_id = "Required";
+    if (!currencySelected) newErrors.currency_id = "Required";
+    if (!salesOrderId) newErrors.sales_order_id = "Required";
+    if (!deliveryOrderId) newErrors.delivery_order_id = "Required";
+    if (!invoiceDate) newErrors.invoice_date = "Required";
+    if (subTotal <= 0) newErrors.subtotal_amount = "Subtotal must be greater than 0";
+    if (grandTotal <= 0) newErrors.grand_total = "Grand total must be greater than 0";
+    if (items.length === 0) newErrors.items = "At least one item is required";
+    if (Object.keys(newErrors).length > 0) { setErrors(newErrors); return; }
+    setErrors({});
+    setLoading(true);
+    try {
+      await createSalesInvoice({
+        invoice_number: invoiceNo,
+        customer_id: customerId,
+        currency_id: currencySelected!,
+        sales_order_id: salesOrderId,
+        delivery_order_id: deliveryOrderId,
+        invoice_date: invoiceDate,
+        due_date: dueDate,
+        exchange_rate_to_idr: String(exchangeRate),
+        subtotal_amount: String(subTotal),
+        tax_percent: overallTaxPercent,
+        tax_amount: String(taxAmount),
+        grand_total: String(grandTotal),
+        grand_total_idr: String(grandTotalIdr),
+        items: items.map((i) => {
+          const itemTax = i.quantity * i.unitPrice * (i.taxPercent / 100);
+          const itemTotal = i.quantity * i.unitPrice + itemTax;
+          return {
+            items_id: i.itemId,
+            quantity: String(i.quantity),
+            unit_price: String(i.unitPrice),
+            tax: String(itemTax),
+            total: String(itemTotal),
+          };
+        }),
+      });
 
-    // TODO: replace with API call
-    console.log("Create Invoice Payload", payload);
+      setShowAlert(true);
+      setIsSuccess(true);
+      setTitlePopup(t.master.success);
+      setMessagePopup(t.sales_invoice.success_create);
+
+      // Reset form
+      const newNumber = await generateSalesInvoiceNumber();
+      setInvoiceNo(newNumber.number);
+      setCustomer("");
+      setCustomerId("");
+      setInvoiceDate("");
+      setDueDate("");
+      setJobReference("");
+      setSalesOrderNo("");
+      setSalesOrderId("");
+      setDeliveryOrderNo("");
+      setDeliveryOrderId("");
+      setCurrencySelected(undefined);
+      setExchangeRate(15000);
+      setExchangeRateInput("15,000");
+      setNotes("");
+      setItems([{ id: crypto.randomUUID(), itemId: "", quantity: 1, unitPrice: 0, unitPriceInput: "", taxPercent: 0 }]);
+
+      setTimeout(() => setShowAlert(false), 6000);
+    } catch (err: any) {
+      setShowAlert(true);
+      setIsSuccess(false);
+      setTitlePopup(t.master.error);
+      setMessagePopup(err.message || t.sales_invoice.success_create);
+      setTimeout(() => setShowAlert(false), 6000);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleChooseCustomer = (customer: GetCustomerData) => {
-    // setForm(prev => ({
-    //   ...prev,
-    //   customerName: customer.customer_name,
-    //   contactPerson: customer.customer_pic_name,
-    //   customerPhone: customer.customer_pic_contact
-    // }));
-    
-    setCustomerModalOpen(false);
-  };
-  
-  if (loading) return <Loading/>;
+  if (loading) return <Loading />;
 
   return (
     <SidebarWithHeader username={auth?.username ?? "Unknown"} daysToExpire={auth?.days_remaining ?? 0}>
-      <Card.Root>
+
+      <Flex justify="space-between" align="center" mb={4}>
+        <Heading size="lg">{t.sales_invoice.title_create}</Heading>
+      </Flex>
+
+      <CustomerLookup isOpen={customerModalOpen} onClose={() => setCustomerModalOpen(false)} onChoose={handleChooseCustomer} />
+      <SalesOrderLookup isOpen={salesOrderModalOpen} onClose={() => setSalesOrderModalOpen(false)} onChoose={handleChooseSalesOrder} />
+      <DeliveryOrderLookup isOpen={deliveryOrderModalOpen} onClose={() => setDeliveryOrderModalOpen(false)} onChoose={handleChooseDeliveryOrder} />
+
+      {showAlert && <AlertMessage title={titlePopup} description={messagePopup} isSuccess={isSuccess} />}
+
+      {/* Invoice Information */}
+      <Card.Root mb={6}>
         <Card.Header>
-          <Flex justify="space-between" align="center">
-            <Flex flexDir={"column"}>
-              <Heading>{t.sales_invoice.title_create}</Heading>
-              <Text fontSize={"sm"} color="gray.500">{t.sales_invoice.description}</Text>
-            </Flex>
-
-            <Flex gap={3}>
-              <Button variant="outline">{t.sales_invoice.preview_pdf}</Button>
-              <Button bg={"#E77A1F"} color={"white"} cursor={"pointer"} onClick={handleSubmit}>{t.sales_invoice.save_invoice}</Button>
-            </Flex>
-          </Flex>
+          <Heading size="md">{t.sales_invoice.invoice_information}</Heading>
         </Card.Header>
-
-        <CustomerLookup isOpen={customerModalOpen} onClose={() => setCustomerModalOpen(false)} onChoose={handleChooseCustomer} />
-          
         <Card.Body>
-          <SimpleGrid templateColumns={{ base: "1fr", md: "repeat(3, 1fr)" }} gap={6}>
-            <Field.Root>
-              <Field.Label>{t.sales_invoice.invoice_number}</Field.Label>
-              <Input placeholder={t.sales_invoice.invoice_number_placeholder} value={form.invoiceNo} onChange={handleChange("invoiceNo")}/>
+          <SimpleGrid columns={{ base: 1, md: 3 }} gap={4}>
+            <Field.Root required invalid={!!errors.invoice_number}>
+              <Field.Label>{t.sales_invoice.invoice_number}<Field.RequiredIndicator/></Field.Label>
+              <Input placeholder={t.sales_invoice.invoice_number_placeholder} value={invoiceNo} onChange={(e) => { setInvoiceNo(e.target.value); setErrors((prev) => { const e = { ...prev }; delete e.invoice_number; return e; }); }} />
+              <Field.ErrorText>{errors.invoice_number}</Field.ErrorText>
             </Field.Root>
-            <Field.Root>
-              <Field.Label>{t.sales_invoice.invoice_date}</Field.Label>
-              <Input type="date" value={form.invoiceDate} onChange={handleChange("invoiceDate")}/>
+            <Field.Root required invalid={!!errors.invoice_date}>
+              <Field.Label>{t.sales_invoice.invoice_date}<Field.RequiredIndicator/></Field.Label>
+              <Input type="date" value={invoiceDate} onChange={(e) => { setInvoiceDate(e.target.value); setErrors((prev) => { const e = { ...prev }; delete e.invoice_date; return e; }); }} />
+              <Field.ErrorText>{errors.invoice_date}</Field.ErrorText>
             </Field.Root>
             <Field.Root>
               <Field.Label>{t.sales_invoice.due_date}</Field.Label>
-              <Input type="date" value={form.dueDate} onChange={handleChange("dueDate")}/>
-            </Field.Root>
-            <Field.Root>
-              <Field.Label>{t.sales_invoice.customer}</Field.Label>
-              <Input placeholder={t.sales_invoice.customer_placeholder} readOnly cursor="pointer" onClick={() => setCustomerModalOpen(true)}/>
-            </Field.Root>
-            <Field.Root>
-              <Field.Label>{t.sales_invoice.job_reference}</Field.Label>
-              <Input placeholder={t.sales_invoice.job_reference_placeholder} value={form.jobRef} onChange={handleChange("jobRef")}/>
-            </Field.Root>
-            <Field.Root>
-              <Field.Label>Sales Order No</Field.Label>
-              <Input placeholder="Enter SO Number" value={form.salesOrderNo} onChange={handleChange("salesOrderNo")}/>
-            </Field.Root>
-            <Field.Root>
-              <Field.Label>Delivery Order No</Field.Label>
-              <Input placeholder="Enter DO Number" value={form.deliveryOrderNo} onChange={handleChange("deliveryOrderNo")}/>
-            </Field.Root>
-            <Field.Root>
-              <Field.Label>{t.sales_invoice.currency}</Field.Label>
-                    <Select.Root collection={currencyCollection} value={currencySelected ? [currencySelected] : []} onValueChange={(details) => setSelected(details.value[0])} size="sm" width="100%">
-                      <Select.HiddenSelect />
-                      <Select.Control>
-                        <Select.Trigger>
-                          <Select.ValueText placeholder={t.sales_invoice.currency_placeholder} />
-                        </Select.Trigger>
-                        <Select.IndicatorGroup>
-                          <Select.Indicator />
-                        </Select.IndicatorGroup>
-                      </Select.Control>
-                      <Portal>
-                        <Select.Positioner>
-                          <Select.Content>
-                            {currencyCollection.items.map((currency) => (
-                              <Select.Item item={currency} key={currency.value}>{currency.label}<Select.ItemIndicator /></Select.Item>
-                            ))}
-                          </Select.Content>
-                        </Select.Positioner>
-                      </Portal>
-                    </Select.Root>
-            </Field.Root>
-            <Field.Root>
-              <Field.Label>{t.sales_invoice.exchange_rate}</Field.Label>
-              <Input type="number" placeholder={t.sales_invoice.exchange_rate_helper}/>
-
+              <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
             </Field.Root>
           </SimpleGrid>
 
-          <Flex justify="space-between" align="center" mb={3} mt={7}>
-            <Text fontWeight="semibold">{t.sales_invoice.line_items}</Text>
-            <Button size="sm" variant="outline" onClick={addItem}>{t.sales_invoice.add_item}</Button>
-          </Flex>
-
-          {items.map((it) => {
-            const base = (it.quantity || 0) * (it.unitPrice || 0);
-            const lineTax = (base * (it.taxPercent || 0)) / 100;
-            const amount = base + lineTax;
-
-            return(
-              <Card.Root key={it.id} variant="subtle">
-                <Card.Body>
-                  <SimpleGrid templateColumns={{base: "1fr", md: "3fr 1fr 1fr 1fr 1fr auto"}} gap={4} alignItems="end">
-                    <Field.Root>
-                      <Field.Label>{t.sales_invoice.description_label}</Field.Label>
-                      <Input placeholder={t.sales_invoice.description_placeholder} value={it.description} onChange={(e) => updateItem(it.id, {description: e.target.value,})}/>
-                    </Field.Root>
-                    <Field.Root>
-                      <Field.Label>{t.sales_invoice.quantity}</Field.Label>
-                      <NumberInput.Root value={String(it.quantity)} onValueChange={(d) => updateItem(it.id, { quantity: Number(d.value) })}>
-                        <NumberInput.Control/>
-                        <NumberInput.Input/>
-                      </NumberInput.Root>
-                    </Field.Root>
-                    <Field.Root>
-                      <Field.Label>{t.sales_invoice.unit_price}</Field.Label>
-                      <NumberInput.Root value={String(it.unitPrice)} onValueChange={(d) => updateItem(it.id, { unitPrice: Number(d.value) })}>
-                        <NumberInput.Control/>
-                        <NumberInput.Input/>
-                      </NumberInput.Root>
-                    </Field.Root>
-                    <Field.Root>
-                      <Field.Label>Tax (%)</Field.Label>
-                      <NumberInput.Root value={String(it.taxPercent)} onValueChange={(d) => updateItem(it.id, { taxPercent: Number(d.value) })}>
-                        <NumberInput.Control/>
-                        <NumberInput.Input/>
-                      </NumberInput.Root>
-                    </Field.Root>
-                    <Field.Root>
-                      <Field.Label>{t.sales_invoice.amount}</Field.Label>
-                      <Input value={amount.toLocaleString()}/>
-                    </Field.Root>
-                    <IconButton aria-label="Remove" variant="ghost" color="red" onClick={() => removeItem(it.id)}>
-                      <FaTrash/>
-                    </IconButton>
-                  </SimpleGrid>
-                </Card.Body>
-              </Card.Root>
-            );
-          })}
-
-          <SimpleGrid templateColumns={{ base: "1fr", md: "1fr 300px" }} gap={6} alignItems="start" mt={7}>
-            <Field.Root>
-              <Field.Label>{t.sales_invoice.notes}</Field.Label>
-              <Textarea placeholder={t.sales_invoice.notes_placeholder} value={form.notes}/>
+          <SimpleGrid columns={{ base: 1, md: 3 }} gap={4} mt={4}>
+            <Field.Root required invalid={!!errors.customer_id}>
+              <Field.Label>{t.sales_invoice.customer}<Field.RequiredIndicator/></Field.Label>
+              <Input placeholder={t.sales_invoice.customer_placeholder} value={customer} readOnly cursor="pointer" onClick={() => setCustomerModalOpen(true)} />
+              <Field.ErrorText>{errors.customer_id}</Field.ErrorText>
             </Field.Root>
+            <Field.Root required invalid={!!errors.sales_order_id}>
+              <Field.Label>{t.sales_invoice.sales_order_no}<Field.RequiredIndicator/></Field.Label>
+              <Input placeholder={t.sales_invoice.sales_order_no_placeholder} value={salesOrderNo} readOnly cursor="pointer" onClick={() => setSalesOrderModalOpen(true)} />
+              <Field.ErrorText>{errors.sales_order_id}</Field.ErrorText>
+            </Field.Root>
+            <Field.Root required invalid={!!errors.delivery_order_id}>
+              <Field.Label>{t.sales_invoice.delivery_order_no}<Field.RequiredIndicator/></Field.Label>
+              <Input placeholder={t.sales_invoice.delivery_order_no_placeholder} value={deliveryOrderNo} readOnly cursor="pointer" onClick={() => setDeliveryOrderModalOpen(true)} />
+              <Field.ErrorText>{errors.delivery_order_id}</Field.ErrorText>
+            </Field.Root>
+          </SimpleGrid>
 
-            <Card.Root>
-              <Card.Body>
-                <Flex justify="space-between">
-                  <Text color="gray.600" fontSize={"sm"}>{t.sales_invoice.subtotal}</Text>
-                  <Text fontWeight="semibold" fontSize={"sm"}>{subTotal.toLocaleString()}</Text>
-                </Flex>
-
-                <Field.Root mt={3}>
-                  <Field.Label fontSize={"sm"}>{t.sales_invoice.tax_percent}</Field.Label>
-                  <NumberInput.Root>
-                    <NumberInput.Control/>
-                    <NumberInput.Input/>
-                  </NumberInput.Root>
-                </Field.Root>
-
-                <Flex justify="space-between" mt={3}>
-                  <Text color="gray.600" fontSize={"sm"}>{t.sales_invoice.tax_amount}</Text>
-                  <Text fontWeight="semibold" fontSize={"sm"}>{taxAmount.toLocaleString()}</Text>
-                </Flex>
-
-                <Separator mt={3}/>
-
-                <Flex justify="space-between" mt={3}>
-                  <Text fontWeight="bold">{t.sales_invoice.grand_total}</Text>
-                  <Text fontWeight="bold">{grandTotal.toLocaleString()} {form.currency}</Text>
-                </Flex>
-              </Card.Body>
-            </Card.Root>
+          <SimpleGrid columns={{ base: 1, lg: isIDR ? 1 : 2 }} gap={4} mt={4}>
+            <Field.Root required invalid={!!errors.currency_id}>
+              <Field.Label>{t.sales_invoice.currency}<Field.RequiredIndicator/></Field.Label>
+              <Select.Root w="100%" collection={currencyCollection} value={currencySelected ? [currencySelected] : []} onValueChange={(details) => { setCurrencySelected(details.value[0]); setErrors((prev) => { const e = { ...prev }; delete e.currency_id; return e; }); }}>
+                <Select.HiddenSelect />
+                <Select.Control>
+                  <Select.Trigger>
+                    <Select.ValueText placeholder={t.sales_invoice.currency_placeholder} />
+                  </Select.Trigger>
+                  <Select.IndicatorGroup>
+                    <Select.Indicator />
+                  </Select.IndicatorGroup>
+                </Select.Control>
+                <Portal>
+                  <Select.Positioner>
+                    <Select.Content>
+                      {currencyCollection.items.map((cur) => (
+                        <Select.Item item={cur} key={cur.value}>
+                          {cur.label}
+                          <Select.ItemIndicator />
+                        </Select.Item>
+                      ))}
+                    </Select.Content>
+                  </Select.Positioner>
+                </Portal>
+              </Select.Root>
+              <Field.ErrorText>{errors.currency_id}</Field.ErrorText>
+            </Field.Root>
+            {!isIDR && (
+              <Field.Root>
+                <Field.Label>{t.sales_invoice.exchange_rate}</Field.Label>
+                <Input
+                  value={exchangeRateInput}
+                  onChange={(e) => {
+                    const raw = e.target.value;
+                    setExchangeRateInput(raw);
+                    setExchangeRate(parseFloat(raw.replace(/[^0-9.]/g, "")) || 0);
+                  }}
+                  onBlur={() => setExchangeRateInput(exchangeRate === 0 ? "" : exchangeRate.toLocaleString())}
+                  onFocus={() => setExchangeRateInput(exchangeRate === 0 ? "" : String(exchangeRate))}
+                />
+              </Field.Root>
+            )}
           </SimpleGrid>
         </Card.Body>
       </Card.Root>
-    </SidebarWithHeader>    
+
+      {/* Line Items */}
+      <Card.Root mb={6}>
+        <Card.Header>
+          <Flex justify="space-between" align="center">
+            <Flex align="center" gap={2}>
+              <Heading size="md">{t.sales_invoice.line_items}</Heading>
+              {errors.items && <Text color="red.500" fontSize="sm">{errors.items}</Text>}
+            </Flex>
+            <Button size="sm" bg="#E77A1F" color="white" onClick={addItem}>{t.sales_invoice.add_item}</Button>
+          </Flex>
+        </Card.Header>
+        <Card.Body>
+          <Box overflowX="auto">
+            {items.map((item) => {
+              const base = item.quantity * item.unitPrice;
+              const amount = base + base * (item.taxPercent / 100);
+              return (
+                <SimpleGrid templateColumns="2fr 100px 180px 100px 160px 60px" key={item.id} gap={4} mb={3}>
+                  <Field.Root>
+                    <Field.Label>{t.sales_invoice.description_label}</Field.Label>
+                    <Combobox.Root
+                      collection={itemCollection}
+                      onValueChange={(details) => updateItem(item.id, "itemId", details.value?.[0] ?? "")}
+                      onInputValueChange={(e) => {
+                        const input = e.inputValue ?? "";
+                        if (!input.trim()) { setItemCollection(itemCollections); return; }
+                        setItemCollection(itemCollections.filter((i) => contains(`${i.item_code} - ${i.item_name}`, input)));
+                      }}
+                    >
+                      <Combobox.Control>
+                        <Combobox.Input placeholder={t.sales_invoice.description_placeholder} onFocus={() => setItemCollection(itemCollections)} />
+                        <Combobox.IndicatorGroup>
+                          <Combobox.ClearTrigger />
+                          <Combobox.Trigger />
+                        </Combobox.IndicatorGroup>
+                      </Combobox.Control>
+                      <Portal>
+                        <Combobox.Positioner>
+                          <Combobox.Content>
+                            <Combobox.Empty>No items found</Combobox.Empty>
+                            {itemCollection.items.map((i) => (
+                              <Combobox.Item item={i} key={i.item_id}>
+                                {i.item_code} - {i.item_name}
+                                <Combobox.ItemIndicator />
+                              </Combobox.Item>
+                            ))}
+                          </Combobox.Content>
+                        </Combobox.Positioner>
+                      </Portal>
+                    </Combobox.Root>
+                  </Field.Root>
+                  <Field.Root>
+                    <Field.Label>{t.sales_invoice.quantity}</Field.Label>
+                    <Input type="number" placeholder="0" value={item.quantity === 0 ? "" : item.quantity} onChange={(e) => updateItem(item.id, "quantity", parseFloat(e.target.value) || 0)} />
+                  </Field.Root>
+                  <Field.Root>
+                    <Field.Label>{t.sales_invoice.unit_price}</Field.Label>
+                    <Input
+                      placeholder="0"
+                      value={item.unitPriceInput}
+                      onChange={(e) => updateUnitPrice(item.id, e.target.value)}
+                      onBlur={() => blurUnitPrice(item.id)}
+                      onFocus={() => focusUnitPrice(item.id)}
+                    />
+                  </Field.Root>
+                  <Field.Root>
+                    <Field.Label>{t.sales_invoice.tax_percent}</Field.Label>
+                    <Input type="number" placeholder="0" value={item.taxPercent === 0 ? "" : item.taxPercent} onChange={(e) => updateItem(item.id, "taxPercent", parseFloat(e.target.value) || 0)} />
+                  </Field.Root>
+                  <Field.Root>
+                    <Field.Label>{t.sales_invoice.amount} ({currencySymbol})</Field.Label>
+                    <Text pt={2} fontWeight="medium">{amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Text>
+                  </Field.Root>
+                  <Flex align="flex-end" pb={1}>
+                    <IconButton aria-label="Remove" variant="ghost" color="red" onClick={() => removeItem(item.id)}>
+                      <FaTrash />
+                    </IconButton>
+                  </Flex>
+                </SimpleGrid>
+              );
+            })}
+          </Box>
+
+          <Separator mt={4} />
+
+          <Flex justify="flex-end" mt={4}>
+            <Box w={{ base: "100%", md: "320px" }}>
+              <Flex justify="space-between" mb={1}>
+                <Text color="gray.600">{t.sales_invoice.subtotal} ({currencySymbol})</Text>
+                <Text fontWeight="semibold">{subTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Text>
+              </Flex>
+              {errors.subtotal_amount && <Text color="red.500" fontSize="sm" mb={1}>{errors.subtotal_amount}</Text>}
+              <Flex justify="space-between" mb={2}>
+                <Text color="gray.600">{t.sales_invoice.tax_amount}</Text>
+                <Text fontWeight="semibold">{taxAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Text>
+              </Flex>
+              <Separator mb={2} />
+              <Flex justify="space-between">
+                <Text fontWeight="bold">{t.sales_invoice.grand_total} ({currencySymbol})</Text>
+                <Text fontWeight="bold" color={errors.grand_total ? "red.500" : undefined}>{grandTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Text>
+              </Flex>
+              {errors.grand_total && <Text color="red.500" fontSize="sm" mt={1}>{errors.grand_total}</Text>}
+            </Box>
+          </Flex>
+        </Card.Body>
+      </Card.Root>
+
+      {/* Notes */}
+      <Card.Root mb={6}>
+        <Card.Header>
+          <Heading size="md">{t.sales_invoice.notes}</Heading>
+        </Card.Header>
+        <Card.Body>
+          <Textarea placeholder={t.sales_invoice.notes_placeholder} value={notes} onChange={(e) => setNotes(e.target.value)} rows={4} />
+        </Card.Body>
+      </Card.Root>
+
+      {/* Actions */}
+      <Flex justify="flex-end" mt={4} gap={3}>
+        <Button variant="outline">{t.sales_invoice.cancel}</Button>
+        <Button bg="#E77A1F" color="white" cursor="pointer" onClick={handleSubmit}>{t.sales_invoice.save_invoice}</Button>
+      </Flex>
+
+    </SidebarWithHeader>
   );
 }

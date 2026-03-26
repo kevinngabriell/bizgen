@@ -101,7 +101,7 @@ export default function CreatePurchaseInvoicePage() {
     }
   }
     
-  if (loading) return <Loading/>;
+
 
   const [items, setItems] = useState<InvoiceItem[]>([
     {
@@ -156,7 +156,9 @@ export default function CreatePurchaseInvoicePage() {
 
   const handleSave = (mode: "draft" | "post") => {
     
-  };
+  };  
+  
+  if (loading) return <Loading/>;
 
   return (
     <SidebarWithHeader username={auth?.username ?? "Unknown"} daysToExpire={auth?.days_remaining ?? 0}>

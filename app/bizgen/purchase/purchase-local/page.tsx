@@ -117,7 +117,7 @@ export default function CreatePurchaseLocalPage() {
     }
   }
     
-  if (loading) return <Loading/>;
+ 
 
   const [form, setForm] = useState({
     poNumber: '',
@@ -171,7 +171,9 @@ export default function CreatePurchaseLocalPage() {
 
   const handleSave = (type: 'draft' | 'submit') => {
     console.log({ form, items, status: type });
-  };
+  }; 
+  
+  if (loading) return <Loading/>;
 
   return (
     <SidebarWithHeader username={auth?.username ?? "Unknown"} daysToExpire={auth?.days_remaining ?? 0}>
