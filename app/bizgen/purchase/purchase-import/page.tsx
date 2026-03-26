@@ -1,472 +1,812 @@
+'use client';
 
+import Loading from '@/components/loading';
+import SupplierLookup from '@/components/lookup/SupplierLookup';
+import { AlertMessage } from '@/components/ui/alert';
+import SidebarWithHeader from '@/components/ui/SidebarWithHeader';
+import { checkAuthOrRedirect, DecodedAuthToken, getAuthInfo } from '@/lib/auth/auth';
+import { getLang } from '@/lib/i18n';
+import { getCompanyProfile, GetCompanyProfile } from '@/lib/account/company';
+import { getAllCurrency, GetCurrencyData } from '@/lib/master/currency';
+import { getAllOrigin, GetOriginData } from '@/lib/master/origin';
+import { getAllPaymentMethod, GetPaymentMethodData } from '@/lib/master/payment-method';
+import { getAllShipmentPeriod, GetShipmentPeriodData } from '@/lib/master/shipment-period';
+import { getAllTerm, GetTermData } from '@/lib/master/term';
+import { getAllUOM, UOMData } from '@/lib/master/uom';
+import { GetSupplierData } from '@/lib/master/supplier';
+import { createPurchaseImport, generatePurchaseImportNumber } from '@/lib/purchase/import';
+import {
+  Box, Button, Card, Combobox, createListCollection,
+  Field, Flex, Heading, Icon, IconButton, Input, Portal,
+  Select, Separator, SimpleGrid, Stack, Text, Textarea,
+  useFilter, useListCollection,
+} from '@chakra-ui/react';
+import { Suspense, useEffect, useRef, useState } from 'react';
+import { FaTrash } from 'react-icons/fa';
+import { FiFileText, FiUpload, FiX } from 'react-icons/fi';
 
-"use client";
+const BIZGEN_COLOR = '#E77A1F';
 
-import Loading from "@/components/loading";
-import SidebarWithHeader from "@/components/ui/SidebarWithHeader";
-import { DecodedAuthToken, checkAuthOrRedirect, getAuthInfo } from "@/lib/auth/auth";
-import { getLang } from "@/lib/i18n";
-import { getAllCurrency, GetCurrencyData } from "@/lib/master/currency";
-import { getAllOrigin, GetOriginData } from "@/lib/master/origin";
-import { getAllSupplier, GetSupplierData } from "@/lib/master/supplier";
-import { getAllTerm, GetTermData } from "@/lib/master/term";
-import { Button, Flex, Heading, SimpleGrid, Field, Input, IconButton, Separator, Text, Card, NumberInput, createListCollection, Select, Portal } from "@chakra-ui/react";
-import { useRouter } from "next/navigation";
-import { useState, useMemo, useEffect } from "react";
-import { FaTrash } from "react-icons/fa";
-
-type ItemRow = {
-  sku: string;
+type ImportItem = {
+  id: string;
   description: string;
-  qty: number;
-  unitPrice: number;
+  qty: string;
+  uomId: string;
+  packageSize: string;
+  unitPrice: string;
+  total: string;
+  remarks: string;
 };
 
-export default function CreatePurchaseImportPage() {  
+function newItem(): ImportItem {
+  return {
+    id: crypto.randomUUID(),
+    description: '', qty: '', uomId: '', packageSize: '',
+    unitPrice: '', total: '0', remarks: '',
+  };
+}
+
+function calcTotal(item: ImportItem): ImportItem {
+  const qty = parseFloat(item.qty) || 0;
+  const price = parseFloat(item.unitPrice) || 0;
+  return { ...item, total: (qty * price).toFixed(2) };
+}
+
+export default function CreatePurchaseImportPage() {
+  return (
+    <Suspense fallback={<Loading />}>
+      <PurchaseImportContent />
+    </Suspense>
+  );
+}
+
+function PurchaseImportContent() {
   const [auth, setAuth] = useState<DecodedAuthToken | null>(null);
   const [loading, setLoading] = useState(false);
+  const [lang, setLang] = useState<'en' | 'id'>('en');
+  const t = getLang(lang);
+  const tr = t.purchase_import;
 
-  const [poNumber, setPoNumber] = useState("");
-  const [poDate, setPoDate] = useState("");
-  const [exchangeRate, setExchangeRate] = useState(0);
-  const [freightCost, setFreightCost] = useState(0);
-  const [customsCost, setCustomsCost] = useState(0);
+  const [showAlert, setShowAlert] = useState(false);
+  const [titlePopup, setTitlePopup] = useState('');
+  const [messagePopup, setMessagePopup] = useState('');
+  const [isSuccess, setIsSuccess] = useState(false);
 
-  const [supplierSelected, setSupplierSelected] = useState<string>();
-  const [supplierOptions, setSupplierOptions] = useState<GetSupplierData[]>([]);
+  // Company profile for Should Mention
+  const [companyProfile, setCompanyProfile] = useState<GetCompanyProfile | null>(null);
 
-  const t = getLang("en");  
-  const router = useRouter();
-
-  const supplierCollection = createListCollection({
-    items: supplierOptions.map((supplier) => ({
-        label: `${supplier.supplier_name}`,
-        value: supplier.supplier_id,
-      })),
-  });
-
-  //currency
-  const [currencySelected, setCurrencySelected] = useState<string>();
+  // Master data
   const [currencyOptions, setCurrencyOptions] = useState<GetCurrencyData[]>([]);
+  const [uomOptions, setUomOptions] = useState<UOMData[]>([]);
+  const [originOptions, setOriginOptions] = useState<GetOriginData[]>([]);
+  const [termOptions, setTermOptions] = useState<GetTermData[]>([]);
+  const [shipmentPeriodOptions, setShipmentPeriodOptions] = useState<GetShipmentPeriodData[]>([]);
 
   const currencyCollection = createListCollection({
-    items: currencyOptions.map((currency) => ({
-        label: `${currency.currency_name} (${currency.currency_symbol})`,
-        value: currency.currency_id,
-      })),
+    items: currencyOptions.map((c) => ({
+      label: `${c.currency_code} — ${c.currency_name}`,
+      value: c.currency_id,
+    })),
   });
 
-  //term
-  const [termSelected, setTermSelected] = useState<string>();
-  const [termOptions, seetTermOptions] = useState<GetTermData[]>([]);
-
-  const termCollection = createListCollection({
-    items: termOptions.map((term) => ({
-        label: `${term.term_name}`,
-        value: term.term_id,
-      })),
+  const uomCollection = createListCollection({
+    items: uomOptions.map((u) => ({ label: u.uom_name, value: u.uom_id })),
   });
-
-  //origin
-  const [portofloadingSelected, setPortofLoadingSelected] = useState<string>();
-  const [portofdischargeSelected, setPortofDischargeSelected] = useState<string>();
-  const [originOptions, setOriginOptions] = useState<GetOriginData[]>([]);
 
   const originCollection = createListCollection({
-    items: originOptions.map((origin) => ({
-        label: `${origin.origin_name}`,
-        value: origin.origin_id,
-      })),
+    items: originOptions.map((o) => ({ label: o.origin_name, value: o.origin_id })),
   });
 
+  const termCollection = createListCollection({
+    items: termOptions.map((tm) => ({ label: tm.term_name, value: tm.term_id })),
+  });
+
+  const shipmentPeriodCollection = createListCollection({
+    items: shipmentPeriodOptions.map((sp) => ({
+      label: sp.shipment_period_name,
+      value: sp.shipment_period_id,
+    })),
+  });
+
+  // Payment method — searchable combobox
+  const [paymentMasterAll, setPaymentMasterAll] = useState<GetPaymentMethodData[]>([]);
+  const { contains } = useFilter({ sensitivity: 'base' });
+  const { collection: paymentCollection, set: setPaymentCollection } =
+    useListCollection<GetPaymentMethodData>({
+      initialItems: [],
+      itemToString: (p) => p.payment_name,
+      itemToValue: (p) => p.payment_id,
+    });
+  const [paymentSelected, setPaymentSelected] = useState('');
+  const [paymentSelectedId, setPaymentSelectedId] = useState('');
+
+  // Supplier lookup
+  const [supplierModalOpen, setSupplierModalOpen] = useState(false);
+  const [selectedSupplier, setSelectedSupplier] = useState<GetSupplierData | null>(null);
+
+  // Header form
+  const [form, setForm] = useState({
+    po_number: '',
+    po_date: '',
+    notes: '',
+    shipping_marks: '',
+    consignee_remarks: '',
+  });
+
+  const [currencySelected, setCurrencySelected] = useState<string>();
+  const [originSelected, setOriginSelected] = useState<string>();
+  const [termSelected, setTermSelected] = useState<string>();
+  const [shipmentPeriodSelected, setShipmentPeriodSelected] = useState<string>();
+
+  const selectedCurrencyCode =
+    currencyOptions.find((c) => c.currency_id === currencySelected)?.currency_code ?? '';
+
+  // Items
+  const [items, setItems] = useState<ImportItem[]>([newItem()]);
+
+  // Documents
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
+
   useEffect(() => {
-
-    const fetchCurrency = async () => {
+    const loadAll = async () => {
       try {
-        const currencyRes = await getAllCurrency(1, 1000);
+        setLoading(true);
+
+        const valid = await checkAuthOrRedirect();
+        if (!valid) return;
+
+        const info = getAuthInfo();
+        setAuth(info);
+        setLang(info?.language === 'id' ? 'id' : 'en');
+
+        const [numberRes, currencyRes, uomRes, originRes, termRes, shipPeriodRes, paymentRes] =
+          await Promise.all([
+            generatePurchaseImportNumber(),
+            getAllCurrency(1, 1000),
+            getAllUOM(1, 1000),
+            getAllOrigin(1, 1000),
+            getAllTerm(1, 1000),
+            getAllShipmentPeriod(1, 1000),
+            getAllPaymentMethod(1, 1000),
+          ]);
+
+        setForm((prev) => ({ ...prev, po_number: numberRes.number }));
         setCurrencyOptions(currencyRes?.data ?? []);
-      } catch (error) {
-        console.error(error);
-        setCurrencyOptions([]);
-      }
-    };
-
-    const fetchSupplier = async () => {
-      try {
-        const supplierRes = await getAllSupplier(1, 1000);
-        setSupplierOptions(supplierRes?.data ?? []);
-      } catch (error) {
-        console.error(error);
-        setSupplierOptions([]);
-      }
-    };
-
-    const fetchTerm = async () => {
-      try {
-        const termRes = await getAllTerm(1, 1000);
-        seetTermOptions(termRes?.data ?? []);
-      } catch (error) {
-        console.error(error);
-        seetTermOptions([]);
-      }
-    };
-
-    const fetchOrigin = async () => {
-      try {
-        const originRes = await getAllOrigin(1, 1000);
+        setUomOptions(uomRes?.data ?? []);
         setOriginOptions(originRes?.data ?? []);
-      } catch (error) {
-        console.error(error);
-        setOriginOptions([]);
+        setTermOptions(termRes?.data ?? []);
+        setShipmentPeriodOptions(shipPeriodRes?.data ?? []);
+
+        const paymentData = paymentRes?.data ?? [];
+        setPaymentMasterAll(paymentData);
+        setPaymentCollection(paymentData);
+
+        // Company profile — non-blocking
+        try {
+          const profile = await getCompanyProfile();
+          setCompanyProfile(profile);
+        } catch {
+          // silently ignore if not yet available
+        }
+      } catch (err) {
+        console.error('Failed to initialize:', err);
+      } finally {
+        setLoading(false);
       }
     };
-        
-    fetchCurrency();
-    fetchTerm();
-    fetchSupplier();
-    fetchOrigin();
 
-    init();
+    loadAll();
   }, []);
 
-  const init = async () => {
-    setLoading(true);
+  // Item handlers
+  const handleItemChange = (id: string, field: keyof ImportItem, value: string) => {
+    setItems((prev) =>
+      prev.map((item) => {
+        if (item.id !== id) return item;
+        return calcTotal({ ...item, [field]: value });
+      })
+    );
+  };
 
-    const valid = await checkAuthOrRedirect();
-    if(!valid) return;
+  const addItem = () => setItems((prev) => [...prev, newItem()]);
 
-    const info = getAuthInfo();
-    setAuth(info);
+  const removeItem = (id: string) => {
+    setItems((prev) => (prev.length === 1 ? prev : prev.filter((i) => i.id !== id)));
+  };
 
+  // Footer totals
+  const totalGrand = items.reduce((s, i) => s + (parseFloat(i.total) || 0), 0);
+
+  const fmt = (n: number) =>
+    n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+  // Document handlers
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files ?? []);
+    setUploadedFiles((prev) => [...prev, ...files]);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const removeFile = (index: number) => {
+    setUploadedFiles((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleChooseSupplier = (supplier: GetSupplierData) => {
+    setSelectedSupplier(supplier);
+    setSupplierModalOpen(false);
+  };
+
+  const resetForm = async () => {
+    const res = await generatePurchaseImportNumber();
+    setForm({ po_number: res.number, po_date: '', notes: '', shipping_marks: '', consignee_remarks: '' });
+    setSelectedSupplier(null);
+    setCurrencySelected(undefined);
+    setOriginSelected(undefined);
+    setTermSelected(undefined);
+    setShipmentPeriodSelected(undefined);
+    setPaymentSelected('');
+    setPaymentSelectedId('');
+    setItems([newItem()]);
+    setUploadedFiles([]);
+  };
+
+  const handleSubmit = async (mode: 'draft' | 'submitted') => {
     try {
+      if (!form.po_number) throw new Error(tr.error_po_number);
+      if (!form.po_date) throw new Error(tr.error_po_date);
+      if (!selectedSupplier?.supplier_id) throw new Error(tr.error_supplier);
+      if (!items.some((i) => i.description.trim())) throw new Error(tr.error_items);
 
-    } catch (error: any){
+      setLoading(true);
 
+      await createPurchaseImport({
+        po_number: form.po_number,
+        po_date: form.po_date,
+        supplier_id: selectedSupplier.supplier_id,
+        shipment_period_id: shipmentPeriodSelected ?? '',
+        term_id: termSelected ?? '',
+        payment_method_id: paymentSelectedId,
+        origin_id: originSelected ?? '',
+        currency_id: currencySelected ?? '',
+        notes: form.notes,
+        should_mention: companyProfile?.company_name ?? '',
+        shipping_marks: form.shipping_marks,
+        remarks: form.consignee_remarks,
+        status: mode,
+        items: items.map(({ id: _id, ...rest }) => ({
+          description: rest.description,
+          qty: rest.qty,
+          uom_id: rest.uomId,
+          package_size: rest.packageSize,
+          unit_price: rest.unitPrice,
+          total: rest.total,
+          remarks: rest.remarks,
+        })),
+        documents: uploadedFiles.map((f) => f.name),
+      });
+
+      setIsSuccess(true);
+      setTitlePopup(t.master.success);
+      setMessagePopup(mode === 'draft' ? tr.success_draft : tr.success_create);
+      setShowAlert(true);
+      setTimeout(() => setShowAlert(false), 6000);
+
+      await resetForm();
+    } catch (err: any) {
+      setIsSuccess(false);
+      setTitlePopup(t.master.error);
+      setMessagePopup(err.message || t.master.error_msg);
+      setShowAlert(true);
+      setTimeout(() => setShowAlert(false), 6000);
     } finally {
       setLoading(false);
     }
-  }
-    
-  const [items, setItems] = useState<ItemRow[]>([
-    { sku: "", description: "", qty: 1, unitPrice: 0 },
-  ]);
+  };
 
-  const addItem = () =>
-    setItems((prev) => [
-      ...prev,
-      { sku: "", description: "", qty: 1, unitPrice: 0 },
-    ]);
-
-  const removeItem = (index: number) =>
-    setItems((prev) => prev.filter((_, i) => i !== index));
-
-  const updateItem = (
-    index: number,
-    field: keyof ItemRow,
-    value: string | number
-  ) =>
-    setItems((prev) =>
-      prev.map((row, i) => (i === index ? { ...row, [field]: value } : row))
-    );
-
-  const itemsSubtotal = useMemo(
-    () =>
-      items.reduce(
-        (sum, r) => sum + (Number(r.qty) || 0) * (Number(r.unitPrice) || 0),
-        0
-      ),
-    [items]
-  );
-
-  const landedCost = useMemo(
-    () => itemsSubtotal + Number(freightCost || 0) + Number(customsCost || 0),
-    [itemsSubtotal, freightCost, customsCost]
-  );
-
-  const localCurrencyTotal = useMemo(
-    () => landedCost * Number(exchangeRate || 1),
-    [landedCost, exchangeRate]
-  );
-  
-  if (loading) return <Loading/>;
+  if (loading) return <Loading />;
 
   return (
-    <SidebarWithHeader username={auth?.username ?? "Unknown"} daysToExpire={auth?.days_remaining ?? 0}>
-      {/* Heading Area */}
-      <Heading size="lg">{t.purchase_import.title}</Heading>
-
-      {/* Purchase details & import details card */}
-      <Card.Root mt={4}>
-        <Card.Body>
-          {/* Purchase Details Header */}
-          <Heading size="sm" mb={3}>{t.purchase_import.purchase_details}</Heading>
-
-          {/* PO Number, PO Date, and Supplier Name */}
-          <SimpleGrid columns={{base: 1, md: 2, lg: 3}} gap={"20px"} mt={3} mb={8}>
-            {/* PO Number */}
-            <Field.Root>
-              <Field.Label>{t.purchase_import.po_number}</Field.Label>
-              <Input value={poNumber} onChange={(e) => setPoNumber(e.target.value)} placeholder={t.purchase_import.po_number_placeholder}/>
-            </Field.Root>
-            {/* PO Date */}
-            <Field.Root>
-              <Field.Label>{t.purchase_import.po_date}</Field.Label>
-              <Input value={poDate} onChange={(e) => setPoDate(e.target.value)} placeholder="AUTO / Manual"/>
-            </Field.Root>
-            {/* Supplier Name */}
-            <Field.Root>
-              <Field.Label>{t.purchase_import.supplier}</Field.Label>
-              <Select.Root collection={supplierCollection} value={supplierSelected ? [supplierSelected] : []} onValueChange={(details) => setSupplierSelected(details.value[0])} size="sm" width="100%">
-                <Select.HiddenSelect />
-                <Select.Control>
-                  <Select.Trigger>
-                    <Select.ValueText placeholder={t.purchase_import.supplier_placeholder} />
-                  </Select.Trigger>
-                  <Select.IndicatorGroup>
-                    <Select.Indicator />
-                  </Select.IndicatorGroup>
-                </Select.Control>
-                <Portal>
-                  <Select.Positioner>
-                    <Select.Content>
-                      {supplierCollection.items.map((supplier) => (
-                        <Select.Item item={supplier} key={supplier.value}>
-                          {supplier.label}
-                          <Select.ItemIndicator />
-                        </Select.Item>
-                      ))}
-                    </Select.Content>
-                  </Select.Positioner>
-                </Portal>
-              </Select.Root>
-            </Field.Root>
-          </SimpleGrid>
-
-          <Separator/>
-
-          {/* Import Details Header */}
-          <Heading size="sm" mb={3} mt={6}>{t.purchase_import.import_details}</Heading>
-          
-          {/* Currency, exchange rate, incoterm, port of loading, port of dicharge, freight cost, customs/duty cost */}
-          <SimpleGrid columns={{base: 1, md: 2, lg: 3}} gap={"20px"} mt={3} mb={3}>
-            {/* Currency */}
-            <Field.Root>
-              <Field.Label>{t.purchase_import.currency}</Field.Label>
-              <Select.Root collection={currencyCollection} value={currencySelected ? [currencySelected] : []} onValueChange={(details) => setCurrencySelected(details.value[0])} size="sm" width="100%">
-                <Select.HiddenSelect />
-                <Select.Control>
-                  <Select.Trigger>
-                    <Select.ValueText placeholder={t.purchase_import.currency_placeholder} />
-                  </Select.Trigger>
-                  <Select.IndicatorGroup>
-                    <Select.Indicator />
-                  </Select.IndicatorGroup>
-                </Select.Control>
-                <Portal>
-                  <Select.Positioner>
-                    <Select.Content>
-                      {currencyCollection.items.map((currency) => (
-                        <Select.Item item={currency} key={currency.value}>
-                          {currency.label}
-                          <Select.ItemIndicator />
-                        </Select.Item>
-                      ))}
-                    </Select.Content>
-                  </Select.Positioner>
-                </Portal>
-              </Select.Root>
-            </Field.Root>
-            {/* Exchange Rate */}
-            <Field.Root>
-              <Field.Label>{t.purchase_import.exchange_rate}</Field.Label>
-              {/* <NumberInput
-                value={exchangeRate}
-                min={0}
-                onChange={(_, v) => setExchangeRate(v || 0)}
-              >
-                <NumberInputField />
-              </NumberInput> */}
-            </Field.Root>
-            {/* Incoterm */}
-            <Field.Root>
-              <Field.Label>{t.purchase_import.incoterm}</Field.Label>
-              <Select.Root collection={termCollection} value={termSelected ? [termSelected] : []} onValueChange={(details) => setTermSelected(details.value[0])} size="sm" width="100%">
-                <Select.HiddenSelect />
-                <Select.Control>
-                  <Select.Trigger>
-                    <Select.ValueText placeholder={t.purchase_import.incoterm_placeholder} />
-                  </Select.Trigger>
-                  <Select.IndicatorGroup>
-                    <Select.Indicator />
-                  </Select.IndicatorGroup>
-                </Select.Control>
-                <Portal>
-                  <Select.Positioner>
-                    <Select.Content>
-                      {termCollection.items.map((term) => (
-                        <Select.Item item={term} key={term.value}>
-                          {term.label}
-                          <Select.ItemIndicator />
-                        </Select.Item>
-                      ))}
-                    </Select.Content>
-                  </Select.Positioner>
-                </Portal>
-              </Select.Root>
-            </Field.Root>
-            {/* Port of Loading */}
-            <Field.Root>
-              <Field.Label>{t.purchase_import.port_of_loading}</Field.Label>
-              <Select.Root collection={originCollection} value={portofloadingSelected ? [portofloadingSelected] : []} onValueChange={(details) => setPortofLoadingSelected(details.value[0])} size="sm" width="100%">
-                <Select.HiddenSelect />
-                <Select.Control>
-                  <Select.Trigger>
-                    <Select.ValueText placeholder={t.purchase_import.port_of_loading_placeholder} />
-                  </Select.Trigger>
-                  <Select.IndicatorGroup>
-                    <Select.Indicator />
-                  </Select.IndicatorGroup>
-                </Select.Control>
-                <Portal>
-                  <Select.Positioner>
-                    <Select.Content>
-                      {originCollection.items.map((origin) => (
-                        <Select.Item item={origin} key={origin.value}>
-                          {origin.label}
-                          <Select.ItemIndicator />
-                        </Select.Item>
-                      ))}
-                    </Select.Content>
-                  </Select.Positioner>
-                </Portal>
-              </Select.Root>
-            </Field.Root>
-            {/* Port of Discharge */}
-            <Field.Root>
-              <Field.Label>{t.purchase_import.port_of_discharge}</Field.Label>
-              <Select.Root collection={originCollection} value={portofdischargeSelected ? [portofdischargeSelected] : []} onValueChange={(details) => setPortofDischargeSelected(details.value[0])} size="sm" width="100%">
-                <Select.HiddenSelect />
-                <Select.Control>
-                  <Select.Trigger>
-                    <Select.ValueText placeholder={t.purchase_import.port_of_discharge_placeholder} />
-                  </Select.Trigger>
-                  <Select.IndicatorGroup>
-                    <Select.Indicator />
-                  </Select.IndicatorGroup>
-                </Select.Control>
-                <Portal>
-                  <Select.Positioner>
-                    <Select.Content>
-                      {originCollection.items.map((origin) => (
-                        <Select.Item item={origin} key={origin.value}>
-                          {origin.label}
-                          <Select.ItemIndicator />
-                        </Select.Item>
-                      ))}
-                    </Select.Content>
-                  </Select.Positioner>
-                </Portal>
-              </Select.Root>
-            </Field.Root>
-            {/* Freight Cost (USD) */}
-            <Field.Root>
-              <Field.Label>{t.purchase_import.freight_cost}</Field.Label>
-              {/* <NumberInput
-                value={freightCost}
-                min={0}
-                onChange={(_, v) => setFreightCost(v || 0)}
-              >
-                <NumberInputField />
-              </NumberInput> */}
-            </Field.Root>
-            {/* Customer/Duty Cost (USD) */}
-            <Field.Root>
-              <Field.Label>{t.purchase_import.customs_cost}</Field.Label>
-              {/* <NumberInput
-                value={customsCost}
-                min={0}
-                onChange={(_, v) => setCustomsCost(v || 0)}
-              >
-                <NumberInputField />
-              </NumberInput> */}
-            </Field.Root>
-          </SimpleGrid>
-
-        </Card.Body>
-      </Card.Root>
-      
-      {/* Items card */}
-      <Card.Root mt={6}>
-        <Card.Body>
-          {/* Heading and add item button */}
-          <Flex alignItems={"center"} justifyContent={"space-between"} mb={8}>
-            <Heading size="sm">{t.purchase_import.items}</Heading>
-            <Button size="sm" variant="outline" onClick={addItem}>{t.purchase_import.add_item}</Button>
-          </Flex>
-
-          {items.map((row, i) => (
-            <Card.Root key={i} mb={5}>
-              <Card.Body>
-                  <SimpleGrid columns={{base: 1, md: 2, lg: 4}} gap={"20px"}>
-                    <Field.Root>
-                      <Field.Label>{t.purchase_import.sku}</Field.Label>
-                      <Input value={row.sku} onChange={(e) => updateItem(i, "sku", e.target.value)}/>
-                    </Field.Root>
-
-                    <Field.Root>
-                      <Field.Label>{t.purchase_import.description}</Field.Label>
-                      <Input value={row.description} onChange={(e) => updateItem(i, "description", e.target.value)}/>
-                    </Field.Root>
-
-                    <Field.Root>
-                      <Field.Label>{t.purchase_import.qty}</Field.Label>
-                      <NumberInput.Root min={0}>
-                        <NumberInput.Control/>
-                        <NumberInput.Input />
-                      </NumberInput.Root>
-                    </Field.Root>
-
-                    <Field.Root>
-                      <Field.Label>{t.purchase_import.unit_price}</Field.Label>
-                      <NumberInput.Root min={0}>
-                        <NumberInput.Control/>
-                        <NumberInput.Input />
-                      </NumberInput.Root>
-                    </Field.Root>
-                  </SimpleGrid>
-
-                  <Flex justify="space-between" mt={2} align="center">
-                    <Text fontSize="sm" color="gray.600"> {t.purchase_import.line_total}{" "} {(row.qty || 0) * (row.unitPrice || 0)} </Text>
-                    {items.length > 1 && (
-                      <IconButton p={3} aria-label="Remove item" size="sm" color={"red"} variant="ghost" onClick={() => removeItem(i)}>
-                        <FaTrash/>
-                        <Text>{t.purchase_import.delete_item}</Text>
-                      </IconButton>
-                    )}
-                  </Flex>
-              </Card.Body>
-            </Card.Root>
-          ))}
-        </Card.Body>
-      </Card.Root>
-
-      <Card.Root mt={6}>
-        <Card.Body>
-          <Heading size="sm" mb={3}>{t.purchase_import.cost_summary}</Heading>
-          
-          <Text fontSize={"md"}>{t.purchase_import.items_subtotal} {itemsSubtotal.toLocaleString()} </Text>
-          <Text>{t.purchase_import.freight_customs}:{" "} {(Number(freightCost) + Number(customsCost)).toLocaleString()}{" "}</Text>
-          <Text fontWeight="semibold">{t.purchase_import.landed_cost}: {landedCost.toLocaleString()} </Text>
-          <Text color="gray.600">{t.purchase_import.local_currency}: {localCurrencyTotal.toLocaleString("id-ID")}</Text>
-        </Card.Body>
-      </Card.Root>
-
-      <Flex gap={3} justify="flex-end" mt={4}>
-        <Button variant="outline">{t.purchase_import.save_draft}</Button>
-        <Button colorScheme="blue">{t.purchase_import.submit_purchase}</Button>
+    <SidebarWithHeader username={auth?.username ?? 'Unknown'} daysToExpire={auth?.days_remaining ?? 0}>
+      <Flex justify="space-between" align="center" mb={6}>
+        <Flex flexDir="column">
+          <Heading size="lg">{tr.title}</Heading>
+          <Text color="gray.500" fontSize="sm">{tr.subtitle}</Text>
+        </Flex>
+        <Flex gap={3}>
+          <Button variant="outline" color={BIZGEN_COLOR} borderColor={BIZGEN_COLOR} onClick={() => handleSubmit('draft')}>
+            {tr.save_draft}
+          </Button>
+          <Button bg={BIZGEN_COLOR} color="white" onClick={() => handleSubmit('submitted')}>
+            {tr.submit_purchase}
+          </Button>
+        </Flex>
       </Flex>
 
+      {showAlert && <AlertMessage title={titlePopup} description={messagePopup} isSuccess={isSuccess} />}
+
+      <SupplierLookup
+        isOpen={supplierModalOpen}
+        onClose={() => setSupplierModalOpen(false)}
+        onChoose={handleChooseSupplier}
+      />
+
+      <Stack gap={6}>
+        {/* Purchase Details */}
+        <Card.Root>
+          <Card.Header>
+            <Heading size="md">{tr.purchase_details}</Heading>
+          </Card.Header>
+          <Card.Body>
+            <SimpleGrid columns={{ base: 1, md: 3 }} gap={4}>
+              <Field.Root required>
+                <Field.Label fontSize="sm">{tr.po_number}<Field.RequiredIndicator /></Field.Label>
+                <Input
+                  value={form.po_number}
+                  onChange={(e) => setForm({ ...form, po_number: e.target.value })}
+                  placeholder={tr.po_number_placeholder}
+                />
+              </Field.Root>
+
+              <Field.Root required>
+                <Field.Label fontSize="sm">{tr.po_date}<Field.RequiredIndicator /></Field.Label>
+                <Input
+                  type="date"
+                  value={form.po_date}
+                  onChange={(e) => setForm({ ...form, po_date: e.target.value })}
+                />
+              </Field.Root>
+
+              {/* Supplier */}
+              <Field.Root required>
+                <Field.Label fontSize="sm">{tr.supplier}<Field.RequiredIndicator /></Field.Label>
+                <Input
+                  value={selectedSupplier?.supplier_name ?? ''}
+                  readOnly
+                  cursor="pointer"
+                  placeholder={tr.supplier_placeholder}
+                  onClick={() => setSupplierModalOpen(true)}
+                />
+              </Field.Root>
+
+              {/* Supplier info */}
+              <Field.Root>
+                <Field.Label fontSize="sm">{tr.supplier_info}</Field.Label>
+                <Box fontSize="xs" color="gray.500" lineHeight="short" pt={1}>
+                  <Text>{selectedSupplier?.supplier_origin ?? '—'}</Text>
+                  <Text>{selectedSupplier?.supplier_currency ? `Currency: ${selectedSupplier.supplier_currency}` : '—'}</Text>
+                  <Text>{selectedSupplier?.supplier_term ? `Term: ${selectedSupplier.supplier_term}` : '—'}</Text>
+                </Box>
+              </Field.Root>
+
+              {/* Shipment Period */}
+              <Field.Root>
+                <Field.Label fontSize="sm">{tr.shipment_period}</Field.Label>
+                <Select.Root
+                  collection={shipmentPeriodCollection}
+                  value={shipmentPeriodSelected ? [shipmentPeriodSelected] : []}
+                  onValueChange={(d) => setShipmentPeriodSelected(d.value[0])}
+                >
+                  <Select.HiddenSelect />
+                  <Select.Control>
+                    <Select.Trigger>
+                      <Select.ValueText placeholder={tr.shipment_period_placeholder} />
+                    </Select.Trigger>
+                    <Select.IndicatorGroup><Select.Indicator /></Select.IndicatorGroup>
+                  </Select.Control>
+                  <Portal>
+                    <Select.Positioner>
+                      <Select.Content>
+                        {shipmentPeriodCollection.items.map((sp) => (
+                          <Select.Item item={sp} key={sp.value}>{sp.label}<Select.ItemIndicator /></Select.Item>
+                        ))}
+                      </Select.Content>
+                    </Select.Positioner>
+                  </Portal>
+                </Select.Root>
+              </Field.Root>
+
+              {/* Incoterm */}
+              <Field.Root>
+                <Field.Label fontSize="sm">{tr.term}</Field.Label>
+                <Select.Root
+                  collection={termCollection}
+                  value={termSelected ? [termSelected] : []}
+                  onValueChange={(d) => setTermSelected(d.value[0])}
+                >
+                  <Select.HiddenSelect />
+                  <Select.Control>
+                    <Select.Trigger>
+                      <Select.ValueText placeholder={tr.term_placeholder} />
+                    </Select.Trigger>
+                    <Select.IndicatorGroup><Select.Indicator /></Select.IndicatorGroup>
+                  </Select.Control>
+                  <Portal>
+                    <Select.Positioner>
+                      <Select.Content>
+                        {termCollection.items.map((tm) => (
+                          <Select.Item item={tm} key={tm.value}>{tm.label}<Select.ItemIndicator /></Select.Item>
+                        ))}
+                      </Select.Content>
+                    </Select.Positioner>
+                  </Portal>
+                </Select.Root>
+              </Field.Root>
+
+              {/* Payment Method — searchable combobox */}
+              <Field.Root>
+                <Field.Label fontSize="sm">{tr.payment_method}</Field.Label>
+                <Combobox.Root
+                  collection={paymentCollection}
+                  onValueChange={(d) => {
+                    const id = d.value?.[0] ?? '';
+                    setPaymentSelectedId(id);
+                    const found = paymentMasterAll.find((p) => p.payment_id === id);
+                    setPaymentSelected(found?.payment_name ?? '');
+                  }}
+                  onInputValueChange={(e) => {
+                    const input = e.inputValue ?? '';
+                    setPaymentSelected(input);
+                    if (!input.trim()) { setPaymentCollection(paymentMasterAll); return; }
+                    setPaymentCollection(
+                      paymentMasterAll.filter((p) => contains(p.payment_name, input))
+                    );
+                  }}
+                >
+                  <Combobox.Control>
+                    <Combobox.Input
+                      placeholder={tr.payment_method_placeholder}
+                      value={paymentSelected}
+                      onFocus={() => setPaymentCollection(paymentMasterAll)}
+                    />
+                    <Combobox.IndicatorGroup>
+                      <Combobox.ClearTrigger onClick={() => { setPaymentSelected(''); setPaymentSelectedId(''); }} />
+                      <Combobox.Trigger />
+                    </Combobox.IndicatorGroup>
+                  </Combobox.Control>
+                  <Portal>
+                    <Combobox.Positioner>
+                      <Combobox.Content>
+                        <Combobox.Empty>No payment methods found</Combobox.Empty>
+                        {paymentCollection.items.map((p) => (
+                          <Combobox.Item item={p} key={p.payment_id}>
+                            {p.payment_name}<Combobox.ItemIndicator />
+                          </Combobox.Item>
+                        ))}
+                      </Combobox.Content>
+                    </Combobox.Positioner>
+                  </Portal>
+                </Combobox.Root>
+              </Field.Root>
+
+              {/* Origin */}
+              <Field.Root>
+                <Field.Label fontSize="sm">{tr.origin}</Field.Label>
+                <Select.Root
+                  collection={originCollection}
+                  value={originSelected ? [originSelected] : []}
+                  onValueChange={(d) => setOriginSelected(d.value[0])}
+                >
+                  <Select.HiddenSelect />
+                  <Select.Control>
+                    <Select.Trigger>
+                      <Select.ValueText placeholder={tr.origin_placeholder} />
+                    </Select.Trigger>
+                    <Select.IndicatorGroup><Select.Indicator /></Select.IndicatorGroup>
+                  </Select.Control>
+                  <Portal>
+                    <Select.Positioner>
+                      <Select.Content>
+                        {originCollection.items.map((o) => (
+                          <Select.Item item={o} key={o.value}>{o.label}<Select.ItemIndicator /></Select.Item>
+                        ))}
+                      </Select.Content>
+                    </Select.Positioner>
+                  </Portal>
+                </Select.Root>
+              </Field.Root>
+
+              {/* Currency */}
+              <Field.Root>
+                <Field.Label fontSize="sm">{tr.currency}</Field.Label>
+                <Select.Root
+                  collection={currencyCollection}
+                  value={currencySelected ? [currencySelected] : []}
+                  onValueChange={(d) => setCurrencySelected(d.value[0])}
+                >
+                  <Select.HiddenSelect />
+                  <Select.Control>
+                    <Select.Trigger>
+                      <Select.ValueText placeholder={tr.currency_placeholder} />
+                    </Select.Trigger>
+                    <Select.IndicatorGroup><Select.Indicator /></Select.IndicatorGroup>
+                  </Select.Control>
+                  <Portal>
+                    <Select.Positioner>
+                      <Select.Content>
+                        {currencyCollection.items.map((c) => (
+                          <Select.Item item={c} key={c.value}>{c.label}<Select.ItemIndicator /></Select.Item>
+                        ))}
+                      </Select.Content>
+                    </Select.Positioner>
+                  </Portal>
+                </Select.Root>
+              </Field.Root>
+            </SimpleGrid>
+
+            <Field.Root mt={4}>
+              <Field.Label fontSize="sm">{tr.notes}</Field.Label>
+              <Textarea
+                rows={3}
+                value={form.notes}
+                onChange={(e) => setForm({ ...form, notes: e.target.value })}
+                placeholder={tr.notes_placeholder}
+              />
+            </Field.Root>
+          </Card.Body>
+        </Card.Root>
+
+        {/* Purchase Items */}
+        <Card.Root>
+          <Card.Header>
+            <Flex justify="space-between" align="center">
+              <Heading size="md">{tr.purchase_items}</Heading>
+              <Button size="sm" bg={BIZGEN_COLOR} color="white" onClick={addItem}>
+                {tr.add_item}
+              </Button>
+            </Flex>
+          </Card.Header>
+          <Card.Body>
+            <Box overflowX="auto">
+              {/* Column headers */}
+              <Flex minW="1260px" gap={3} mb={2} px={1}>
+                {[
+                  ['32px', '#'],
+                  ['220px', tr.description],
+                  ['80px', tr.qty],
+                  ['120px', tr.uom],
+                  ['140px', tr.packaging_size],
+                  ['140px', `${tr.unit_price}${selectedCurrencyCode ? ` (${selectedCurrencyCode})` : ''}`],
+                  ['140px', tr.item_total],
+                  ['120px', tr.remarks],
+                  ['40px', ''],
+                ].map(([w, label], i) => (
+                  <Box key={i} w={w} flexShrink={0}>
+                    <Text fontSize="xs" fontWeight="semibold" color="gray.500" textTransform="uppercase">{label}</Text>
+                  </Box>
+                ))}
+              </Flex>
+
+              {/* Item rows */}
+              {items.map((item, idx) => (
+                <Flex key={item.id} minW="1260px" gap={3} mb={3} align="center" px={1}>
+                  <Box w="32px" flexShrink={0}>
+                    <Text fontSize="sm" color="gray.400">{idx + 1}</Text>
+                  </Box>
+                  <Box w="220px" flexShrink={0}>
+                    <Input
+                      placeholder={tr.description_placeholder}
+                      value={item.description}
+                      onChange={(e) => handleItemChange(item.id, 'description', e.target.value)}
+                    />
+                  </Box>
+                  <Box w="80px" flexShrink={0}>
+                    <Input
+                      type="number"
+                      placeholder="0"
+                      value={item.qty}
+                      onChange={(e) => handleItemChange(item.id, 'qty', e.target.value)}
+                    />
+                  </Box>
+                  <Box w="120px" flexShrink={0}>
+                    <Select.Root
+                      collection={uomCollection}
+                      value={item.uomId ? [item.uomId] : []}
+                      onValueChange={(d) => handleItemChange(item.id, 'uomId', d.value[0])}
+                      width="100%"
+                    >
+                      <Select.HiddenSelect />
+                      <Select.Control>
+                        <Select.Trigger>
+                          <Select.ValueText placeholder={tr.uom_placeholder} />
+                        </Select.Trigger>
+                        <Select.IndicatorGroup><Select.Indicator /></Select.IndicatorGroup>
+                      </Select.Control>
+                      <Portal>
+                        <Select.Positioner>
+                          <Select.Content>
+                            {uomCollection.items.map((u) => (
+                              <Select.Item item={u} key={u.value}>{u.label}<Select.ItemIndicator /></Select.Item>
+                            ))}
+                          </Select.Content>
+                        </Select.Positioner>
+                      </Portal>
+                    </Select.Root>
+                  </Box>
+                  <Box w="140px" flexShrink={0}>
+                    <Input
+                      placeholder={tr.packaging_size_placeholder}
+                      value={item.packageSize}
+                      onChange={(e) => handleItemChange(item.id, 'packageSize', e.target.value)}
+                    />
+                  </Box>
+                  <Box w="140px" flexShrink={0}>
+                    <Input
+                      type="number"
+                      placeholder="0"
+                      value={item.unitPrice}
+                      onChange={(e) => handleItemChange(item.id, 'unitPrice', e.target.value)}
+                    />
+                  </Box>
+                  <Box w="140px" flexShrink={0}>
+                    <Input value={fmt(parseFloat(item.total) || 0)} readOnly bg="gray.50" fontWeight="semibold" />
+                  </Box>
+                  <Box w="120px" flexShrink={0}>
+                    <Input
+                      placeholder={tr.remarks_placeholder}
+                      value={item.remarks}
+                      onChange={(e) => handleItemChange(item.id, 'remarks', e.target.value)}
+                    />
+                  </Box>
+                  <Box w="40px" flexShrink={0}>
+                    <IconButton aria-label="Remove item" variant="ghost" color="red.500" size="sm" onClick={() => removeItem(item.id)}>
+                      <FaTrash />
+                    </IconButton>
+                  </Box>
+                </Flex>
+              ))}
+
+              {/* Grand total footer */}
+              <Separator mt={2} mb={4} />
+              <Flex justify="flex-end" minW="1260px" pr={1}>
+                <Box w="300px">
+                  <Flex justify="space-between">
+                    <Text fontWeight="bold">
+                      {tr.total_grand}{selectedCurrencyCode ? ` (${selectedCurrencyCode})` : ''}
+                    </Text>
+                    <Text fontWeight="bold" color={BIZGEN_COLOR}>{fmt(totalGrand)}</Text>
+                  </Flex>
+                </Box>
+              </Flex>
+            </Box>
+          </Card.Body>
+        </Card.Root>
+
+        {/* Consignee Details */}
+        <Card.Root>
+          <Card.Header>
+            <Heading size="md">{tr.consignee_details}</Heading>
+          </Card.Header>
+          <Card.Body>
+            <SimpleGrid columns={{ base: 1, md: 3 }} gap={6}>
+              {/* Should Mention — read-only from company profile */}
+              <Box>
+                <Text fontSize="sm" fontWeight="semibold" color="gray.500" mb={2} textTransform="uppercase" letterSpacing="wide">
+                  {tr.should_mention}
+                </Text>
+                {companyProfile ? (
+                  <Box lineHeight="tall">
+                    <Text fontWeight="bold" fontSize="sm">{companyProfile.company_name}</Text>
+                    <Text fontSize="sm" color="gray.600" whiteSpace="pre-line">{companyProfile.company_address}</Text>
+                    {companyProfile.company_phone && (
+                      <Text fontSize="sm" color="gray.600">{companyProfile.company_phone}</Text>
+                    )}
+                  </Box>
+                ) : (
+                  <Text fontSize="sm" color="gray.400" fontStyle="italic">—</Text>
+                )}
+              </Box>
+
+              {/* Shipping Marks */}
+              <Field.Root>
+                <Field.Label fontSize="sm" fontWeight="semibold" color="gray.500" textTransform="uppercase" letterSpacing="wide">
+                  {tr.shipping_marks}
+                </Field.Label>
+                <Textarea
+                  rows={4}
+                  value={form.shipping_marks}
+                  onChange={(e) => setForm({ ...form, shipping_marks: e.target.value })}
+                  placeholder={tr.shipping_marks_placeholder}
+                  borderColor="gray.200"
+                />
+              </Field.Root>
+
+              {/* Remarks */}
+              <Field.Root>
+                <Field.Label fontSize="sm" fontWeight="semibold" color="gray.500" textTransform="uppercase" letterSpacing="wide">
+                  {tr.consignee_remarks}
+                </Field.Label>
+                <Textarea
+                  rows={4}
+                  value={form.consignee_remarks}
+                  onChange={(e) => setForm({ ...form, consignee_remarks: e.target.value })}
+                  placeholder={tr.consignee_remarks_placeholder}
+                  borderColor="gray.200"
+                />
+              </Field.Root>
+            </SimpleGrid>
+          </Card.Body>
+        </Card.Root>
+
+        {/* Document Upload */}
+        <Card.Root>
+          <Card.Header>
+            <Heading size="md">{tr.document}</Heading>
+          </Card.Header>
+          <Card.Body>
+            <Flex
+              border="1px dashed"
+              borderColor="gray.300"
+              borderRadius="lg"
+              p={6}
+              align="center"
+              justify="center"
+              direction="column"
+              gap={2}
+              textAlign="center"
+              cursor="pointer"
+              _hover={{ borderColor: BIZGEN_COLOR, bg: 'orange.50' }}
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <Icon as={FiUpload} boxSize={7} color="gray.400" />
+              <Text fontSize="sm" color="gray.500">{tr.document_upload_hint}</Text>
+              <Button size="sm" variant="outline" color={BIZGEN_COLOR} borderColor={BIZGEN_COLOR} pointerEvents="none">
+                {tr.document_choose}
+              </Button>
+            </Flex>
+
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              hidden
+              onChange={handleFileChange}
+            />
+
+            {uploadedFiles.length > 0 && (
+              <Stack mt={4} gap={2}>
+                {uploadedFiles.map((file, idx) => (
+                  <Flex
+                    key={idx}
+                    align="center"
+                    justify="space-between"
+                    px={3}
+                    py={2}
+                    borderRadius="md"
+                    border="1px solid"
+                    borderColor="gray.200"
+                    bg="gray.50"
+                  >
+                    <Flex align="center" gap={2}>
+                      <Icon as={FiFileText} color="gray.500" />
+                      <Text fontSize="sm" color="gray.700">{file.name}</Text>
+                      <Text fontSize="xs" color="gray.400">({(file.size / 1024).toFixed(1)} KB)</Text>
+                    </Flex>
+                    <IconButton
+                      aria-label="Remove file"
+                      variant="ghost"
+                      size="xs"
+                      color="red.400"
+                      onClick={() => removeFile(idx)}
+                    >
+                      <FiX />
+                    </IconButton>
+                  </Flex>
+                ))}
+              </Stack>
+            )}
+          </Card.Body>
+        </Card.Root>
+      </Stack>
+
+      <Flex justify="flex-end" gap={3} mt={6}>
+        <Button variant="outline" color={BIZGEN_COLOR} borderColor={BIZGEN_COLOR} onClick={() => handleSubmit('draft')}>
+          {tr.save_draft}
+        </Button>
+        <Button bg={BIZGEN_COLOR} color="white" onClick={() => handleSubmit('submitted')}>
+          {tr.submit_purchase}
+        </Button>
+      </Flex>
     </SidebarWithHeader>
-    
   );
 }

@@ -359,22 +359,31 @@ export const en = {
   },
   purchase_invoice: {
     title: "Create Purchase Invoice",
+    subtitle: "Register supplier billing document against a purchase order.",
+
     invoice_details: "Invoice Details",
 
-    supplier: "Supplier",
-    supplier_placeholder: "Select or search supplier",
-
     invoice_number: "Invoice Number",
-    invoice_number_placeholder: "Enter invoice number",
+    invoice_number_placeholder: "Auto-generated",
+
+    supplier: "Supplier",
+    supplier_placeholder: "Click to select supplier",
+    supplier_info: "Supplier Information",
+
+    po_number: "PO Number / Reference",
+    po_number_placeholder: "Select PO (coming soon)",
 
     invoice_date: "Invoice Date",
-    due_date: "Due Date",
+    ship_date: "Ship Date",
+
+    exchange_rate: "Exchange Rate (to IDR)",
+    exchange_rate_placeholder: "e.g. 15500",
+
+    term: "Term / Incoterm",
+    term_placeholder: "Select term",
 
     currency: "Currency",
-    exchange_rate: "Exchange Rate",
-
-    po_reference: "PO Reference",
-    po_reference_placeholder: "Optional — link to purchase order",
+    currency_placeholder: "Select currency",
 
     notes: "Notes",
     notes_placeholder: "Additional information",
@@ -382,116 +391,235 @@ export const en = {
     invoice_items: "Invoice Items",
     add_item: "Add Item",
 
-    description: "Description",
-    description_placeholder: "Item description",
-
-    qty: "Quantity",
-    uom: "Unit of Measure",
+    item_name: "Item Name",
+    item_name_placeholder: "Search item...",
+    qty: "Qty",
+    uom: "UOM",
+    uom_placeholder: "UOM",
+    packaging_size: "Pkg. Size",
+    packaging_size_placeholder: "e.g. 25 kg/bag",
     unit_price: "Unit Price",
-    tax_percent: "Tax %",
-    line_total: "Line Total",
+    item_total: "Total",
+    vat_percent: "VAT %",
+    vat_amount: "VAT Amt",
+    grand_total: "Grand Total",
+    remarks: "Remarks",
+    remarks_placeholder: "Notes",
 
     subtotal: "Subtotal",
-    tax: "Tax",
-    grand_total: "Grand Total",
+    total_vat: "Total VAT",
+    total_grand: "Grand Total",
 
     save_draft: "Save as Draft",
     post_invoice: "Post Invoice",
 
-    delete: "Delete",
+    error_invoice_number: "Invoice number is required.",
+    error_supplier: "Please select a supplier.",
+    error_invoice_date: "Invoice date is required.",
+    error_items: "At least one item is required.",
 
-    success_create: "Purchase invoice has been successfully created.",
-    success_post: "Purchase invoice has been successfully posted."
+    success_draft: "Purchase invoice saved as draft.",
+    success_create: "Purchase invoice has been successfully posted.",
   },
   purchase_import: {
-  title: "Create Purchase Import",
+  title: "Create Purchase Import Order",
+  subtitle: "Create a purchase order for imported goods.",
 
   purchase_details: "Purchase Details",
   po_number: "PO Number",
-  po_number_placeholder: "AUTO / Manual",
-
-  po_date: "PO Date",
-  supplier: "Supplier",
-  supplier_placeholder: "Select supplier",
-
-  import_details: "Import Details",
-
-  currency: "Currency",
-  currency_placeholder: "Select currency",
-
-  exchange_rate: "Exchange Rate (to IDR)",
-
-  incoterm: "Incoterm",
-  incoterm_placeholder: "Select incoterm",
-
-  port_of_loading: "Port of Loading",
-  port_of_loading_placeholder: "Select port of loading",
-
-  port_of_discharge: "Port of Discharge",
-  port_of_discharge_placeholder: "Select port of discharge",
-
-  freight_cost: "Freight Cost",
-  customs_cost: "Customs / Duty Cost",
-
-  items: "Items",
-  add_item: "Add Item",
-  delete_item: "Delete Item",
-
-  sku: "SKU",
-  description: "Description",
-  qty: "Quantity",
-  unit_price: "Unit Price",
-
-  line_total: "Line Total",
-
-  cost_summary: "Cost Summary",
-  items_subtotal: "Items Subtotal",
-  freight_customs: "Freight + Customs",
-  landed_cost: "Landed Cost",
-  local_currency: "Local Currency (IDR)",
-
-  save_draft: "Save Draft",
-  submit_purchase: "Submit Purchase",
-
-  success_create: "Purchase import has been successfully created."
-},
-purchase_local: {
-  title: "Create Local Purchase",
-
-  purchase_details: "Purchase Details",
-  po_number: "PO Number",
-  po_number_placeholder: "Auto / Manual",
+  po_number_placeholder: "Auto-generated",
 
   po_date: "PO Date",
 
   supplier: "Supplier",
-  supplier_placeholder: "Select supplier",
+  supplier_placeholder: "Click to select supplier",
+  supplier_info: "Supplier Information",
+
+  shipment_period: "Shipment Period",
+  shipment_period_placeholder: "Select shipment period",
+
+  term: "Incoterm",
+  term_placeholder: "Select incoterm",
+
+  payment_method: "Payment Method",
+  payment_method_placeholder: "Search payment method...",
+
+  origin: "Origin",
+  origin_placeholder: "Select origin",
 
   currency: "Currency",
   currency_placeholder: "Select currency",
-
-  payment_terms: "Payment Terms",
-  payment_terms_placeholder: "e.g. Net 30, Cash",
 
   notes: "Notes",
   notes_placeholder: "Additional notes",
 
   purchase_items: "Purchase Items",
   add_item: "Add Item",
-  delete_item: "Delete Item",
 
-  description: "Description",
+  description: "Item Name",
+  description_placeholder: "Enter item name",
   qty: "Quantity",
-  uom: "Unit of Measurement",
+  uom: "UOM",
+  uom_placeholder: "UOM",
+  packaging_size: "Pkg. Size",
+  packaging_size_placeholder: "e.g. 25 kg/bag",
   unit_price: "Unit Price",
+  item_total: "Total",
   remarks: "Remarks",
+  remarks_placeholder: "Notes",
 
   subtotal: "Subtotal",
+  total_grand: "Grand Total",
+
+  consignee_details: "Consignee Details",
+  should_mention: "Should Mention",
+  shipping_marks: "Shipping Marks",
+  shipping_marks_placeholder: "Enter shipping marks",
+  consignee_remarks: "Remarks",
+  consignee_remarks_placeholder: "Additional remarks",
+
+  document: "Documents",
+  document_upload_hint: "Click or drag files here to attach",
+  document_choose: "Choose File",
+
+  save_draft: "Save as Draft",
+  submit_purchase: "Submit Purchase",
+
+  error_po_number: "PO number is required.",
+  error_po_date: "PO date is required.",
+  error_supplier: "Please select a supplier.",
+  error_items: "At least one item with a name is required.",
+
+  success_draft: "Purchase import saved as draft.",
+  success_create: "Purchase import has been successfully submitted.",
+},
+purchase_local: {
+  title: "Create Local Purchase Order",
+  subtitle: "Create a purchase order for local / domestic procurement.",
+
+  purchase_details: "Purchase Details",
+  po_number: "PO Number",
+  po_number_placeholder: "Auto-generated",
+
+  po_date: "PO Date",
+  shipment_date: "Shipment Date",
+
+  supplier: "Supplier",
+  supplier_placeholder: "Click to select supplier",
+  supplier_info: "Supplier Information",
+
+  invoice_under: "Invoice Under",
+  delivery_address: "Delivery Address",
+  delivery_address_placeholder: "Enter delivery address",
+
+  document: "Document",
+  document_upload_hint: "Click or drag files here to attach",
+  document_choose: "Choose File",
+
+  currency: "Currency",
+  currency_placeholder: "Select currency",
+
+  payment_method: "Payment Method",
+  payment_method_placeholder: "Search payment method...",
+
+  tax: "Tax",
+  tax_placeholder: "Select tax",
+
+  notes: "Notes",
+  notes_placeholder: "Additional notes or instructions",
+
+  purchase_items: "Purchase Items",
+  add_item: "Add Item",
+  delete_item: "Delete Item",
+
+  description: "Description / Item",
+  description_placeholder: "Item or service description",
+  qty: "Qty",
+  uom: "UOM",
+  uom_placeholder: "Select UOM",
+  packaging_size: "Package Size",
+  packaging_size_placeholder: "e.g. CTN / 50x40x30",
+  unit_price: "Unit Price",
+  item_total: "Total",
+  dpp: "DPP",
+  ppn: "PPN",
+  grand_total: "Grand Total",
+  remarks: "Remarks",
+  remarks_placeholder: "Optional",
+
+  subtotal: "Subtotal",
+  total_ppn: "Total PPN",
+  total_grand: "Grand Total",
 
   save_draft: "Save Draft",
   submit_purchase: "Submit Purchase",
 
+  error_po_number: "PO Number is required.",
+  error_po_date: "PO Date is required.",
+  error_supplier: "Supplier is required.",
+  error_items: "At least one item with a description is required.",
+
+  success_draft: "Purchase Order saved as draft.",
   success_create: "Local purchase has been successfully created."
+},
+receiving_items: {
+  title: "Create Receiving Items / GR",
+  subtitle: "Record goods receipt from supplier into warehouse.",
+
+  gr_details: "Goods Receipt Details",
+  gr_number: "GR Number",
+  gr_number_placeholder: "Auto-generated",
+
+  supplier: "Supplier",
+  supplier_placeholder: "Click to select supplier",
+  supplier_info: "Supplier Information",
+
+  po_number: "PO Number / Reference",
+  po_number_placeholder: "Select PO (coming soon)",
+
+  receiving_date: "Receiving Date",
+  address: "Receiving Address",
+  address_placeholder: "Enter warehouse / delivery address",
+
+  ship_date: "Ship Date",
+  ship_via: "Ship Via",
+  ship_via_placeholder: "Select shipping method",
+
+  notes: "Notes",
+  notes_placeholder: "Damages, partial receipt info, etc.",
+
+  items_received: "Items Received",
+  add_item: "Add Item",
+
+  item_name: "Item Name",
+  item_name_placeholder: "Search item...",
+  qty: "Qty",
+  uom: "UOM",
+  uom_placeholder: "UOM",
+  packaging_size: "Pkg. Size",
+  packaging_size_placeholder: "e.g. 25 kg/bag",
+  unit_price: "Unit Price",
+  item_total: "Total",
+  vat_percent: "VAT %",
+  vat_amount: "VAT Amt",
+  grand_total: "Grand Total",
+  remarks: "Remarks",
+  remarks_placeholder: "Notes",
+
+  subtotal: "Subtotal",
+  total_vat: "Total VAT",
+  total_grand: "Grand Total",
+
+  save_draft: "Save as Draft",
+  post_gr: "Post Receiving",
+
+  error_gr_number: "GR number is required.",
+  error_supplier: "Please select a supplier.",
+  error_receiving_date: "Receiving date is required.",
+  error_items: "At least one item is required.",
+
+  success_draft: "Goods receipt saved as draft.",
+  success_create: "Goods receipt has been successfully posted.",
 },
 sales_module : {
     title: "Sales Module",
@@ -1349,5 +1477,55 @@ profile: {
   success_update: "Profile updated successfully.",
   error_password_mismatch: "New password and confirmation do not match.",
   error_current_password_required: "Current password is required to set a new password.",
+},
+purchase_requisition: {
+  title: "Create Purchase Requisition",
+  subtitle: "Raise an internal request for goods or services before issuing a Purchase Order.",
+
+  requisition_details: "Requisition Details",
+
+  pr_number: "PR Number",
+  pr_number_placeholder: "Auto-generated",
+  pr_date: "PR Date",
+  requester: "Requester",
+  requester_placeholder: "Requester name",
+  department: "Department",
+  department_placeholder: "e.g. Operations, Logistics, Finance",
+  priority: "Priority",
+  priority_placeholder: "Select priority",
+  category: "Category",
+  category_placeholder: "Select category",
+  needed_by: "Needed By Date",
+  preferred_vendor: "Preferred Vendor",
+  preferred_vendor_placeholder: "Vendor name (optional)",
+  currency: "Currency",
+  currency_placeholder: "Select currency",
+  notes: "Notes / Justification",
+  notes_placeholder: "Additional instructions or justifications",
+
+  requested_items: "Requested Items",
+  add_item: "Add Item",
+  item_label: "Item",
+  description: "Description",
+  description_placeholder: "Item / Service description",
+  qty: "Qty",
+  uom: "UOM",
+  uom_placeholder: "PCS / BOX / KG",
+  est_price: "Est. Price",
+  subtotal: "Subtotal",
+  remarks: "Remarks",
+  remarks_placeholder: "Optional remarks",
+
+  save_draft: "Save Draft",
+  submit: "Submit",
+
+  error_pr_number: "PR Number is required.",
+  error_pr_date: "PR Date is required.",
+  error_requester: "Requester is required.",
+  error_department: "Department is required.",
+  error_items: "At least one item with a description is required.",
+
+  success_draft: "Purchase Requisition saved as draft.",
+  success_submit: "Purchase Requisition submitted successfully.",
 }
 };

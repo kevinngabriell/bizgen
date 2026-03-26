@@ -359,22 +359,31 @@ export const id = {
     },
     purchase_invoice: {
   title: "Buat Faktur Pembelian",
+  subtitle: "Daftarkan tagihan dari pemasok berdasarkan purchase order.",
+
   invoice_details: "Detail Faktur",
 
-  supplier: "Pemasok",
-  supplier_placeholder: "Pilih atau cari pemasok",
-
   invoice_number: "Nomor Faktur",
-  invoice_number_placeholder: "Masukkan nomor faktur",
+  invoice_number_placeholder: "Otomatis",
+
+  supplier: "Pemasok",
+  supplier_placeholder: "Klik untuk memilih pemasok",
+  supplier_info: "Informasi Pemasok",
+
+  po_number: "Nomor PO / Referensi",
+  po_number_placeholder: "Pilih PO (segera hadir)",
 
   invoice_date: "Tanggal Faktur",
-  due_date: "Tanggal Jatuh Tempo",
+  ship_date: "Tanggal Kirim",
+
+  exchange_rate: "Kurs (ke IDR)",
+  exchange_rate_placeholder: "mis. 15500",
+
+  term: "Term / Incoterm",
+  term_placeholder: "Pilih term",
 
   currency: "Mata Uang",
-  exchange_rate: "Kurs",
-
-  po_reference: "Referensi PO",
-  po_reference_placeholder: "Opsional — hubungkan ke purchase order",
+  currency_placeholder: "Pilih mata uang",
 
   notes: "Catatan",
   notes_placeholder: "Informasi tambahan",
@@ -382,116 +391,235 @@ export const id = {
   invoice_items: "Item Faktur",
   add_item: "Tambah Item",
 
-  description: "Deskripsi",
-  description_placeholder: "Deskripsi barang",
-
+  item_name: "Nama Item",
+  item_name_placeholder: "Cari item...",
   qty: "Jumlah",
   uom: "Satuan",
+  uom_placeholder: "Satuan",
+  packaging_size: "Ukuran Kemasan",
+  packaging_size_placeholder: "mis. 25 kg/karung",
   unit_price: "Harga Satuan",
-  tax_percent: "Pajak %",
-  line_total: "Total Baris",
+  item_total: "Total",
+  vat_percent: "PPN %",
+  vat_amount: "Jml PPN",
+  grand_total: "Grand Total",
+  remarks: "Keterangan",
+  remarks_placeholder: "Catatan",
 
   subtotal: "Subtotal",
-  tax: "Pajak",
-  grand_total: "Total Akhir",
+  total_vat: "Total PPN",
+  total_grand: "Grand Total",
 
   save_draft: "Simpan sebagai Draft",
   post_invoice: "Posting Faktur",
 
-  delete: "Hapus",
+  error_invoice_number: "Nomor faktur wajib diisi.",
+  error_supplier: "Silakan pilih pemasok.",
+  error_invoice_date: "Tanggal faktur wajib diisi.",
+  error_items: "Minimal satu item wajib diisi.",
 
-  success_create: "Faktur pembelian berhasil dibuat.",
-  success_post: "Faktur pembelian berhasil diposting."
+  success_draft: "Faktur pembelian disimpan sebagai draft.",
+  success_create: "Faktur pembelian berhasil diposting.",
 },
 purchase_import: {
-  title: "Buat Pembelian Impor",
+  title: "Buat Purchase Order Impor",
+  subtitle: "Buat purchase order untuk pengadaan barang impor.",
 
   purchase_details: "Detail Pembelian",
   po_number: "Nomor PO",
-  po_number_placeholder: "Otomatis / Manual",
-
-  po_date: "Tanggal PO",
-  supplier: "Pemasok",
-  supplier_placeholder: "Pilih pemasok",
-
-  import_details: "Detail Impor",
-
-  currency: "Mata Uang",
-  currency_placeholder: "Pilih mata uang",
-
-  exchange_rate: "Kurs (ke IDR)",
-
-  incoterm: "Incoterm",
-  incoterm_placeholder: "Pilih incoterm",
-
-  port_of_loading: "Pelabuhan Muat",
-  port_of_loading_placeholder: "Pilih pelabuhan muat",
-
-  port_of_discharge: "Pelabuhan Bongkar",
-  port_of_discharge_placeholder: "Pilih pelabuhan bongkar",
-
-  freight_cost: "Biaya Pengiriman",
-  customs_cost: "Biaya Bea Masuk / Pajak Impor",
-
-  items: "Item",
-  add_item: "Tambah Item",
-  delete_item: "Hapus Item",
-
-  sku: "SKU",
-  description: "Deskripsi",
-  qty: "Jumlah",
-  unit_price: "Harga Satuan",
-
-  line_total: "Total Baris",
-
-  cost_summary: "Ringkasan Biaya",
-  items_subtotal: "Subtotal Item",
-  freight_customs: "Pengiriman + Bea Masuk",
-  landed_cost: "Total Landed Cost",
-  local_currency: "Mata Uang Lokal (IDR)",
-
-  save_draft: "Simpan sebagai Draft",
-  submit_purchase: "Submit Pembelian",
-
-  success_create: "Pembelian impor berhasil dibuat."
-},
-purchase_local: {
-  title: "Buat Pembelian Lokal",
-
-  purchase_details: "Detail Pembelian",
-  po_number: "Nomor PO",
-  po_number_placeholder: "Otomatis / Manual",
+  po_number_placeholder: "Otomatis",
 
   po_date: "Tanggal PO",
 
   supplier: "Pemasok",
-  supplier_placeholder: "Pilih pemasok",
+  supplier_placeholder: "Klik untuk memilih pemasok",
+  supplier_info: "Informasi Pemasok",
+
+  shipment_period: "Periode Pengiriman",
+  shipment_period_placeholder: "Pilih periode pengiriman",
+
+  term: "Incoterm",
+  term_placeholder: "Pilih incoterm",
+
+  payment_method: "Metode Pembayaran",
+  payment_method_placeholder: "Cari metode pembayaran...",
+
+  origin: "Asal",
+  origin_placeholder: "Pilih asal",
 
   currency: "Mata Uang",
   currency_placeholder: "Pilih mata uang",
-
-  payment_terms: "Termin Pembayaran",
-  payment_terms_placeholder: "contoh: Net 30, Tunai",
 
   notes: "Catatan",
   notes_placeholder: "Catatan tambahan",
 
   purchase_items: "Item Pembelian",
   add_item: "Tambah Item",
-  delete_item: "Hapus Item",
 
-  description: "Deskripsi",
+  description: "Nama Item",
+  description_placeholder: "Masukkan nama item",
   qty: "Jumlah",
   uom: "Satuan",
+  uom_placeholder: "Satuan",
+  packaging_size: "Ukuran Kemasan",
+  packaging_size_placeholder: "mis. 25 kg/karung",
   unit_price: "Harga Satuan",
+  item_total: "Total",
   remarks: "Keterangan",
+  remarks_placeholder: "Catatan",
 
   subtotal: "Subtotal",
+  total_grand: "Grand Total",
+
+  consignee_details: "Detail Penerima",
+  should_mention: "Should Mention",
+  shipping_marks: "Shipping Marks",
+  shipping_marks_placeholder: "Masukkan shipping marks",
+  consignee_remarks: "Keterangan",
+  consignee_remarks_placeholder: "Keterangan tambahan",
+
+  document: "Dokumen",
+  document_upload_hint: "Klik atau seret file ke sini untuk melampirkan",
+  document_choose: "Pilih File",
 
   save_draft: "Simpan sebagai Draft",
   submit_purchase: "Submit Pembelian",
 
+  error_po_number: "Nomor PO wajib diisi.",
+  error_po_date: "Tanggal PO wajib diisi.",
+  error_supplier: "Silakan pilih pemasok.",
+  error_items: "Minimal satu item dengan nama wajib diisi.",
+
+  success_draft: "Purchase order impor disimpan sebagai draft.",
+  success_create: "Purchase order impor berhasil disubmit.",
+},
+purchase_local: {
+  title: "Buat Purchase Order Lokal",
+  subtitle: "Buat purchase order untuk pengadaan barang / jasa dalam negeri.",
+
+  purchase_details: "Detail Pembelian",
+  po_number: "Nomor PO",
+  po_number_placeholder: "Otomatis",
+
+  po_date: "Tanggal PO",
+  shipment_date: "Tanggal Pengiriman",
+
+  supplier: "Supplier",
+  supplier_placeholder: "Klik untuk memilih supplier",
+  supplier_info: "Informasi Supplier",
+
+  invoice_under: "Invoice Under",
+  delivery_address: "Alamat Pengiriman",
+  delivery_address_placeholder: "Masukkan alamat pengiriman",
+
+  document: "Dokumen",
+  document_upload_hint: "Klik atau seret file ke sini untuk melampirkan",
+  document_choose: "Pilih File",
+
+  currency: "Mata Uang",
+  currency_placeholder: "Pilih mata uang",
+
+  payment_method: "Metode Pembayaran",
+  payment_method_placeholder: "Cari metode pembayaran...",
+
+  tax: "Pajak",
+  tax_placeholder: "Pilih pajak",
+
+  notes: "Catatan",
+  notes_placeholder: "Catatan atau instruksi tambahan",
+
+  purchase_items: "Item Pembelian",
+  add_item: "Tambah Item",
+  delete_item: "Hapus Item",
+
+  description: "Deskripsi / Item",
+  description_placeholder: "Deskripsi barang atau jasa",
+  qty: "Jumlah",
+  uom: "Satuan",
+  uom_placeholder: "Pilih satuan",
+  packaging_size: "Ukuran Kemasan",
+  packaging_size_placeholder: "mis. CTN / 50x40x30",
+  unit_price: "Harga Satuan",
+  item_total: "Total",
+  dpp: "DPP",
+  ppn: "PPN",
+  grand_total: "Grand Total",
+  remarks: "Keterangan",
+  remarks_placeholder: "Opsional",
+
+  subtotal: "Subtotal",
+  total_ppn: "Total PPN",
+  total_grand: "Grand Total",
+
+  save_draft: "Simpan Draft",
+  submit_purchase: "Submit Pembelian",
+
+  error_po_number: "Nomor PO diperlukan.",
+  error_po_date: "Tanggal PO diperlukan.",
+  error_supplier: "Supplier diperlukan.",
+  error_items: "Minimal satu item dengan deskripsi diperlukan.",
+
+  success_draft: "Purchase Order disimpan sebagai draft.",
   success_create: "Pembelian lokal berhasil dibuat."
+},
+receiving_items: {
+  title: "Buat Penerimaan Barang / GR",
+  subtitle: "Catat penerimaan barang dari pemasok ke gudang.",
+
+  gr_details: "Detail Penerimaan Barang",
+  gr_number: "Nomor GR",
+  gr_number_placeholder: "Otomatis",
+
+  supplier: "Pemasok",
+  supplier_placeholder: "Klik untuk memilih pemasok",
+  supplier_info: "Informasi Pemasok",
+
+  po_number: "Nomor PO / Referensi",
+  po_number_placeholder: "Pilih PO (segera hadir)",
+
+  receiving_date: "Tanggal Penerimaan",
+  address: "Alamat Penerimaan",
+  address_placeholder: "Masukkan alamat gudang / pengiriman",
+
+  ship_date: "Tanggal Kirim",
+  ship_via: "Via Pengiriman",
+  ship_via_placeholder: "Pilih metode pengiriman",
+
+  notes: "Catatan",
+  notes_placeholder: "Kerusakan, penerimaan sebagian, dll.",
+
+  items_received: "Barang Diterima",
+  add_item: "Tambah Item",
+
+  item_name: "Nama Item",
+  item_name_placeholder: "Cari item...",
+  qty: "Jumlah",
+  uom: "Satuan",
+  uom_placeholder: "Satuan",
+  packaging_size: "Ukuran Kemasan",
+  packaging_size_placeholder: "mis. 25 kg/karung",
+  unit_price: "Harga Satuan",
+  item_total: "Total",
+  vat_percent: "PPN %",
+  vat_amount: "Jml PPN",
+  grand_total: "Grand Total",
+  remarks: "Keterangan",
+  remarks_placeholder: "Catatan",
+
+  subtotal: "Subtotal",
+  total_vat: "Total PPN",
+  total_grand: "Grand Total",
+
+  save_draft: "Simpan sebagai Draft",
+  post_gr: "Posting Penerimaan",
+
+  error_gr_number: "Nomor GR wajib diisi.",
+  error_supplier: "Silakan pilih pemasok.",
+  error_receiving_date: "Tanggal penerimaan wajib diisi.",
+  error_items: "Minimal satu item wajib diisi.",
+
+  success_draft: "Penerimaan barang disimpan sebagai draft.",
+  success_create: "Penerimaan barang berhasil diposting.",
 },
 sales_module : {
     title: "Modul Penjualan",
@@ -1347,5 +1475,55 @@ profile: {
   success_update: "Profil berhasil diperbarui.",
   error_password_mismatch: "Kata sandi baru dan konfirmasi tidak cocok.",
   error_current_password_required: "Kata sandi saat ini diperlukan untuk menetapkan kata sandi baru.",
+},
+purchase_requisition: {
+  title: "Buat Permintaan Pembelian",
+  subtitle: "Ajukan permintaan internal untuk barang atau jasa sebelum menerbitkan Purchase Order.",
+
+  requisition_details: "Detail Permintaan",
+
+  pr_number: "Nomor PR",
+  pr_number_placeholder: "Otomatis",
+  pr_date: "Tanggal PR",
+  requester: "Pemohon",
+  requester_placeholder: "Nama pemohon",
+  department: "Departemen",
+  department_placeholder: "mis. Operasional, Logistik, Keuangan",
+  priority: "Prioritas",
+  priority_placeholder: "Pilih prioritas",
+  category: "Kategori",
+  category_placeholder: "Pilih kategori",
+  needed_by: "Diperlukan Sebelum",
+  preferred_vendor: "Vendor Pilihan",
+  preferred_vendor_placeholder: "Nama vendor (opsional)",
+  currency: "Mata Uang",
+  currency_placeholder: "Pilih mata uang",
+  notes: "Catatan / Justifikasi",
+  notes_placeholder: "Instruksi atau justifikasi tambahan",
+
+  requested_items: "Item yang Diminta",
+  add_item: "Tambah Item",
+  item_label: "Item",
+  description: "Deskripsi",
+  description_placeholder: "Deskripsi barang / jasa",
+  qty: "Jumlah",
+  uom: "Satuan",
+  uom_placeholder: "PCS / BOX / KG",
+  est_price: "Harga Estimasi",
+  subtotal: "Subtotal",
+  remarks: "Keterangan",
+  remarks_placeholder: "Keterangan opsional",
+
+  save_draft: "Simpan Draft",
+  submit: "Submit",
+
+  error_pr_number: "Nomor PR diperlukan.",
+  error_pr_date: "Tanggal PR diperlukan.",
+  error_requester: "Nama pemohon diperlukan.",
+  error_department: "Departemen diperlukan.",
+  error_items: "Minimal satu item dengan deskripsi diperlukan.",
+
+  success_draft: "Permintaan Pembelian disimpan sebagai draft.",
+  success_submit: "Permintaan Pembelian berhasil disubmit.",
 }
 };
