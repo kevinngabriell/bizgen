@@ -6,9 +6,7 @@ import { AlertMessage } from "@/components/ui/alert";
 import { DecodedAuthToken, checkAuthOrRedirect, getAuthInfo } from "@/lib/auth/auth";
 import { getLang } from "@/lib/i18n";
 import { updateProfile } from "@/lib/account/profile";
-import {
-  Box, Button, Card, Field, Flex, Heading, Input, Separator, Text,
-} from "@chakra-ui/react";
+import { Box, Button, Card, Field, Flex, Heading, Input, Separator, Text } from "@chakra-ui/react";
 import { Suspense, useEffect, useState } from "react";
 
 export default function ProfilePage() {
@@ -129,19 +127,11 @@ function ProfileContent() {
           <Flex direction="column" gap={4} maxW="480px">
             <Field.Root>
               <Field.Label>{t.profile.username}</Field.Label>
-              <Input
-                placeholder={t.profile.username_placeholder}
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-              />
+              <Input placeholder={t.profile.username_placeholder} value={username} onChange={(e) => setUsername(e.target.value)}/>
             </Field.Root>
             <Field.Root>
               <Field.Label>{t.profile.phone_number}</Field.Label>
-              <Input
-                placeholder={t.profile.phone_number_placeholder}
-                value={phoneNumber}
-                onChange={(e) => setPhoneNumber(e.target.value)}
-              />
+              <Input placeholder={t.profile.phone_number_placeholder} value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)}/>
             </Field.Root>
           </Flex>
         </Card.Body>
@@ -206,11 +196,7 @@ function ProfileContent() {
         <Card.Header>
           <Flex justify="space-between" align="center">
             <Heading size="md">{t.profile.change_password}</Heading>
-            <Button
-              size="sm"
-              variant={changePassword ? "solid" : "outline"}
-              bg={changePassword ? "#E77A1F" : undefined}
-              color={changePassword ? "white" : undefined}
+            <Button size="sm" variant={changePassword ? "solid" : "outline"} bg={changePassword ? "#E77A1F" : undefined} color={changePassword ? "white" : undefined}
               onClick={() => {
                 setChangePassword((prev) => !prev);
                 setCurrentPassword("");
@@ -227,30 +213,15 @@ function ProfileContent() {
             <Flex direction="column" gap={4} maxW="480px">
               <Field.Root>
                 <Field.Label>{t.profile.current_password}</Field.Label>
-                <Input
-                  type="password"
-                  placeholder={t.profile.current_password_placeholder}
-                  value={currentPassword}
-                  onChange={(e) => setCurrentPassword(e.target.value)}
-                />
+                <Input type="password" placeholder={t.profile.current_password_placeholder} value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)}/>
               </Field.Root>
               <Field.Root>
                 <Field.Label>{t.profile.new_password}</Field.Label>
-                <Input
-                  type="password"
-                  placeholder={t.profile.new_password_placeholder}
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                />
+                <Input type="password" placeholder={t.profile.new_password_placeholder} value={newPassword} onChange={(e) => setNewPassword(e.target.value)}/>
               </Field.Root>
               <Field.Root>
                 <Field.Label>{t.profile.confirm_password}</Field.Label>
-                <Input
-                  type="password"
-                  placeholder={t.profile.confirm_password_placeholder}
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                />
+                <Input type="password" placeholder={t.profile.confirm_password_placeholder} value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)}/>
               </Field.Root>
             </Flex>
           </Card.Body>
@@ -259,9 +230,7 @@ function ProfileContent() {
 
       {/* Save */}
       <Flex justify="flex-end" mb={10}>
-        <Button bg="#E77A1F" color="white" cursor="pointer" onClick={handleSave}>
-          {t.profile.save_changes}
-        </Button>
+        <Button bg="#E77A1F" color="white" cursor="pointer" onClick={handleSave}>{t.profile.save_changes}</Button>
       </Flex>
 
       {/* Footer */}

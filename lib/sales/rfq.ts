@@ -27,15 +27,14 @@ export interface GetRfqNumber {
 }
 
 export interface GetRfq {
-    sales_rfq_id: string;
-    sales_rfq_number: string;
-    rfq_status: string;
+    inquiry_id: string;
+    rfq_no: string;
+    status: string;
     created_at: string;
     customer_name: string;
     ship_via_name: string;
-    origin: string;
-    destination: string;
-    term_id: string;
+    origin_name: string;
+    destination_name: string;
     commodity_name: string;
 }
 
@@ -156,9 +155,17 @@ export async function getSalesRfq(page: number = 1, limit : number = 10, search:
         throw new Error(json.status_message || 'Failed to fetch rfq');
     }
 
+    const total = json.data?.total ?? 0;
+    const pageSize = json.data?.limit ?? limit;
+
     return {
         data: json.data?.data || [],
-        pagination: json.data?.pagination || {}
+        pagination: {
+            total,
+            page: json.data?.page ?? 1,
+            limit: pageSize,
+            total_pages: Math.ceil(total / pageSize) || 1,
+        },
     };
 }
 

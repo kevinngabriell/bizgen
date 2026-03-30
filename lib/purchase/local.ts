@@ -3,36 +3,37 @@ export interface GetPurchaseLocalNumber {
 }
 
 export interface CreatePurchaseLocalItem {
-  description: string;
+  item_id: string;
   qty: string;
-  uom_id: string;
-  package_size: string;
   unit_price: string;
-  total: string;
-  dpp: string;
-  ppn: string;
-  grand_total: string;
+  uom_id: string;
   remarks: string;
 }
 
 export interface CreatePurchaseLocalData {
+  purchase_type: 'local';
   po_number: string;
   po_date: string;
-  supplier_id: string;
   delivery_date: string;
+  supplier_id: string;
   payment_id: string;
-  tax_id: string;
   currency_id: string;
-  delivery_address: string;
+  tax_id: string;
+  exchange_rate_idr: string;
   notes: string;
-  status: "draft" | "submitted";
   items: CreatePurchaseLocalItem[];
-  documents: string[];
+}
+
+export interface GetPurchaseLocalData {
+  purchase_id: string;
+  po_number: string;
+  po_date: string;
+  created_at: string;
 }
 
 export async function generatePurchaseLocalNumber(): Promise<GetPurchaseLocalNumber> {
   const baseUrl = process.env.NEXT_PUBLIC_API_URL;
-  const token = localStorage.getItem("token");
+  const token = localStorage.getItem('token');
 
   const res = await fetch(`${baseUrl}purchase/generate-number.php?module_name=local`, {
     method: 'GET',
@@ -52,9 +53,9 @@ export async function generatePurchaseLocalNumber(): Promise<GetPurchaseLocalNum
 
 export async function createPurchaseLocal(input: CreatePurchaseLocalData): Promise<any> {
   const baseUrl = process.env.NEXT_PUBLIC_API_URL;
-  const token = localStorage.getItem("token");
+  const token = localStorage.getItem('token');
 
-  const res = await fetch(`${baseUrl}purchase/local.php`, {
+  const res = await fetch(`${baseUrl}purchase/purchase-orders.php`, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${token}`,
@@ -70,4 +71,27 @@ export async function createPurchaseLocal(input: CreatePurchaseLocalData): Promi
   }
 
   return json;
+}
+
+export async function getPurchaseLocal(page: number = 1, limit: number = 10): Promise<{ data: GetPurchaseLocalData[]; pagination: any }> {
+  const baseUrl = process.env.NEXT_PUBLIC_API_URL;
+  const token = localStorage.getItem('token');
+
+  const res = await fetch(`${baseUrl}purchase/purchase-orders.php?type=local&page=${page}&limit=${limit}`, {
+    method: 'GET',
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  const json = await res.json();
+
+  if (json.status_code !== 200) {
+    throw new Error(json.status_message || 'Failed to fetch purchase local orders');
+  }
+
+  return {
+    data: json.data?.data || [],
+    pagination: json.data?.pagination || {},
+  };
 }

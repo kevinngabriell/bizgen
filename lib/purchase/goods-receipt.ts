@@ -4,29 +4,34 @@ export interface GetPurchaseGoodsReceiptNumber {
 
 export interface CreateGoodsReceiptItem {
   item_id: string;
-  description: string;
-  qty: string;
+  qty_received: string;
+  unit_cost: string;
   uom_id: string;
-  package_size: string;
-  unit_price: string;
-  total: string;
-  vat_percent: string;
-  vat_amount: string;
-  grand_total: string;
-  remarks: string;
+  packaging_size: string;
+  tax_amount: string;
+  notes: string;
 }
 
 export interface CreateGoodsReceiptData {
-  gr_number: string;
+  receipt_number: string;
+  receipt_date: string;
+  purchase_id_local: string;
+  purchase_id_import: string;
   supplier_id: string;
-  po_number: string;
-  receiving_date: string;
-  address: string;
-  ship_date: string;
+  warehouse_id: string;
+  send_date: string;
   ship_via_id: string;
-  notes: string;
-  status: 'draft' | 'posted';
+  send_address: string;
+  remarks: string;
+  total_cost_idr: string;
   items: CreateGoodsReceiptItem[];
+}
+
+export interface GetGoodsReceiptData {
+  receipt_id: string;
+  receipt_number: string;
+  receipt_date: string;
+  created_at: string;
 }
 
 export async function generatePurchaseGoodsReceiptNumber(): Promise<GetPurchaseGoodsReceiptNumber> {
@@ -51,7 +56,7 @@ export async function createGoodsReceipt(input: CreateGoodsReceiptData): Promise
   const baseUrl = process.env.NEXT_PUBLIC_API_URL;
   const token = localStorage.getItem('token');
 
-  const res = await fetch(`${baseUrl}purchase/goods-receipt.php`, {
+  const res = await fetch(`${baseUrl}purchase/receiving.php`, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${token}`,
@@ -67,4 +72,27 @@ export async function createGoodsReceipt(input: CreateGoodsReceiptData): Promise
   }
 
   return json;
+}
+
+export async function getGoodsReceipt(page: number = 1, limit: number = 10, search: string = ''): Promise<{ data: GetGoodsReceiptData[]; pagination: any }> {
+  const baseUrl = process.env.NEXT_PUBLIC_API_URL;
+  const token = localStorage.getItem('token');
+
+  const res = await fetch(`${baseUrl}purchase/receiving.php?page=${page}&limit=${limit}&params=${search}`, {
+    method: 'GET',
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  const json = await res.json();
+
+  if (json.status_code !== 200) {
+    throw new Error(json.status_message || 'Failed to fetch goods receipt');
+  }
+
+  return {
+    data: json.data?.data || [],
+    pagination: json.data?.pagination || {},
+  };
 }

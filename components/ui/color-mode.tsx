@@ -11,11 +11,11 @@ export interface ColorModeProviderProps extends ThemeProviderProps {}
 
 export function ColorModeProvider(props: ColorModeProviderProps) {
   return (
-    <ThemeProvider attribute="class" disableTransitionOnChange {...props} />
+    <ThemeProvider attribute="class" defaultTheme="light" forcedTheme="light" disableTransitionOnChange {...props} />
   )
 }
 
-export type ColorMode = "light"
+export type ColorMode = "light" | "dark"
 
 export interface UseColorModeReturn {
   colorMode: ColorMode
@@ -24,25 +24,26 @@ export interface UseColorModeReturn {
 }
 
 export function useColorMode(): UseColorModeReturn {
-  const colorMode: ColorMode = "light"
-  const setColorMode = () => {}
-  const toggleColorMode = () => {}
-
+  const { resolvedTheme, setTheme, forcedTheme } = useTheme()
+  const colorMode = forcedTheme || resolvedTheme
+  const toggleColorMode = () => {
+    setTheme(resolvedTheme === "dark" ? "light" : "dark")
+  }
   return {
-    colorMode,
-    setColorMode,
+    colorMode: colorMode as ColorMode,
+    setColorMode: setTheme,
     toggleColorMode,
   }
 }
 
 export function useColorModeValue<T>(light: T, dark: T) {
   const { colorMode } = useColorMode()
-  return light
+  return colorMode === "dark" ? dark : light
 }
 
 export function ColorModeIcon() {
   const { colorMode } = useColorMode()
-  return <LuSun />
+  return colorMode === "dark" ? <LuMoon /> : <LuSun />
 }
 
 interface ColorModeButtonProps extends Omit<IconButtonProps, "aria-label"> {}

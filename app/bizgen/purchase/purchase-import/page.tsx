@@ -8,19 +8,15 @@ import { checkAuthOrRedirect, DecodedAuthToken, getAuthInfo } from '@/lib/auth/a
 import { getLang } from '@/lib/i18n';
 import { getCompanyProfile, GetCompanyProfile } from '@/lib/account/company';
 import { getAllCurrency, GetCurrencyData } from '@/lib/master/currency';
-import { getAllOrigin, GetOriginData } from '@/lib/master/origin';
+import { getAllItem, GetItemData } from '@/lib/master/item';
+import { getAllPort, GetPortData } from '@/lib/master/port';
 import { getAllPaymentMethod, GetPaymentMethodData } from '@/lib/master/payment-method';
 import { getAllShipmentPeriod, GetShipmentPeriodData } from '@/lib/master/shipment-period';
 import { getAllTerm, GetTermData } from '@/lib/master/term';
 import { getAllUOM, UOMData } from '@/lib/master/uom';
 import { GetSupplierData } from '@/lib/master/supplier';
 import { createPurchaseImport, generatePurchaseImportNumber } from '@/lib/purchase/import';
-import {
-  Box, Button, Card, Combobox, createListCollection,
-  Field, Flex, Heading, Icon, IconButton, Input, Portal,
-  Select, Separator, SimpleGrid, Stack, Text, Textarea,
-  useFilter, useListCollection,
-} from '@chakra-ui/react';
+import { Box, Button, Card, Combobox, createListCollection, Field, Flex, Heading, Icon, IconButton, Input, Portal, Select, Separator, SimpleGrid, Stack, Text, Textarea, useFilter, useListCollection } from '@chakra-ui/react';
 import { Suspense, useEffect, useRef, useState } from 'react';
 import { FaTrash } from 'react-icons/fa';
 import { FiFileText, FiUpload, FiX } from 'react-icons/fi';
@@ -29,6 +25,7 @@ const BIZGEN_COLOR = '#E77A1F';
 
 type ImportItem = {
   id: string;
+  itemId: string;
   description: string;
   qty: string;
   uomId: string;
@@ -41,7 +38,7 @@ type ImportItem = {
 function newItem(): ImportItem {
   return {
     id: crypto.randomUUID(),
-    description: '', qty: '', uomId: '', packageSize: '',
+    itemId: '', description: '', qty: '', uomId: '', packageSize: '',
     unitPrice: '', total: '0', remarks: '',
   };
 }
@@ -78,7 +75,7 @@ function PurchaseImportContent() {
   // Master data
   const [currencyOptions, setCurrencyOptions] = useState<GetCurrencyData[]>([]);
   const [uomOptions, setUomOptions] = useState<UOMData[]>([]);
-  const [originOptions, setOriginOptions] = useState<GetOriginData[]>([]);
+  const [portOptions, setPortOptions] = useState<GetPortData[]>([]);
   const [termOptions, setTermOptions] = useState<GetTermData[]>([]);
   const [shipmentPeriodOptions, setShipmentPeriodOptions] = useState<GetShipmentPeriodData[]>([]);
 
@@ -93,8 +90,8 @@ function PurchaseImportContent() {
     items: uomOptions.map((u) => ({ label: u.uom_name, value: u.uom_id })),
   });
 
-  const originCollection = createListCollection({
-    items: originOptions.map((o) => ({ label: o.origin_name, value: o.origin_id })),
+  const portCollection = createListCollection({
+    items: portOptions.map((p) => ({ label: `${p.port_name} — ${p.origin_name}`, value: p.port_id })),
   });
 
   const termCollection = createListCollection({
@@ -108,9 +105,18 @@ function PurchaseImportContent() {
     })),
   });
 
+  // Item master — searchable combobox
+  const [itemMasterAll, setItemMasterAll] = useState<GetItemData[]>([]);
+  const { contains } = useFilter({ sensitivity: 'base' });
+  const { collection: itemCollection, set: setItemCollection } =
+    useListCollection<GetItemData>({
+      initialItems: [],
+      itemToString: (i) => `${i.item_code} — ${i.item_name}`,
+      itemToValue: (i) => i.item_id,
+    });
+
   // Payment method — searchable combobox
   const [paymentMasterAll, setPaymentMasterAll] = useState<GetPaymentMethodData[]>([]);
-  const { contains } = useFilter({ sensitivity: 'base' });
   const { collection: paymentCollection, set: setPaymentCollection } =
     useListCollection<GetPaymentMethodData>({
       initialItems: [],
@@ -128,6 +134,7 @@ function PurchaseImportContent() {
   const [form, setForm] = useState({
     po_number: '',
     po_date: '',
+    exchange_rate: '',
     notes: '',
     shipping_marks: '',
     consignee_remarks: '',
@@ -135,6 +142,7 @@ function PurchaseImportContent() {
 
   const [currencySelected, setCurrencySelected] = useState<string>();
   const [originSelected, setOriginSelected] = useState<string>();
+  const [destinationSelected, setDestinationSelected] = useState<string>();
   const [termSelected, setTermSelected] = useState<string>();
   const [shipmentPeriodSelected, setShipmentPeriodSelected] = useState<string>();
 
@@ -160,27 +168,32 @@ function PurchaseImportContent() {
         setAuth(info);
         setLang(info?.language === 'id' ? 'id' : 'en');
 
-        const [numberRes, currencyRes, uomRes, originRes, termRes, shipPeriodRes, paymentRes] =
+        const [numberRes, currencyRes, uomRes, portRes, termRes, shipPeriodRes, paymentRes, itemRes] =
           await Promise.all([
             generatePurchaseImportNumber(),
             getAllCurrency(1, 1000),
             getAllUOM(1, 1000),
-            getAllOrigin(1, 1000),
+            getAllPort(1, 1000),
             getAllTerm(1, 1000),
             getAllShipmentPeriod(1, 1000),
             getAllPaymentMethod(1, 1000),
+            getAllItem(1, 1000),
           ]);
 
         setForm((prev) => ({ ...prev, po_number: numberRes.number }));
         setCurrencyOptions(currencyRes?.data ?? []);
         setUomOptions(uomRes?.data ?? []);
-        setOriginOptions(originRes?.data ?? []);
+        setPortOptions(portRes?.data ?? []);
         setTermOptions(termRes?.data ?? []);
         setShipmentPeriodOptions(shipPeriodRes?.data ?? []);
 
         const paymentData = paymentRes?.data ?? [];
         setPaymentMasterAll(paymentData);
         setPaymentCollection(paymentData);
+
+        const itemData = itemRes?.data ?? [];
+        setItemMasterAll(itemData);
+        setItemCollection(itemData);
 
         // Company profile — non-blocking
         try {
@@ -205,6 +218,17 @@ function PurchaseImportContent() {
       prev.map((item) => {
         if (item.id !== id) return item;
         return calcTotal({ ...item, [field]: value });
+      })
+    );
+  };
+
+  const handleItemSelect = (id: string, itemId: string) => {
+    const found = itemMasterAll.find((i) => i.item_id === itemId);
+    if (!found) return;
+    setItems((prev) =>
+      prev.map((item) => {
+        if (item.id !== id) return item;
+        return calcTotal({ ...item, itemId: found.item_id, description: found.item_name, uomId: found.default_uom ?? '' });
       })
     );
   };
@@ -239,10 +263,11 @@ function PurchaseImportContent() {
 
   const resetForm = async () => {
     const res = await generatePurchaseImportNumber();
-    setForm({ po_number: res.number, po_date: '', notes: '', shipping_marks: '', consignee_remarks: '' });
+    setForm({ po_number: res.number, po_date: '', exchange_rate: '', notes: '', shipping_marks: '', consignee_remarks: '' });
     setSelectedSupplier(null);
     setCurrencySelected(undefined);
     setOriginSelected(undefined);
+    setDestinationSelected(undefined);
     setTermSelected(undefined);
     setShipmentPeriodSelected(undefined);
     setPaymentSelected('');
@@ -256,34 +281,42 @@ function PurchaseImportContent() {
       if (!form.po_number) throw new Error(tr.error_po_number);
       if (!form.po_date) throw new Error(tr.error_po_date);
       if (!selectedSupplier?.supplier_id) throw new Error(tr.error_supplier);
-      if (!items.some((i) => i.description.trim())) throw new Error(tr.error_items);
+      if (!shipmentPeriodSelected) throw new Error(tr.error_shipment_period);
+      if (!termSelected) throw new Error(tr.error_term);
+      if (!paymentSelectedId) throw new Error(tr.error_payment_method);
+      if (!originSelected) throw new Error(tr.error_origin);
+      if (!destinationSelected) throw new Error(tr.error_destination);
+      if (!currencySelected) throw new Error(tr.error_currency);
+      if (!form.exchange_rate || Number(form.exchange_rate) <= 0) throw new Error(tr.error_exchange_rate);
+      if (items.length === 0) throw new Error(tr.error_items);
+      if (items.some((i) => !i.itemId)) throw new Error(tr.error_item_id);
+      if (items.some((i) => Number(i.qty) <= 0)) throw new Error(tr.error_item_qty);
+      if (items.some((i) => Number(i.unitPrice) <= 0)) throw new Error(tr.error_item_price);
 
       setLoading(true);
 
       await createPurchaseImport({
+        purchase_type: 'import',
         po_number: form.po_number,
         po_date: form.po_date,
         supplier_id: selectedSupplier.supplier_id,
-        shipment_period_id: shipmentPeriodSelected ?? '',
-        term_id: termSelected ?? '',
+        shipment_period_id: shipmentPeriodSelected,
+        term_id: termSelected,
         payment_method_id: paymentSelectedId,
-        origin_id: originSelected ?? '',
-        currency_id: currencySelected ?? '',
+        origin_id: originSelected,
+        destination_id: destinationSelected,
+        currency_id: currencySelected,
+        exchange_rate_to_idr: form.exchange_rate,
         notes: form.notes,
-        should_mention: companyProfile?.company_name ?? '',
-        shipping_marks: form.shipping_marks,
-        remarks: form.consignee_remarks,
-        status: mode,
         items: items.map(({ id: _id, ...rest }) => ({
+          item_id: rest.itemId,
           description: rest.description,
           qty: rest.qty,
           uom_id: rest.uomId,
-          package_size: rest.packageSize,
+          packaging_size: rest.packageSize,
           unit_price: rest.unitPrice,
-          total: rest.total,
-          remarks: rest.remarks,
+          notes: rest.remarks,
         })),
-        documents: uploadedFiles.map((f) => f.name),
       });
 
       setIsSuccess(true);
@@ -380,8 +413,8 @@ function PurchaseImportContent() {
               </Field.Root>
 
               {/* Shipment Period */}
-              <Field.Root>
-                <Field.Label fontSize="sm">{tr.shipment_period}</Field.Label>
+              <Field.Root required>
+                <Field.Label fontSize="sm">{tr.shipment_period}<Field.RequiredIndicator /></Field.Label>
                 <Select.Root
                   collection={shipmentPeriodCollection}
                   value={shipmentPeriodSelected ? [shipmentPeriodSelected] : []}
@@ -407,8 +440,8 @@ function PurchaseImportContent() {
               </Field.Root>
 
               {/* Incoterm */}
-              <Field.Root>
-                <Field.Label fontSize="sm">{tr.term}</Field.Label>
+              <Field.Root required>
+                <Field.Label fontSize="sm">{tr.term}<Field.RequiredIndicator /></Field.Label>
                 <Select.Root
                   collection={termCollection}
                   value={termSelected ? [termSelected] : []}
@@ -434,8 +467,8 @@ function PurchaseImportContent() {
               </Field.Root>
 
               {/* Payment Method — searchable combobox */}
-              <Field.Root>
-                <Field.Label fontSize="sm">{tr.payment_method}</Field.Label>
+              <Field.Root required>
+                <Field.Label fontSize="sm">{tr.payment_method}<Field.RequiredIndicator /></Field.Label>
                 <Combobox.Root
                   collection={paymentCollection}
                   onValueChange={(d) => {
@@ -479,26 +512,53 @@ function PurchaseImportContent() {
                 </Combobox.Root>
               </Field.Root>
 
-              {/* Origin */}
-              <Field.Root>
-                <Field.Label fontSize="sm">{tr.origin}</Field.Label>
+              {/* Origin Port */}
+              <Field.Root required>
+                <Field.Label fontSize="sm">{tr.origin_port}<Field.RequiredIndicator /></Field.Label>
                 <Select.Root
-                  collection={originCollection}
+                  collection={portCollection}
                   value={originSelected ? [originSelected] : []}
                   onValueChange={(d) => setOriginSelected(d.value[0])}
                 >
                   <Select.HiddenSelect />
                   <Select.Control>
                     <Select.Trigger>
-                      <Select.ValueText placeholder={tr.origin_placeholder} />
+                      <Select.ValueText placeholder={tr.origin_port_placeholder} />
                     </Select.Trigger>
                     <Select.IndicatorGroup><Select.Indicator /></Select.IndicatorGroup>
                   </Select.Control>
                   <Portal>
                     <Select.Positioner>
                       <Select.Content>
-                        {originCollection.items.map((o) => (
-                          <Select.Item item={o} key={o.value}>{o.label}<Select.ItemIndicator /></Select.Item>
+                        {portCollection.items.map((p) => (
+                          <Select.Item item={p} key={p.value}>{p.label}<Select.ItemIndicator /></Select.Item>
+                        ))}
+                      </Select.Content>
+                    </Select.Positioner>
+                  </Portal>
+                </Select.Root>
+              </Field.Root>
+
+              {/* Destination Port */}
+              <Field.Root required>
+                <Field.Label fontSize="sm">{tr.destination_port}<Field.RequiredIndicator /></Field.Label>
+                <Select.Root
+                  collection={portCollection}
+                  value={destinationSelected ? [destinationSelected] : []}
+                  onValueChange={(d) => setDestinationSelected(d.value[0])}
+                >
+                  <Select.HiddenSelect />
+                  <Select.Control>
+                    <Select.Trigger>
+                      <Select.ValueText placeholder={tr.destination_port_placeholder} />
+                    </Select.Trigger>
+                    <Select.IndicatorGroup><Select.Indicator /></Select.IndicatorGroup>
+                  </Select.Control>
+                  <Portal>
+                    <Select.Positioner>
+                      <Select.Content>
+                        {portCollection.items.map((p) => (
+                          <Select.Item item={p} key={p.value}>{p.label}<Select.ItemIndicator /></Select.Item>
                         ))}
                       </Select.Content>
                     </Select.Positioner>
@@ -507,8 +567,8 @@ function PurchaseImportContent() {
               </Field.Root>
 
               {/* Currency */}
-              <Field.Root>
-                <Field.Label fontSize="sm">{tr.currency}</Field.Label>
+              <Field.Root required>
+                <Field.Label fontSize="sm">{tr.currency}<Field.RequiredIndicator /></Field.Label>
                 <Select.Root
                   collection={currencyCollection}
                   value={currencySelected ? [currencySelected] : []}
@@ -531,6 +591,17 @@ function PurchaseImportContent() {
                     </Select.Positioner>
                   </Portal>
                 </Select.Root>
+              </Field.Root>
+
+              {/* Exchange Rate */}
+              <Field.Root required>
+                <Field.Label fontSize="sm">{tr.exchange_rate}<Field.RequiredIndicator /></Field.Label>
+                <Input
+                  type="number"
+                  value={form.exchange_rate}
+                  onChange={(e) => setForm({ ...form, exchange_rate: e.target.value })}
+                  placeholder={tr.exchange_rate_placeholder}
+                />
               </Field.Root>
             </SimpleGrid>
 
@@ -584,11 +655,42 @@ function PurchaseImportContent() {
                     <Text fontSize="sm" color="gray.400">{idx + 1}</Text>
                   </Box>
                   <Box w="220px" flexShrink={0}>
-                    <Input
-                      placeholder={tr.description_placeholder}
-                      value={item.description}
-                      onChange={(e) => handleItemChange(item.id, 'description', e.target.value)}
-                    />
+                    <Combobox.Root
+                      collection={itemCollection}
+                      onValueChange={(d) => handleItemSelect(item.id, d.value?.[0] ?? '')}
+                      onInputValueChange={(e) => {
+                        const input = e.inputValue ?? '';
+                        if (!input.trim()) { setItemCollection(itemMasterAll); return; }
+                        setItemCollection(itemMasterAll.filter((i) =>
+                          contains(i.item_name, input) || contains(i.item_code, input)
+                        ));
+                      }}
+                    >
+                      <Combobox.Control>
+                        <Combobox.Input
+                          placeholder={tr.description_placeholder}
+                          value={item.description}
+                          onChange={(e) => handleItemChange(item.id, 'description', e.target.value)}
+                          onFocus={() => setItemCollection(itemMasterAll)}
+                        />
+                        <Combobox.IndicatorGroup>
+                          <Combobox.Trigger />
+                        </Combobox.IndicatorGroup>
+                      </Combobox.Control>
+                      <Portal>
+                        <Combobox.Positioner>
+                          <Combobox.Content>
+                            <Combobox.Empty>No items found</Combobox.Empty>
+                            {itemCollection.items.map((i) => (
+                              <Combobox.Item item={i} key={i.item_id}>
+                                {i.item_code} — {i.item_name}
+                                <Combobox.ItemIndicator />
+                              </Combobox.Item>
+                            ))}
+                          </Combobox.Content>
+                        </Combobox.Positioner>
+                      </Portal>
+                    </Combobox.Root>
                   </Box>
                   <Box w="80px" flexShrink={0}>
                     <Input

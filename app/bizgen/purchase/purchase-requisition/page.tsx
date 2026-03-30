@@ -209,7 +209,18 @@ function PurchaseRequisitionContent() {
       if (!form.pr_date) throw new Error(tr.error_pr_date);
       if (!form.requester) throw new Error(tr.error_requester);
       if (!form.department) throw new Error(tr.error_department);
+      if (!currencySelected) throw new Error(tr.error_currency);
       if (!items.some((it) => it.item_id.trim())) throw new Error(tr.error_items);
+      const invalidItem = items.find(
+        (it) =>
+          !it.item_id.trim() ||
+          !it.uom_id.trim() ||
+          it.quantity === '' ||
+          parseFloat(it.quantity) < 0 ||
+          it.estimated_price === '' ||
+          parseFloat(it.estimated_price) < 0
+      );
+      if (invalidItem) throw new Error(tr.error_item_fields);
 
       setLoading(true);
 
@@ -218,8 +229,8 @@ function PurchaseRequisitionContent() {
         pr_date: form.pr_date,
         requester_name: form.requester,
         department: form.department,
-        priority: prioritySelected ?? "",
-        category: categorySelected ?? "",
+        priority: (prioritySelected ?? "normal") as "normal" | "urgent" | "critical",
+        category: (categorySelected ?? "other") as "operational_supplies" | "office_supplies" | "it_equipment" | "logistics_equipment" | "services" | "other",
         deadline_date: form.needed_by,
         supplier_id: selectedSupplier?.supplier_id ?? "",
         currency_id: currencySelected ?? "",
@@ -390,8 +401,8 @@ function PurchaseRequisitionContent() {
                   onClick={() => setSupplierModalOpen(true)}
                 />
               </Field.Root>
-              <Field.Root>
-                <Field.Label >{tr.currency}</Field.Label>
+              <Field.Root required>
+                <Field.Label >{tr.currency}<Field.RequiredIndicator /></Field.Label>
                 <Select.Root
                   collection={currencyCollection}
                   value={currencySelected ? [currencySelected] : []}
@@ -534,6 +545,7 @@ function PurchaseRequisitionContent() {
                     <Input
                       type="number"
                       placeholder="0"
+                      min={0}
                       value={item.quantity}
                       onChange={(e) => handleItemChange(item.id, "quantity", e.target.value)}
                     />

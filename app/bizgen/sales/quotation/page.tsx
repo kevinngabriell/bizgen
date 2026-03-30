@@ -184,11 +184,11 @@ function QuotationContent() {
       setLoading(true);
 
       setSelectedInquiry(rfq);
-      setLinkedInquiry(rfq.sales_rfq_number);
-      setLinkedInquiryID(rfq.sales_rfq_id);
+      setLinkedInquiry(rfq.rfq_no);
+      setLinkedInquiryID(rfq.inquiry_id);
 
       // fetch detail RFQ to get items
-      const detailRes = await getDetailSalesRfq(rfq.sales_rfq_id);
+      const detailRes = await getDetailSalesRfq(rfq.inquiry_id);
 
       const detailItems = detailRes?.items ?? [];
 

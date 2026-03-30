@@ -3,16 +3,11 @@
 import Loading from "@/components/loading";
 import SidebarWithHeader from "@/components/ui/SidebarWithHeader";
 import { checkAuthOrRedirect, DecodedAuthToken, getAuthInfo } from "@/lib/auth/auth";
-import { getLang } from "@/lib/i18n";
-import { getSalesJobOrder, GetSalesBookingData } from "@/lib/sales/booking-confirmation";
-import { getSalesCosting, GetSalesCostingData } from "@/lib/sales/costing";
-import { getSalesdeliveryOrder, GetSalesDeliveryItemData } from "@/lib/sales/delivery-order";
-import { getSalesDocument, GetSalesDocumentItemData } from "@/lib/sales/document";
-import { getSalesInvoice, GetSalesInvoiceItemData } from "@/lib/sales/invoice";
-import { getSalesProfit, GetSalesProfitItemData } from "@/lib/sales/profit";
-import { getSalesRfq, GetRfq } from "@/lib/sales/rfq";
-import { getSalesOrder, GetSalesOrderItemData } from "@/lib/sales/sales-order";
-import { getSalesQuotations, GetSalesQuotationsData } from "@/lib/sales/quotation";
+import { getGoodsReceipt, GetGoodsReceiptData } from "@/lib/purchase/goods-receipt";
+import { getPurchaseImport, GetPurchaseImportData } from "@/lib/purchase/import";
+import { getPurchaseInvoice, GetPurchaseInvoiceData } from "@/lib/purchase/invoice";
+import { getPurchaseLocal, GetPurchaseLocalData } from "@/lib/purchase/local";
+import { getPurchaseRequisition, GetPurchaseRequisitionData } from "@/lib/purchase/requisition";
 import {
   Badge,
   Box,
@@ -30,55 +25,26 @@ import {
   Text,
 } from "@chakra-ui/react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useState } from "react";
 import { FiSearch, FiX } from "react-icons/fi";
 import { LuChevronLeft, LuChevronRight } from "react-icons/lu";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type ModuleType =
-  | "inquiry"
   | "quotation"
-  | "booking"
-  | "shipment"
-  | "costing"
-  | "sales_order"
-  | "delivery"
-  | "profit"
+  | "requisition"
+  | "local"
+  | "import"
+  | "goods_receipt"
   | "invoice";
 
 type AnyRecord =
-  | GetRfq
-  | GetSalesQuotationsData
-  | GetSalesBookingData
-  | GetSalesDocumentItemData
-  | GetSalesCostingData
-  | GetSalesOrderItemData
-  | GetSalesDeliveryItemData
-  | GetSalesProfitItemData
-  | GetSalesInvoiceItemData;
-
-// ─── Status badge helper ───────────────────────────────────────────────────────
-
-const STATUS_COLOR: Record<string, string> = {
-  draft: "gray",
-  submitted: "blue",
-  approved: "green",
-  rejected: "red",
-  quoted: "purple",
-  confirmed: "teal",
-  sent: "cyan",
-  cancelled: "red",
-};
-
-function StatusBadge({ status }: { status: string }) {
-  const color = STATUS_COLOR[status?.toLowerCase()] ?? "gray";
-  return (
-    <Badge color={color} variant="subtle" textTransform="capitalize">
-      {status}
-    </Badge>
-  );
-}
+  | GetPurchaseRequisitionData
+  | GetPurchaseLocalData
+  | GetPurchaseImportData
+  | GetGoodsReceiptData
+  | GetPurchaseInvoiceData;
 
 // ─── Column definitions per module ────────────────────────────────────────────
 
@@ -88,49 +54,31 @@ interface ColumnDef {
 }
 
 const COLUMNS: Record<ModuleType, ColumnDef[]> = {
-  inquiry: [
-    { label: "RFQ No",    render: (r: GetRfq) => <Text fontWeight="medium" fontSize="sm">{r.rfq_no}</Text> },
-    { label: "Customer",  render: (r: GetRfq) => <Text fontSize="sm">{r.customer_name}</Text> },
-    { label: "Mode",      render: (r: GetRfq) => <Badge variant="outline" fontSize="xs">{r.ship_via_name}</Badge> },
-    { label: "Route",     render: (r: GetRfq) => <Text fontSize="xs" color="gray.600">{r.origin_name} → {r.destination_name}</Text> },
-    { label: "Commodity", render: (r: GetRfq) => <Text fontSize="xs">{r.commodity_name}</Text> },
-    { label: "Status",    render: (r: GetRfq) => <StatusBadge status={r.status} /> },
-    { label: "Created",   render: (r: GetRfq) => <Text fontSize="xs" color="gray.500">{fmtDate(r.created_at)}</Text> },
+  quotation: [],
+  requisition: [
+    { label: "PR Number",  render: (r: GetPurchaseRequisitionData) => <Text fontWeight="medium" fontSize="sm">{r.pr_number}</Text> },
+    { label: "PR Date",    render: (r: GetPurchaseRequisitionData) => <Text fontSize="xs" color="gray.600">{fmtDate(r.pr_date)}</Text> },
+    { label: "Created",    render: (r: GetPurchaseRequisitionData) => <Text fontSize="xs" color="gray.500">{fmtDate(r.created_at)}</Text> },
   ],
-  quotation: [
-    { label: "Quotation No", render: (r: GetSalesQuotationsData) => <Text fontWeight="medium" fontSize="sm">{r.sales_quotation_number}</Text> },
-    { label: "Customer", render: (r: GetSalesQuotationsData) => <Text fontSize="sm">{r.customer_name}</Text> },
-    { label: "Currency", render: (r: GetSalesQuotationsData) => <Badge variant="outline" fontSize="xs">{r.currency_symbol}</Badge> },
-    { label: "Status", render: (r: GetSalesQuotationsData) => <StatusBadge status={r.quotation_status} /> },
-    { label: "Created", render: (r: GetSalesQuotationsData) => <Text fontSize="xs" color="gray.500">{fmtDate(r.created_at)}</Text> },
+  local: [
+    { label: "PO Number",  render: (r: GetPurchaseLocalData) => <Text fontWeight="medium" fontSize="sm">{r.po_number}</Text> },
+    { label: "PO Date",    render: (r: GetPurchaseLocalData) => <Text fontSize="xs" color="gray.600">{fmtDate(r.po_date)}</Text> },
+    { label: "Created",    render: (r: GetPurchaseLocalData) => <Text fontSize="xs" color="gray.500">{fmtDate(r.created_at)}</Text> },
   ],
-  booking: [
-    { label: "Job Order No", render: (r: GetSalesBookingData) => <Text fontWeight="medium" fontSize="sm">{r.job_order_no}</Text> },
-    { label: "Created", render: (r: GetSalesBookingData) => <Text fontSize="xs" color="gray.500">{fmtDate(r.created_at)}</Text> },
+  import: [
+    { label: "PO Number",  render: (r: GetPurchaseImportData) => <Text fontWeight="medium" fontSize="sm">{r.po_number}</Text> },
+    { label: "PO Date",    render: (r: GetPurchaseImportData) => <Text fontSize="xs" color="gray.600">{fmtDate(r.po_date)}</Text> },
+    { label: "Created",    render: (r: GetPurchaseImportData) => <Text fontSize="xs" color="gray.500">{fmtDate(r.created_at)}</Text> },
   ],
-  shipment: [
-    { label: "Shipment No", render: (r: GetSalesDocumentItemData) => <Text fontWeight="medium" fontSize="sm">{r.shipment_no}</Text> },
-    { label: "Created", render: (r: GetSalesDocumentItemData) => <Text fontSize="xs" color="gray.500">{fmtDate(r.created_at)}</Text> },
-  ],
-  costing: [
-    { label: "Costing No", render: (r: GetSalesCostingData) => <Text fontWeight="medium" fontSize="sm">{r.sales_costing_no}</Text> },
-    { label: "Created", render: (r: GetSalesCostingData) => <Text fontSize="xs" color="gray.500">{fmtDate(r.created_at)}</Text> },
-  ],
-  sales_order: [
-    { label: "Sales Order No", render: (r: GetSalesOrderItemData) => <Text fontWeight="medium" fontSize="sm">{r.sales_order_no}</Text> },
-    { label: "Created", render: (r: GetSalesOrderItemData) => <Text fontSize="xs" color="gray.500">{fmtDate(r.created_at)}</Text> },
-  ],
-  delivery: [
-    { label: "DO Number", render: (r: GetSalesDeliveryItemData) => <Text fontWeight="medium" fontSize="sm">{r.do_number}</Text> },
-    { label: "Created", render: (r: GetSalesDeliveryItemData) => <Text fontSize="xs" color="gray.500">{fmtDate(r.created_at)}</Text> },
-  ],
-  profit: [
-    { label: "Profit No", render: (r: GetSalesProfitItemData) => <Text fontWeight="medium" fontSize="sm">{r.sales_profit_no}</Text> },
-    { label: "Created", render: (r: GetSalesProfitItemData) => <Text fontSize="xs" color="gray.500">{fmtDate(r.created_at)}</Text> },
+  goods_receipt: [
+    { label: "Receipt No", render: (r: GetGoodsReceiptData) => <Text fontWeight="medium" fontSize="sm">{r.receipt_number}</Text> },
+    { label: "Receipt Date", render: (r: GetGoodsReceiptData) => <Text fontSize="xs" color="gray.600">{fmtDate(r.receipt_date)}</Text> },
+    { label: "Created",    render: (r: GetGoodsReceiptData) => <Text fontSize="xs" color="gray.500">{fmtDate(r.created_at)}</Text> },
   ],
   invoice: [
-    { label: "Invoice No", render: (r: GetSalesInvoiceItemData) => <Text fontWeight="medium" fontSize="sm">{r.invoice_number}</Text> },
-    { label: "Created", render: (r: GetSalesInvoiceItemData) => <Text fontSize="xs" color="gray.500">{fmtDate(r.created_at)}</Text> },
+    { label: "Invoice No", render: (r: GetPurchaseInvoiceData) => <Text fontWeight="medium" fontSize="sm">{r.invoice_number}</Text> },
+    { label: "Invoice Date", render: (r: GetPurchaseInvoiceData) => <Text fontSize="xs" color="gray.600">{fmtDate(r.invoice_date)}</Text> },
+    { label: "Created",    render: (r: GetPurchaseInvoiceData) => <Text fontSize="xs" color="gray.500">{fmtDate(r.created_at)}</Text> },
   ],
 };
 
@@ -138,29 +86,34 @@ const COLUMNS: Record<ModuleType, ColumnDef[]> = {
 
 function getRowId(type: ModuleType, row: AnyRecord): string {
   switch (type) {
-    case "inquiry":     return (row as GetRfq).inquiry_id;
-    case "quotation":   return (row as GetSalesQuotationsData).sales_quotation_id;
-    case "booking":     return (row as GetSalesBookingData).job_order_id;
-    case "shipment":    return (row as GetSalesDocumentItemData).shipment_id;
-    case "costing":     return (row as GetSalesCostingData).sales_costing_expense_id;
-    case "sales_order": return (row as GetSalesOrderItemData).sales_order_id;
-    case "delivery":    return (row as GetSalesDeliveryItemData).delivery_order_id;
-    case "profit":      return (row as GetSalesProfitItemData).profit_summary_id;
-    case "invoice":     return (row as GetSalesInvoiceItemData).invoice_id;
+    case "quotation":    return "";
+    case "requisition":  return (row as GetPurchaseRequisitionData).pr_id;
+    case "local":        return (row as GetPurchaseLocalData).purchase_id;
+    case "import":       return (row as GetPurchaseImportData).purchase_import_id;
+    case "goods_receipt":return (row as GetGoodsReceiptData).receipt_id;
+    case "invoice":      return (row as GetPurchaseInvoiceData).purchase_invoice_id;
   }
 }
 
 function getDetailRoute(type: ModuleType, id: string): string {
   switch (type) {
-    case "inquiry":     return `/bizgen/sales/inquiry?rfq_id=${id}`;
-    case "quotation":   return `/bizgen/sales/quotation?quotation_id=${id}`;
-    case "booking":     return `/bizgen/sales/booking-confirmation?booking_id=${id}`;
-    case "shipment":    return `/bizgen/sales/shipment-process?shipment_id=${id}`;
-    case "costing":     return `/bizgen/sales/costing-expense?shipment_id=${id}`;
-    case "sales_order": return `/bizgen/sales/sales-order?shipment_id=${id}`;
-    case "delivery":    return `/bizgen/sales/delivery-order?delivery_order_id=${id}`;
-    case "profit":      return `/bizgen/sales/profit-summary?profit_id=${id}`;
-    case "invoice":     return `/bizgen/sales/invoice?invoice_id=${id}`;
+    case "quotation":    return `/bizgen/purchase/request-quotation`;
+    case "requisition":  return `/bizgen/purchase/purchase-requisition?pr_id=${id}`;
+    case "local":        return `/bizgen/purchase/purchase-local?purchase_id=${id}`;
+    case "import":       return `/bizgen/purchase/purchase-import?purchase_import_id=${id}`;
+    case "goods_receipt":return `/bizgen/purchase/receiving-items?receipt_id=${id}`;
+    case "invoice":      return `/bizgen/purchase/purchase-invoice?invoice_id=${id}`;
+  }
+}
+
+function getCreateRoute(type: ModuleType): string {
+  switch (type) {
+    case "quotation":    return `/bizgen/purchase/request-quotation`;
+    case "requisition":  return `/bizgen/purchase/purchase-requisition`;
+    case "local":        return `/bizgen/purchase/purchase-local`;
+    case "import":       return `/bizgen/purchase/purchase-import`;
+    case "goods_receipt":return `/bizgen/purchase/receiving-items`;
+    case "invoice":      return `/bizgen/purchase/purchase-invoice`;
   }
 }
 
@@ -173,30 +126,24 @@ async function fetchModule(
 ): Promise<{ data: AnyRecord[]; pagination: any }> {
   const limit = 15;
   switch (type) {
-    case "inquiry":     return getSalesRfq(page, limit, search);
-    case "quotation":   return getSalesQuotations(page, limit, search);
-    case "booking":     return getSalesJobOrder(page, limit, search);
-    case "shipment":    return getSalesDocument(page, limit, search);
-    case "costing":     return getSalesCosting(page, limit, search);
-    case "sales_order": return getSalesOrder(page, limit, search);
-    case "delivery":    return getSalesdeliveryOrder(page, limit, search);
-    case "profit":      return getSalesProfit(page, limit, search);
-    case "invoice":     return getSalesInvoice(page, limit, search);
+    case "quotation":    return { data: [], pagination: {} };
+    case "requisition":  return getPurchaseRequisition(page, limit, search);
+    case "local":        return getPurchaseLocal(page, limit);
+    case "import":       return getPurchaseImport(page, limit);
+    case "goods_receipt":return getGoodsReceipt(page, limit, search);
+    case "invoice":      return getPurchaseInvoice(page, limit);
   }
 }
 
 // ─── Module labels ─────────────────────────────────────────────────────────────
 
 const MODULE_LABEL: Record<ModuleType, string> = {
-  inquiry:     "Inquiry / RFQ",
-  quotation:   "Quotation",
-  booking:     "Booking Confirmation / Job Order",
-  shipment:    "Shipment Processing & Documents",
-  costing:     "Costing & Expense",
-  sales_order: "Sales Order",
-  delivery:    "Delivery Order",
-  profit:      "Profit Summary",
-  invoice:     "Invoice",
+  quotation:    "Request for Quotation",
+  requisition:  "Purchase Requisition",
+  local:        "Purchase Order — Local",
+  import:       "Purchase Order — Import",
+  goods_receipt:"Receiving Items / GR",
+  invoice:      "Purchase Invoice",
 };
 
 // ─── Date formatter ────────────────────────────────────────────────────────────
@@ -215,8 +162,8 @@ function fmtDate(dateStr: string) {
 function SeeAllContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const rawType = searchParams.get("type") ?? "inquiry";
-  const type: ModuleType = (rawType as ModuleType) in MODULE_LABEL ? (rawType as ModuleType) : "inquiry";
+  const rawType = searchParams.get("type") ?? "requisition";
+  const type: ModuleType = (rawType as ModuleType) in MODULE_LABEL ? (rawType as ModuleType) : "requisition";
 
   const [data, setData] = useState<AnyRecord[]>([]);
   const [pagination, setPagination] = useState<any>({});
@@ -228,44 +175,29 @@ function SeeAllContent() {
   const totalCount: number = pagination?.total_items ?? pagination?.total ?? 0;
   const totalPages: number = pagination?.total_pages ?? (Math.ceil(totalCount / 15) || 1);
 
-  // Reset state and refetch whenever type changes
+  const load = useCallback(async (p: number, search: string) => {
+    setFetching(true);
+    try {
+      const res = await fetchModule(type, p, search);
+      setData(res.data);
+      setPagination(res.pagination);
+    } catch {
+      setData([]);
+      setPagination({});
+    } finally {
+      setFetching(false);
+    }
+  }, [type]);
+
   useEffect(() => {
     setPage(1);
     setSearchInput("");
     setAppliedSearch("");
-    setData([]);
-    setPagination({});
-
-    let cancelled = false;
-    setFetching(true);
-    fetchModule(type, 1, "")
-      .then((res) => {
-        if (cancelled) return;
-        setData(res.data);
-        setPagination(res.pagination);
-      })
-      .catch(() => { if (!cancelled) { setData([]); setPagination({}); } })
-      .finally(() => { if (!cancelled) setFetching(false); });
-
-    return () => { cancelled = true; };
   }, [type]);
 
-  // Refetch when page or appliedSearch changes (not on initial mount reset)
   useEffect(() => {
-    if (page === 1 && appliedSearch === "") return; // initial state, type effect handles it
-    let cancelled = false;
-    setFetching(true);
-    fetchModule(type, page, appliedSearch)
-      .then((res) => {
-        if (cancelled) return;
-        setData(res.data);
-        setPagination(res.pagination);
-      })
-      .catch(() => { if (!cancelled) { setData([]); setPagination({}); } })
-      .finally(() => { if (!cancelled) setFetching(false); });
-
-    return () => { cancelled = true; };
-  }, [page, appliedSearch]);
+    load(page, appliedSearch);
+  }, [page, appliedSearch, load]);
 
   const handleSearch = () => {
     setPage(1);
@@ -286,7 +218,7 @@ function SeeAllContent() {
       <Breadcrumb.Root mb={3} fontSize="sm">
         <Breadcrumb.List>
           <Breadcrumb.Item>
-            <Breadcrumb.Link href="/bizgen/sales" color="gray.500">Sales</Breadcrumb.Link>
+            <Breadcrumb.Link href="/bizgen/purchase" color="gray.500">Purchase</Breadcrumb.Link>
           </Breadcrumb.Item>
           <Breadcrumb.Separator />
           <Breadcrumb.Item>
@@ -308,20 +240,7 @@ function SeeAllContent() {
           bg="#E77A1F"
           color="white"
           cursor="pointer"
-          onClick={() => {
-            const routes: Record<ModuleType, string> = {
-              inquiry:     "/bizgen/sales/inquiry",
-              quotation:   "/bizgen/sales/quotation",
-              booking:     "/bizgen/sales/booking-confirmation",
-              shipment:    "/bizgen/sales/shipment-process",
-              costing:     "/bizgen/sales/costing-expense",
-              sales_order: "/bizgen/sales/sales-order",
-              delivery:    "/bizgen/sales/delivery-order",
-              profit:      "/bizgen/sales/profit-summary",
-              invoice:     "/bizgen/sales/invoice",
-            };
-            router.push(routes[type]);
-          }}
+          onClick={() => router.push(getCreateRoute(type))}
         >
           + Create New
         </Button>
@@ -335,7 +254,7 @@ function SeeAllContent() {
               <Text fontSize="xs" fontWeight="semibold" color="gray.500" mb={1}>Search</Text>
               <Flex gap={2}>
                 <Input
-                  placeholder="Search by number, customer, or reference..."
+                  placeholder="Search by number, supplier, or reference..."
                   value={searchInput}
                   onChange={(e) => setSearchInput(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && handleSearch()}
@@ -406,7 +325,7 @@ function SeeAllContent() {
                   const rowNum = (page - 1) * 15 + idx + 1;
                   return (
                     <Table.Row
-                      key={id}
+                      key={id || idx}
                       _hover={{ bg: "orange.50", cursor: "pointer" }}
                       onClick={() => router.push(getDetailRoute(type, id))}
                       transition="background 0.15s"
@@ -465,10 +384,9 @@ function SeeAllContent() {
 
 // ─── Page wrapper ──────────────────────────────────────────────────────────────
 
-export default function SeeAllSales() {
+export default function SeeAllPurchase() {
   const [auth, setAuth] = useState<DecodedAuthToken | null>(null);
   const [loading, setLoading] = useState(true);
-  const [lang, setLang] = useState<"en" | "id">("en");
 
   useEffect(() => {
     const init = async () => {
@@ -476,7 +394,6 @@ export default function SeeAllSales() {
       if (!valid) return;
       const info = getAuthInfo();
       setAuth(info);
-      setLang(info?.language === "id" ? "id" : "en");
       setLoading(false);
     };
     init();

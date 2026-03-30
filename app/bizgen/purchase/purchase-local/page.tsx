@@ -8,17 +8,13 @@ import { checkAuthOrRedirect, DecodedAuthToken, getAuthInfo } from '@/lib/auth/a
 import { getLang } from '@/lib/i18n';
 import { getCompanyProfile, GetCompanyProfile } from '@/lib/account/company';
 import { getAllCurrency, GetCurrencyData } from '@/lib/master/currency';
+import { getAllItem, GetItemData } from '@/lib/master/item';
 import { getAllPaymentMethod, GetPaymentMethodData } from '@/lib/master/payment-method';
 import { getAllTax, GetTaxData } from '@/lib/master/tax';
 import { getAllUOM, UOMData } from '@/lib/master/uom';
 import { GetSupplierData } from '@/lib/master/supplier';
 import { createPurchaseLocal, generatePurchaseLocalNumber } from '@/lib/purchase/local';
-import {
-  Box, Button, Card, Combobox, createListCollection,
-  Field, Flex, Heading, Icon, IconButton, Input, Portal,
-  Select, Separator, SimpleGrid, Stack, Text, Textarea,
-  useFilter, useListCollection,
-} from '@chakra-ui/react';
+import { Box, Button, Card, Combobox, createListCollection, Field, Flex, Heading, Icon, IconButton, Input, Portal, Select, Separator, SimpleGrid, Stack, Text, Textarea, useFilter, useListCollection } from '@chakra-ui/react';
 import { Suspense, useEffect, useRef, useState } from 'react';
 import { FaTrash } from 'react-icons/fa';
 import { FiFileText, FiUpload, FiX } from 'react-icons/fi';
@@ -27,6 +23,7 @@ const BIZGEN_COLOR = '#E77A1F';
 
 type PurchaseItem = {
   id: string;
+  itemId: string;
   description: string;
   qty: string;
   uomId: string;
@@ -42,7 +39,7 @@ type PurchaseItem = {
 function newItem(): PurchaseItem {
   return {
     id: crypto.randomUUID(),
-    description: '', qty: '', uomId: '', packageSize: '',
+    itemId: '', description: '', qty: '', uomId: '', packageSize: '',
     unitPrice: '', total: '0', dpp: '0', ppn: '0', grandTotal: '0', remarks: '',
   };
 }
@@ -122,9 +119,18 @@ function PurchaseLocalContent() {
     })),
   });
 
+  // Item master — searchable combobox
+  const [itemMasterAll, setItemMasterAll] = useState<GetItemData[]>([]);
+  const { contains } = useFilter({ sensitivity: 'base' });
+  const { collection: itemCollection, set: setItemCollection } =
+    useListCollection<GetItemData>({
+      initialItems: [],
+      itemToString: (i) => `${i.item_code} — ${i.item_name}`,
+      itemToValue: (i) => i.item_id,
+    });
+
   // Payment method — searchable combobox
   const [paymentMasterAll, setPaymentMasterAll] = useState<GetPaymentMethodData[]>([]);
-  const { contains } = useFilter({ sensitivity: 'base' });
   const { collection: paymentCollection, set: setPaymentCollection } =
     useListCollection<GetPaymentMethodData>({
       initialItems: [],
@@ -145,6 +151,7 @@ function PurchaseLocalContent() {
     shipment_date: '',
     delivery_address: '',
     notes: '',
+    exchange_rate_idr: ''
   });
 
   const [currencySelected, setCurrencySelected] = useState<string>();
@@ -173,12 +180,13 @@ function PurchaseLocalContent() {
         setAuth(info);
         setLang(info?.language === 'id' ? 'id' : 'en');
 
-        const [numberRes, currencyRes, uomRes, taxRes, paymentRes] = await Promise.all([
+        const [numberRes, currencyRes, uomRes, taxRes, paymentRes, itemRes] = await Promise.all([
           generatePurchaseLocalNumber(),
           getAllCurrency(1, 1000),
           getAllUOM(1, 1000),
           getAllTax(1, 1000),
           getAllPaymentMethod(1, 1000),
+          getAllItem(1, 1000),
         ]);
 
         setForm((prev) => ({ ...prev, po_number: numberRes.number }));
@@ -189,6 +197,10 @@ function PurchaseLocalContent() {
         const paymentData = paymentRes?.data ?? [];
         setPaymentMasterAll(paymentData);
         setPaymentCollection(paymentData);
+
+        const itemData = itemRes?.data ?? [];
+        setItemMasterAll(itemData);
+        setItemCollection(itemData);
 
         // Company profile — non-blocking
         try {
@@ -214,6 +226,20 @@ function PurchaseLocalContent() {
         if (item.id !== id) return item;
         const updated = { ...item, [field]: value };
         return calcItem(updated, selectedTax);
+      })
+    );
+  };
+
+  const handleItemSelect = (id: string, itemId: string) => {
+    const found = itemMasterAll.find((i) => i.item_id === itemId);
+    if (!found) return;
+    setItems((prev) =>
+      prev.map((item) => {
+        if (item.id !== id) return item;
+        return calcItem(
+          { ...item, itemId: found.item_id, description: found.item_name, uomId: found.default_uom ?? '' },
+          selectedTax
+        );
       })
     );
   };
@@ -256,7 +282,7 @@ function PurchaseLocalContent() {
 
   const resetForm = async () => {
     const res = await generatePurchaseLocalNumber();
-    setForm({ po_number: res.number, po_date: '', shipment_date: '', delivery_address: '', notes: '' });
+    setForm({ po_number: res.number, po_date: '', shipment_date: '', delivery_address: '', exchange_rate_idr: '0', notes: '' });
     setSelectedSupplier(null);
     setCurrencySelected(undefined);
     setTaxSelected(undefined);
@@ -271,34 +297,33 @@ function PurchaseLocalContent() {
       if (!form.po_number) throw new Error(tr.error_po_number);
       if (!form.po_date) throw new Error(tr.error_po_date);
       if (!selectedSupplier?.supplier_id) throw new Error(tr.error_supplier);
-      if (!items.some((i) => i.description.trim())) throw new Error(tr.error_items);
+      if (!form.shipment_date) throw new Error(tr.error_delivery_date);
+      if (!paymentSelectedId) throw new Error(tr.error_payment);
+      if (items.length === 0) throw new Error(tr.error_items);
+      if (items.some((i) => !i.itemId)) throw new Error(tr.error_item_id);
+      if (items.some((i) => Number(i.qty) <= 0)) throw new Error(tr.error_item_qty);
+      if (items.some((i) => Number(i.unitPrice) <= 0)) throw new Error(tr.error_item_price);
 
       setLoading(true);
 
       await createPurchaseLocal({
+        purchase_type: 'local',
         po_number: form.po_number,
         po_date: form.po_date,
-        supplier_id: selectedSupplier.supplier_id,
         delivery_date: form.shipment_date,
+        supplier_id: selectedSupplier.supplier_id,
         payment_id: paymentSelectedId,
-        tax_id: taxSelected ?? '',
         currency_id: currencySelected ?? '',
-        delivery_address: form.delivery_address,
+        tax_id: taxSelected ?? '',
+        exchange_rate_idr: form.exchange_rate_idr,
         notes: form.notes,
-        status: mode,
         items: items.map(({ id: _id, ...rest }) => ({
-          description: rest.description,
+          item_id: rest.itemId,
           qty: rest.qty,
-          uom_id: rest.uomId,
-          package_size: rest.packageSize,
           unit_price: rest.unitPrice,
-          total: rest.total,
-          dpp: rest.dpp,
-          ppn: rest.ppn,
-          grand_total: rest.grandTotal,
+          uom_id: rest.uomId,
           remarks: rest.remarks,
         })),
-        documents: uploadedFiles.map((f) => f.name),
       });
 
       setIsSuccess(true);
@@ -370,8 +395,8 @@ function PurchaseLocalContent() {
                   onChange={(e) => setForm({ ...form, po_date: e.target.value })}
                 />
               </Field.Root>
-              <Field.Root>
-                <Field.Label fontSize="sm">{tr.shipment_date}</Field.Label>
+              <Field.Root required>
+                <Field.Label fontSize="sm">{tr.shipment_date}<Field.RequiredIndicator /></Field.Label>
                 <Input
                   type="date"
                   value={form.shipment_date}
@@ -428,9 +453,20 @@ function PurchaseLocalContent() {
                 </Select.Root>
               </Field.Root>
 
-              {/* Payment Method — searchable combobox */}
+              {/* Exchange Rate IDR */}
               <Field.Root>
-                <Field.Label fontSize="sm">{tr.payment_method}</Field.Label>
+                <Field.Label fontSize="sm">{tr.exchange_rate_idr}</Field.Label>
+                <Input
+                  type="number"
+                  value={form.exchange_rate_idr}
+                  onChange={(e) => setForm({ ...form, exchange_rate_idr: e.target.value })}
+                  placeholder="0"
+                />
+              </Field.Root>
+
+              {/* Payment Method — searchable combobox */}
+              <Field.Root required>
+                <Field.Label fontSize="sm">{tr.payment_method}<Field.RequiredIndicator /></Field.Label>
                 <Combobox.Root
                   collection={paymentCollection}
                   onValueChange={(d) => {
@@ -555,11 +591,42 @@ function PurchaseLocalContent() {
                     <Text fontSize="sm" color="gray.400">{idx + 1}</Text>
                   </Box>
                   <Box w="220px" flexShrink={0}>
-                    <Input
-                      placeholder={tr.description_placeholder}
-                      value={item.description}
-                      onChange={(e) => handleItemChange(item.id, 'description', e.target.value)}
-                    />
+                    <Combobox.Root
+                      collection={itemCollection}
+                      onValueChange={(d) => handleItemSelect(item.id, d.value?.[0] ?? '')}
+                      onInputValueChange={(e) => {
+                        const input = e.inputValue ?? '';
+                        if (!input.trim()) { setItemCollection(itemMasterAll); return; }
+                        setItemCollection(itemMasterAll.filter((i) =>
+                          contains(i.item_name, input) || contains(i.item_code, input)
+                        ));
+                      }}
+                    >
+                      <Combobox.Control>
+                        <Combobox.Input
+                          placeholder={tr.description_placeholder}
+                          value={item.description}
+                          onChange={(e) => handleItemChange(item.id, 'description', e.target.value)}
+                          onFocus={() => setItemCollection(itemMasterAll)}
+                        />
+                        <Combobox.IndicatorGroup>
+                          <Combobox.Trigger />
+                        </Combobox.IndicatorGroup>
+                      </Combobox.Control>
+                      <Portal>
+                        <Combobox.Positioner>
+                          <Combobox.Content>
+                            <Combobox.Empty>No items found</Combobox.Empty>
+                            {itemCollection.items.map((i) => (
+                              <Combobox.Item item={i} key={i.item_id}>
+                                {i.item_code} — {i.item_name}
+                                <Combobox.ItemIndicator />
+                              </Combobox.Item>
+                            ))}
+                          </Combobox.Content>
+                        </Combobox.Positioner>
+                      </Portal>
+                    </Combobox.Root>
                   </Box>
                   <Box w="80px" flexShrink={0}>
                     <Input

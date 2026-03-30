@@ -99,13 +99,13 @@ export default function InquiryLookup({
                   </Table.Header>
                   <Table.Body>
                     {rfq.map((item) => (
-                      <Table.Row key={item.sales_rfq_id} cursor="pointer" _hover={{ bg: "gray.50" }}
+                      <Table.Row key={item.inquiry_id} cursor="pointer" _hover={{ bg: "gray.50" }}
                         onClick={() => {
                           onChoose(item);
                           onClose();
                         }}
                       >
-                        <Table.Cell textAlign="center">{item.sales_rfq_number}</Table.Cell>
+                        <Table.Cell textAlign="center">{item.rfq_no}</Table.Cell>
                         <Table.Cell textAlign="center">{item.customer_name}</Table.Cell>
                         <Table.Cell textAlign="center">{item.created_at ? new Date(item.created_at).toLocaleString(
                             lang === "id" ? "id-ID" : "en-US",

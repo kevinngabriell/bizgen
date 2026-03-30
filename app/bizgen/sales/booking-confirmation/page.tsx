@@ -193,8 +193,8 @@ function BookingConfirmationContent() {
     try {
       setLoading(true);
       setSelectedInquiry(rfq);
-      setLinkedInquiry(rfq.sales_rfq_number);
-      setLinkedInquiryID(rfq.sales_rfq_id);
+      setLinkedInquiry(rfq.rfq_no);
+      setLinkedInquiryID(rfq.inquiry_id);
     } catch (error) {
       console.error("Failed to bind inquiry items", error);
     } finally {

@@ -1,6 +1,7 @@
 'use client';
 
 import Loading from '@/components/loading';
+import PurchaseOrderLookup, { PurchaseOrderEntry } from '@/components/lookup/PurchaseOrderLookup';
 import SupplierLookup from '@/components/lookup/SupplierLookup';
 import { AlertMessage } from '@/components/ui/alert';
 import SidebarWithHeader from '@/components/ui/SidebarWithHeader';
@@ -114,6 +115,12 @@ function PurchaseInvoiceContent() {
   const [supplierModalOpen, setSupplierModalOpen] = useState(false);
   const [selectedSupplier, setSelectedSupplier] = useState<GetSupplierData | null>(null);
 
+  // Purchase Order lookup
+  const [poLookupOpen, setPoLookupOpen] = useState(false);
+  const [selectedPO, setSelectedPO] = useState<PurchaseOrderEntry | null>(null);
+  const purchaseOrderLocalId = selectedPO?.purchase_type === 'local' ? selectedPO.purchase_id : '';
+  const purchaseOrderImportId = selectedPO?.purchase_type === 'import' ? selectedPO.purchase_import_id : '';
+
   // Selects
   const [currencySelected, setCurrencySelected] = useState<string>();
   const [termSelected, setTermSelected] = useState<string>();
@@ -217,10 +224,15 @@ function PurchaseInvoiceContent() {
     setSupplierModalOpen(false);
   };
 
+  const handleChoosePO = (entry: PurchaseOrderEntry) => {
+    setSelectedPO(entry);
+  };
+
   const resetForm = async () => {
     const res = await generatePurchaseInvoiceNumber();
     setForm({ invoice_number: res.number, po_number: '', invoice_date: '', ship_date: '', exchange_rate: '', notes: '' });
     setSelectedSupplier(null);
+    setSelectedPO(null);
     setCurrencySelected(undefined);
     setTermSelected(undefined);
     setItems([newItem()]);
@@ -231,33 +243,32 @@ function PurchaseInvoiceContent() {
       if (!form.invoice_number) throw new Error(tr.error_invoice_number);
       if (!selectedSupplier?.supplier_id) throw new Error(tr.error_supplier);
       if (!form.invoice_date) throw new Error(tr.error_invoice_date);
-      if (!items.some((i) => i.description.trim())) throw new Error(tr.error_items);
+      if (!purchaseOrderLocalId && !purchaseOrderImportId) throw new Error(tr.error_po);
+      if (items.length === 0) throw new Error(tr.error_items);
+      if (items.some((i) => !i.itemId)) throw new Error(tr.error_item_id);
+      if (items.some((i) => Number(i.qty) <= 0)) throw new Error(tr.error_item_qty);
+      if (items.some((i) => Number(i.unitPrice) <= 0)) throw new Error(tr.error_item_price);
 
       setLoading(true);
 
       await createPurchaseInvoice({
         invoice_number: form.invoice_number,
         supplier_id: selectedSupplier.supplier_id,
-        po_number: form.po_number,
         invoice_date: form.invoice_date,
-        ship_date: form.ship_date,
-        exchange_rate: form.exchange_rate,
+        purchase_order_local_id: purchaseOrderLocalId,
+        purchase_order_import_id: purchaseOrderImportId,
+        due_date: form.ship_date,
         term_id: termSelected ?? '',
         currency_id: currencySelected ?? '',
+        exchange_rate_to_idr: form.exchange_rate,
         notes: form.notes,
-        status: mode,
         items: items.map(({ id: _id, ...rest }) => ({
           item_id: rest.itemId,
-          description: rest.description,
-          qty: rest.qty,
           uom_id: rest.uomId,
-          package_size: rest.packageSize,
+          quantity: rest.qty,
           unit_price: rest.unitPrice,
-          total: rest.total,
-          vat_percent: rest.vatPercent,
-          vat_amount: rest.vatAmount,
-          grand_total: rest.grandTotal,
-          remarks: rest.remarks,
+          tax_percent: rest.vatPercent,
+          notes: rest.remarks,
         })),
       });
 
@@ -306,6 +317,12 @@ function PurchaseInvoiceContent() {
         onChoose={handleChooseSupplier}
       />
 
+      <PurchaseOrderLookup
+        isOpen={poLookupOpen}
+        onClose={() => setPoLookupOpen(false)}
+        onChoose={handleChoosePO}
+      />
+
       <Stack gap={6}>
         {/* Invoice Details */}
         <Card.Root>
@@ -344,16 +361,15 @@ function PurchaseInvoiceContent() {
                 </Box>
               </Field.Root>
 
-              {/* PO Number — future lookup */}
-              <Field.Root>
-                <Field.Label fontSize="sm">{tr.po_number}</Field.Label>
+              {/* Purchase Order lookup */}
+              <Field.Root required>
+                <Field.Label fontSize="sm">{tr.po_number}<Field.RequiredIndicator /></Field.Label>
                 <Input
-                  value={form.po_number}
+                  value={selectedPO ? `[${selectedPO.purchase_type.toUpperCase()}] ${selectedPO.po_number}` : ''}
                   readOnly
-                  cursor="not-allowed"
+                  cursor="pointer"
                   placeholder={tr.po_number_placeholder}
-                  bg="gray.50"
-                  color="gray.400"
+                  onClick={() => setPoLookupOpen(true)}
                 />
               </Field.Root>
 

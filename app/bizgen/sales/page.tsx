@@ -178,8 +178,8 @@ export default function Sales (){
     router.push(`/bizgen/sales/invoice?invoice_id=${invoice_id}`);
   }
 
-  const handleToSeeAll = () => {
-    router.push(`/bizgen/sales/see-all`);
+  const handleToSeeAll = (type: string) => {
+    router.push(`/bizgen/sales/see-all?type=${type}`);
   }
 
   // Helper function to render lists with empty/placeholder state
@@ -240,8 +240,8 @@ export default function Sales (){
               {/* Data for inquiry */}
               <Flex direction="column" gap={1}>
                 {renderList(salesRfqData, (rfq) => (
-                  <Flex key={rfq.sales_rfq_id} justify="space-between">
-                    <Text fontSize="xs" color="gray.600" maxLines={1} onClick={() => handleDirectToSalesRfqDetail(rfq.sales_rfq_id)}>{rfq.sales_rfq_number}</Text>
+                  <Flex key={rfq.inquiry_id} justify="space-between">
+                    <Text fontSize="xs" color="gray.600" maxLines={1} onClick={() => handleDirectToSalesRfqDetail(rfq.inquiry_id)}>{rfq.rfq_no}</Text>
                     <Badge colorScheme="gray" variant="subtle">{formatDate(rfq.created_at)}</Badge>
                   </Flex>
                 ))}
@@ -249,7 +249,7 @@ export default function Sales (){
             </Flex>
 
             <Flex justify="space-between">
-              <Button size="sm" bg={"transparent"} borderColor={"#E77A1F"} color={"#E77A1F"} cursor={"pointer"} onClick={handleToSeeAll}>{t.sales_module.inquiry.see_all}</Button>
+              <Button size="sm" bg={"transparent"} borderColor={"#E77A1F"} color={"#E77A1F"} cursor={"pointer"} onClick={() => handleToSeeAll("inquiry")}>{t.sales_module.inquiry.see_all}</Button>
               <Button size="sm" bg={"#E77A1F"} color={"white"} cursor={"pointer"} onClick={handleDirectToDetailInquiry} >{t.sales_module.inquiry.create}</Button>
             </Flex>
           </Card.Body>
@@ -282,7 +282,7 @@ export default function Sales (){
             </Flex>
 
           <Flex justify="space-between">
-            <Button size="sm" bg={"transparent"} borderColor={"#E77A1F"} color={"#E77A1F"} cursor={"pointer"}>{t.sales_module.quotation.see_all}</Button>
+            <Button size="sm" bg={"transparent"} borderColor={"#E77A1F"} color={"#E77A1F"} cursor={"pointer"} onClick={() => handleToSeeAll("quotation")}>{t.sales_module.quotation.see_all}</Button>
             <Button size="sm" bg={"#E77A1F"} color={"white"} cursor={"pointer"} onClick={handleDirectToDetailQuotation}>{t.sales_module.quotation.create}</Button>
           </Flex>
           </Card.Body>
@@ -315,7 +315,7 @@ export default function Sales (){
             </Flex>
 
             <Flex justify="space-between">
-              <Button size="sm" bg={"transparent"} borderColor={"#E77A1F"} color={"#E77A1F"} cursor={"pointer"}>{t.sales_module.booking.see_all}</Button>
+              <Button size="sm" bg={"transparent"} borderColor={"#E77A1F"} color={"#E77A1F"} cursor={"pointer"} onClick={() => handleToSeeAll("booking")}>{t.sales_module.booking.see_all}</Button>
               <Button size="sm" bg={"#E77A1F"} color={"white"} cursor={"pointer"} onClick={handleDirectToBooking}>{t.sales_module.booking.create}</Button>
             </Flex>
           </Card.Body>
@@ -348,7 +348,7 @@ export default function Sales (){
             </Flex>
 
             <Flex justify="space-between">
-              <Button size="sm" bg={"transparent"} borderColor={"#E77A1F"} color={"#E77A1F"} cursor={"pointer"}>{t.sales_module.shipment.see_all}</Button>
+              <Button size="sm" bg={"transparent"} borderColor={"#E77A1F"} color={"#E77A1F"} cursor={"pointer"} onClick={() => handleToSeeAll("shipment")}>{t.sales_module.shipment.see_all}</Button>
               <Button size="sm" bg={"#E77A1F"} color={"white"} cursor={"pointer"} onClick={handleDirectToShipment}>{t.sales_module.shipment.update}</Button>
             </Flex>
           </Card.Body>
@@ -383,7 +383,7 @@ export default function Sales (){
             </Flex>
 
             <Flex justify="space-between">
-              <Button size="sm" bg={"transparent"} borderColor={"#E77A1F"} color={"#E77A1F"} cursor={"pointer"}>{t.sales_module.costing.see_all}</Button>
+              <Button size="sm" bg={"transparent"} borderColor={"#E77A1F"} color={"#E77A1F"} cursor={"pointer"} onClick={() => handleToSeeAll("costing")}>{t.sales_module.costing.see_all}</Button>
               <Button size="sm" bg={"#E77A1F"} color={"white"} cursor={"pointer"} onClick={handleDriectToCostingExpense}>{t.sales_module.costing.record}</Button>
             </Flex>
           </Card.Body>
@@ -414,7 +414,7 @@ export default function Sales (){
             </Flex>
 
             <Flex justify="space-between">
-              <Button size="sm" bg={"transparent"} borderColor={"#E77A1F"} color={"#E77A1F"} cursor={"pointer"}>{t.sales_module.sales_order.see_all}</Button>
+              <Button size="sm" bg={"transparent"} borderColor={"#E77A1F"} color={"#E77A1F"} cursor={"pointer"} onClick={() => handleToSeeAll("sales_order")}>{t.sales_module.sales_order.see_all}</Button>
               <Button size="sm" bg={"#E77A1F"} color={"white"} cursor={"pointer"} onClick={handleDirectToSalesOrder}>{t.sales_module.sales_order.generate}</Button>
             </Flex>
           </Card.Body>
@@ -445,7 +445,7 @@ export default function Sales (){
             </Flex>
 
             <Flex justify="space-between">
-              <Button size="sm" bg={"transparent"} borderColor={"#E77A1F"} color={"#E77A1F"} cursor={"pointer"}>{t.sales_module.delivery.see_all}</Button>
+              <Button size="sm" bg={"transparent"} borderColor={"#E77A1F"} color={"#E77A1F"} cursor={"pointer"} onClick={() => handleToSeeAll("delivery")}>{t.sales_module.delivery.see_all}</Button>
               <Button size="sm" bg={"#E77A1F"} color={"white"} cursor={"pointer"} onClick={handleDirectToDeliveryOrder}>{t.sales_module.delivery.issue}</Button>
             </Flex>
           </Card.Body>
@@ -476,7 +476,7 @@ export default function Sales (){
             </Flex>
 
             <Flex justify="space-between">
-              <Button size="sm" bg={"transparent"} borderColor={"#E77A1F"} color={"#E77A1F"} cursor={"pointer"}>{t.sales_module.profit.see_all}</Button>
+              <Button size="sm" bg={"transparent"} borderColor={"#E77A1F"} color={"#E77A1F"} cursor={"pointer"} onClick={() => handleToSeeAll("profit")}>{t.sales_module.profit.see_all}</Button>
               <Button size="sm" bg={"#E77A1F"} color={"white"} cursor={"pointer"} onClick={handleDirectToProfitSummary}>{t.sales_module.profit.view}</Button>
             </Flex>
           </Card.Body>
@@ -507,7 +507,7 @@ export default function Sales (){
             </Flex>
 
             <Flex justify="space-between">
-              <Button size="sm" bg={"transparent"} borderColor={"#E77A1F"} color={"#E77A1F"} cursor={"pointer"}>{t.sales_module.invoice.see_all}</Button>
+              <Button size="sm" bg={"transparent"} borderColor={"#E77A1F"} color={"#E77A1F"} cursor={"pointer"} onClick={() => handleToSeeAll("invoice")}>{t.sales_module.invoice.see_all}</Button>
               <Button size="sm" bg={"#E77A1F"} color={"white"} cursor={"pointer"} onClick={handleDirectToInvoice}>{t.sales_module.invoice.create}</Button>
             </Flex>
           </Card.Body>

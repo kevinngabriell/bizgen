@@ -1,6 +1,7 @@
 'use client';
 
 import Loading from '@/components/loading';
+import PurchaseOrderLookup, { PurchaseOrderEntry } from '@/components/lookup/PurchaseOrderLookup';
 import SupplierLookup from '@/components/lookup/SupplierLookup';
 import { AlertMessage } from '@/components/ui/alert';
 import SidebarWithHeader from '@/components/ui/SidebarWithHeader';
@@ -105,13 +106,18 @@ function ReceivingItemsContent() {
   const [supplierModalOpen, setSupplierModalOpen] = useState(false);
   const [selectedSupplier, setSelectedSupplier] = useState<GetSupplierData | null>(null);
 
+  // Purchase Order lookup
+  const [poLookupOpen, setPoLookupOpen] = useState(false);
+  const [selectedPO, setSelectedPO] = useState<PurchaseOrderEntry | null>(null);
+  const purchaseOrderLocalId = selectedPO?.purchase_type === 'local' ? (selectedPO as any).purchase_id : '';
+  const purchaseOrderImportId = selectedPO?.purchase_type === 'import' ? (selectedPO as any).purchase_import_id : '';
+
   // Ship via
   const [shipViaSelected, setShipViaSelected] = useState<string>();
 
   // Header form
   const [form, setForm] = useState({
     gr_number: '',
-    po_number: '',
     receiving_date: '',
     address: '',
     ship_date: '',
@@ -204,8 +210,9 @@ function ReceivingItemsContent() {
 
   const resetForm = async () => {
     const res = await generatePurchaseGoodsReceiptNumber();
-    setForm({ gr_number: res.number, po_number: '', receiving_date: '', address: '', ship_date: '', notes: '' });
+    setForm({ gr_number: res.number, receiving_date: '', address: '', ship_date: '', notes: '' });
     setSelectedSupplier(null);
+    setSelectedPO(null);
     setShipViaSelected(undefined);
     setItems([newItem()]);
   };
@@ -215,32 +222,34 @@ function ReceivingItemsContent() {
       if (!form.gr_number) throw new Error(tr.error_gr_number);
       if (!selectedSupplier?.supplier_id) throw new Error(tr.error_supplier);
       if (!form.receiving_date) throw new Error(tr.error_receiving_date);
-      if (!items.some((i) => i.description.trim())) throw new Error(tr.error_items);
+      if (!purchaseOrderLocalId && !purchaseOrderImportId) throw new Error(tr.error_po);
+      if (items.length === 0) throw new Error(tr.error_items);
+      if (items.some((i) => !i.itemId)) throw new Error(tr.error_item_id);
+      if (items.some((i) => Number(i.qty) <= 0)) throw new Error(tr.error_item_qty);
+      if (items.some((i) => !i.uomId)) throw new Error(tr.error_item_uom);
 
       setLoading(true);
 
       await createGoodsReceipt({
-        gr_number: form.gr_number,
+        receipt_number: form.gr_number,
+        receipt_date: form.receiving_date,
+        purchase_id_local: purchaseOrderLocalId,
+        purchase_id_import: purchaseOrderImportId,
         supplier_id: selectedSupplier.supplier_id,
-        po_number: form.po_number,
-        receiving_date: form.receiving_date,
-        address: form.address,
-        ship_date: form.ship_date,
+        warehouse_id: '',
+        send_date: form.ship_date,
         ship_via_id: shipViaSelected ?? '',
-        notes: form.notes,
-        status: mode,
+        send_address: form.address,
+        remarks: form.notes,
+        total_cost_idr: '',
         items: items.map(({ id: _id, ...rest }) => ({
           item_id: rest.itemId,
-          description: rest.description,
-          qty: rest.qty,
+          qty_received: rest.qty,
+          unit_cost: rest.unitPrice,
           uom_id: rest.uomId,
-          package_size: rest.packageSize,
-          unit_price: rest.unitPrice,
-          total: rest.total,
-          vat_percent: rest.vatPercent,
-          vat_amount: rest.vatAmount,
-          grand_total: rest.grandTotal,
-          remarks: rest.remarks,
+          packaging_size: rest.packageSize,
+          tax_amount: rest.vatAmount,
+          notes: rest.remarks,
         })),
       });
 
@@ -289,6 +298,12 @@ function ReceivingItemsContent() {
         onChoose={handleChooseSupplier}
       />
 
+      <PurchaseOrderLookup
+        isOpen={poLookupOpen}
+        onClose={() => setPoLookupOpen(false)}
+        onChoose={(entry) => { setSelectedPO(entry); setPoLookupOpen(false); }}
+      />
+
       <Stack gap={6}>
         {/* GR Details */}
         <Card.Root>
@@ -327,16 +342,15 @@ function ReceivingItemsContent() {
                 </Box>
               </Field.Root>
 
-              {/* PO Number — future lookup */}
-              <Field.Root>
-                <Field.Label fontSize="sm">{tr.po_number}</Field.Label>
+              {/* PO Number lookup */}
+              <Field.Root required>
+                <Field.Label fontSize="sm">{tr.po_number}<Field.RequiredIndicator /></Field.Label>
                 <Input
-                  value={form.po_number}
+                  value={selectedPO ? `[${selectedPO.purchase_type.toUpperCase()}] ${selectedPO.po_number}` : ''}
                   readOnly
-                  cursor="not-allowed"
+                  cursor="pointer"
                   placeholder={tr.po_number_placeholder}
-                  bg="gray.50"
-                  color="gray.400"
+                  onClick={() => setPoLookupOpen(true)}
                 />
               </Field.Root>
 
