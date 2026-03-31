@@ -185,7 +185,7 @@ export default function SettingSupplier(){
                     supplier_name: editingSupplier.supplier_name, 
                     supplier_phone: '', 
                     supplier_address: '',
-                    supplier_origin: editingSupplier.supplier_origin,
+                    supplier_origin: editingSupplier.origin_name,
                     supplier_pic_name: '',
                     supplier_pic_contact: '',
                     supplier_currency: '',
@@ -237,8 +237,8 @@ export default function SettingSupplier(){
                     {supplierData?.map((supplier) => (
                     <Table.Row key={supplier.supplier_id}>
                         <Table.Cell textAlign={"center"}>{supplier.supplier_name}</Table.Cell>
-                        <Table.Cell textAlign={"center"}>{supplier.supplier_origin}</Table.Cell>
-                        <Table.Cell textAlign={"center"}>{supplier.supplier_currency}</Table.Cell>
+                        <Table.Cell textAlign={"center"}>{supplier.origin_name}</Table.Cell>
+                        <Table.Cell textAlign={"center"}>{supplier.currency_name}</Table.Cell>
                         <Table.Cell textAlign="center">
                             <Flex justify="center" gap={4} fontSize={"2xl"}>
                                 <FiEdit
