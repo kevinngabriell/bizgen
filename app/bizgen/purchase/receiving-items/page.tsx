@@ -336,9 +336,9 @@ function ReceivingItemsContent() {
               <Field.Root>
                 <Field.Label fontSize="sm">{tr.supplier_info}</Field.Label>
                 <Box fontSize="xs" color="gray.500" lineHeight="short" pt={1}>
-                  <Text>{selectedSupplier?.supplier_origin ?? '—'}</Text>
-                  <Text>{selectedSupplier?.supplier_currency ? `Currency: ${selectedSupplier.supplier_currency}` : '—'}</Text>
-                  <Text>{selectedSupplier?.supplier_term ? `Term: ${selectedSupplier.supplier_term}` : '—'}</Text>
+                  <Text>{selectedSupplier?.origin_name ?? '—'}</Text>
+                  <Text>{selectedSupplier?.currency_name ? `Currency: ${selectedSupplier.currency_name}` : '—'}</Text>
+                  <Text>{selectedSupplier?.term_name ? `Term: ${selectedSupplier.term_name}` : '—'}</Text>
                 </Box>
               </Field.Root>
 

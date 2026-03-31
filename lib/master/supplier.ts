@@ -1,9 +1,12 @@
 export interface GetSupplierData{
     supplier_id: string;
     supplier_name: string;
-    supplier_origin: string;
-    supplier_currency: string;
-    supplier_term: string;
+    origin_id: string;
+    origin_name: string;
+    currency_id: string;
+    currency_name: string;
+    term_id: string;
+    term_name: string;
     created_by: string;
     created_at: string;
     updated_by: string;
