@@ -25,6 +25,51 @@ export interface GetSalesDeliveryItemData {
   created_at: string;
 }
 
+export interface GetDetailDeliveryHeader {
+  delivery_order_id: string;
+  delivery_order_no: string;
+  status: string;
+  issue_date: string;
+  delivery_date: string;
+  customer_name: string;
+  sales_order_no: string;
+  warehouse_name: string;
+  remarks: string;
+}
+
+export interface GetDetailDeliveryItem {
+  delivery_order_item_id: string;
+  item_name: string;
+  uom_name: string;
+  quantity: number;
+  notes: string;
+}
+
+export interface GetDetailDeliveryHistory {
+  action: string;
+  created_by: string;
+  note: string;
+  created_at: string;
+}
+
+export interface GetDetailDeliveryResponse {
+  header: GetDetailDeliveryHeader;
+  items: GetDetailDeliveryItem[];
+  history: GetDetailDeliveryHistory[];
+}
+
+export interface UpdateDeliveryOrderData {
+  delivery_id: string;
+  issue_date?: string;
+  delivery_date?: string;
+  remarks?: string;
+}
+
+export interface ProcessDeliveryOrderActionData {
+  delivery_id: string;
+  action: 'submit' | 'approve' | 'reject';
+  notes?: string;
+}
 
 export async function generateSalesDeliveryNumber(): Promise<GetSalesDeliveryNumber> {
   const baseUrl = process.env.NEXT_PUBLIC_API_URL;
@@ -69,7 +114,7 @@ export async function createDeliveryOrder(input: CreateSalesDeliveryData) : Prom
 
   const json = await res.json();
 
-  //Jika statusnya bukan 201 atau 200 maka error 
+  //Jika statusnya bukan 201 atau 200 maka error
   if (json.status_code !== 201 && json.status_code !== 200) {
       throw new Error(json.status_message || 'Failed to create sales delivery');
   }
@@ -98,4 +143,88 @@ export async function getSalesdeliveryOrder(page: number = 1, limit : number = 1
         data: json.data?.data || [],
         pagination: json.data?.pagination || {}
     };
+}
+
+export async function getDetailDeliveryOrder(delivery_id: string): Promise<GetDetailDeliveryResponse> {
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL;
+    const token = localStorage.getItem("token");
+
+    const res = await fetch(`${baseUrl}sales/delivery-orders.php?delivery_id=${delivery_id}`, {
+        method: 'GET',
+        headers: {
+            Authorization: `Bearer ${token}`,
+        },
+    });
+
+    const json = await res.json();
+
+    if (json.status_code !== 200) {
+        throw new Error(json.status_message || 'Failed to fetch delivery order detail');
+    }
+
+    return json.data;
+}
+
+export async function updateDeliveryOrder(input: UpdateDeliveryOrderData): Promise<any> {
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL;
+    const token = localStorage.getItem("token");
+
+    const res = await fetch(`${baseUrl}sales/delivery-orders.php`, {
+        method: 'PUT',
+        headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(input),
+    });
+
+    const json = await res.json();
+
+    if (json.status_code !== 200) {
+        throw new Error(json.status_message || 'Failed to update delivery order');
+    }
+
+    return json;
+}
+
+export async function processDeliveryOrderAction(input: ProcessDeliveryOrderActionData): Promise<any> {
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL;
+    const token = localStorage.getItem("token");
+
+    const res = await fetch(`${baseUrl}sales/delivery-orders.php?action=${input.action}`, {
+        method: 'PUT',
+        headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(input),
+    });
+
+    const json = await res.json();
+
+    if (json.status_code !== 200) {
+        throw new Error(json.status_message || 'Failed to process delivery order action');
+    }
+
+    return json;
+}
+
+export async function deleteDeliveryOrder(delivery_id: string): Promise<any> {
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL;
+    const token = localStorage.getItem("token");
+
+    const res = await fetch(`${baseUrl}sales/delivery-orders.php?delivery_id=${delivery_id}`, {
+        method: 'DELETE',
+        headers: {
+            Authorization: `Bearer ${token}`,
+        },
+    });
+
+    const json = await res.json();
+
+    if (json.status_code !== 200) {
+        throw new Error(json.status_message || 'Failed to delete delivery order');
+    }
+
+    return json;
 }

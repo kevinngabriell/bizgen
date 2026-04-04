@@ -163,7 +163,7 @@ export default function Sales (){
   }
 
   const handleDirectToSalesOrderDetail = (sales_order_id: string) => {
-    router.push(`/bizgen/sales/sales-order?shipment_id=${sales_order_id}`);
+    router.push(`/bizgen/sales/sales-order?sales_order_id=${sales_order_id}`);
   }
 
   const handleDirectToDeliveryDetail = (delivery_order_id: string) => {
@@ -499,7 +499,7 @@ export default function Sales (){
               <Flex direction="column" gap={1}>
                 {renderList(salesInvoiceData, (sio) => (
                   <Flex key={sio.invoice_id} justify="space-between">
-                    <Text fontSize="xs" color="gray.600" maxLines={1} onClick={() => handleDirectToSalesRfqDetail(sio.invoice_id)}>{sio.invoice_number}</Text>
+                    <Text fontSize="xs" color="gray.600" maxLines={1} onClick={() => handleDirectToInvoiceDetail(sio.invoice_id)}>{sio.invoice_number}</Text>
                     <Badge colorScheme="gray" variant="subtle">{formatDate(sio.created_at)}</Badge>
                   </Flex>
                 ))}

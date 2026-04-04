@@ -20,7 +20,7 @@ export interface CreateSalesOrderData {
   items: CreateSalesOrderItemData[];
 }
 
-export interface CreateSalesOrderItemData{ 
+export interface CreateSalesOrderItemData{
   item_id: string;
   quantity: string;
   unit_price: string;
@@ -34,6 +34,62 @@ export interface GetSalesOrderItemData {
   sales_order_id: string;
   sales_order_no: string;
   created_at: string;
+}
+
+export interface GetDetailSalesOrderHeader {
+  sales_order_id: string;
+  sales_order_no: string;
+  order_date: string;
+  status: string;
+  customer_name: string;
+  ship_via_name: string;
+  origin_port_name: string;
+  destination_port_name: string;
+  term_name: string;
+  tax_name: string;
+  eta: string;
+  etd: string;
+  sales_person?: string;
+  service_type?: string;
+  remarks?: string;
+}
+
+export interface GetDetailSalesOrderItem {
+  sales_order_item_id: string;
+  item_name: string;
+  quantity: number;
+  unit_price: number;
+  dpp: number;
+  ppn: number;
+  total: number;
+}
+
+export interface GetDetailSalesOrderHistory {
+  action: string;
+  created_by: string;
+  note: string;
+  created_at: string;
+}
+
+export interface GetDetailSalesOrderResponse {
+  header: GetDetailSalesOrderHeader;
+  items: GetDetailSalesOrderItem[];
+  history: GetDetailSalesOrderHistory[];
+}
+
+export interface UpdateSalesOrderData {
+  so_id: string;
+  order_date?: string;
+  sales_person?: string;
+  eta?: string;
+  etd?: string;
+  remarks?: string;
+}
+
+export interface ProcessSalesOrderActionData {
+  so_id: string;
+  action: 'submit' | 'approve' | 'reject';
+  notes?: string;
 }
 
 export async function generateSalesNumber(): Promise<GetSalesOrderNumber> {
@@ -87,7 +143,7 @@ export async function createSalesOrder(input: CreateSalesOrderData) : Promise<an
 
   const json = await res.json();
 
-  //Jika statusnya bukan 201 atau 200 maka error 
+  //Jika statusnya bukan 201 atau 200 maka error
   if (json.status_code !== 201 && json.status_code !== 200) {
       throw new Error(json.status_message || 'Failed to create sales costing');
   }
@@ -116,4 +172,88 @@ export async function getSalesOrder(page: number = 1, limit : number = 10, searc
         data: json.data?.data || [],
         pagination: json.data?.pagination || {}
     };
+}
+
+export async function getDetailSalesOrder(so_id: string): Promise<GetDetailSalesOrderResponse> {
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL;
+    const token = localStorage.getItem("token");
+
+    const res = await fetch(`${baseUrl}sales/sales-orders.php?so_id=${so_id}`, {
+        method: 'GET',
+        headers: {
+            Authorization: `Bearer ${token}`,
+        },
+    });
+
+    const json = await res.json();
+
+    if (json.status_code !== 200) {
+        throw new Error(json.status_message || 'Failed to fetch sales order detail');
+    }
+
+    return json.data;
+}
+
+export async function updateSalesOrder(input: UpdateSalesOrderData): Promise<any> {
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL;
+    const token = localStorage.getItem("token");
+
+    const res = await fetch(`${baseUrl}sales/sales-orders.php`, {
+        method: 'PUT',
+        headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(input),
+    });
+
+    const json = await res.json();
+
+    if (json.status_code !== 200) {
+        throw new Error(json.status_message || 'Failed to update sales order');
+    }
+
+    return json;
+}
+
+export async function processSalesOrderAction(input: ProcessSalesOrderActionData): Promise<any> {
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL;
+    const token = localStorage.getItem("token");
+
+    const res = await fetch(`${baseUrl}sales/sales-orders.php?action=${input.action}`, {
+        method: 'PUT',
+        headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(input),
+    });
+
+    const json = await res.json();
+
+    if (json.status_code !== 200) {
+        throw new Error(json.status_message || 'Failed to process sales order action');
+    }
+
+    return json;
+}
+
+export async function deleteSalesOrder(so_id: string): Promise<any> {
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL;
+    const token = localStorage.getItem("token");
+
+    const res = await fetch(`${baseUrl}sales/sales-orders.php?so_id=${so_id}`, {
+        method: 'DELETE',
+        headers: {
+            Authorization: `Bearer ${token}`,
+        },
+    });
+
+    const json = await res.json();
+
+    if (json.status_code !== 200) {
+        throw new Error(json.status_message || 'Failed to delete sales order');
+    }
+
+    return json;
 }

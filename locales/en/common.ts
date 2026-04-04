@@ -139,6 +139,14 @@ export const en = {
     reject: "Reject",
     approve: "Approve"
   },
+  reject_dialog: {
+    title: "Reject Confirmation",
+    description: "Please provide a reason for rejection. This will be recorded in the history log.",
+    reason_label: "Rejection Reason",
+    reason_placeholder: "Enter the reason for rejection...",
+    cancel: "Cancel",
+    confirm: "Reject",
+  },
   customer: {
     title: "Customer Master Data",
     create_button: "Create Customer",
@@ -856,7 +864,9 @@ sales_quotation: {
   error_6 : "At least one item is required",
   error_msg : "Failed to create Quotation",
   valid_until : "Quotation expired date",
-  error_7 : "Customer not found in master data. You can only save as draft."
+  error_7 : "Customer not found in master data. You can only save as draft.",
+  title_view: "Quotation Details",
+  title_edit: "Edit Quotation",
 },
 booking_confirmation: {
   title: "Booking Confirmation / Job Order",

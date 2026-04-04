@@ -83,6 +83,23 @@ export interface GetDetailRfqResponse {
   history: GetDetailRfqHistory[];
 }
 
+export interface UpdateRfqData {
+  sales_rfq_id: string;
+  ship_via_id?: string;
+  origin_id?: string;
+  destination_id?: string;
+  incoterm_id?: string;
+  commodity_id?: string;
+  remarks?: string;
+  items?: CreateRfqItems[];
+}
+
+export interface ProcessRfqActionData {
+  sales_rfq_id: string;
+  action: 'submit' | 'approve' | 'reject';
+  rejection_reason?: string;
+}
+
 export async function createSalesRfq(input: CreateRfq) : Promise<any> {
   const baseUrl = process.env.NEXT_PUBLIC_API_URL;
   const token = localStorage.getItem("token");
@@ -110,7 +127,7 @@ export async function createSalesRfq(input: CreateRfq) : Promise<any> {
 
   const json = await res.json();
 
-  //Jika statusnya bukan 201 atau 200 maka error 
+  //Jika statusnya bukan 201 atau 200 maka error
   if (json.status_code !== 201 && json.status_code !== 200) {
       throw new Error(json.status_message || 'Failed to create sales rfq');
   }
@@ -192,4 +209,68 @@ export async function getDetailSalesRfq(
   }
 
   return json.data;
+}
+
+export async function updateSalesRfq(input: UpdateRfqData): Promise<any> {
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL;
+    const token = localStorage.getItem("token");
+
+    const res = await fetch(`${baseUrl}sales/inquiries.php`, {
+        method: 'PUT',
+        headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(input),
+    });
+
+    const json = await res.json();
+
+    if (json.status_code !== 200) {
+        throw new Error(json.status_message || 'Failed to update sales RFQ');
+    }
+
+    return json;
+}
+
+export async function processRfqAction(input: ProcessRfqActionData): Promise<any> {
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL;
+    const token = localStorage.getItem("token");
+
+    const res = await fetch(`${baseUrl}sales/inquiries.php?action=${input.action}`, {
+        method: 'PUT',
+        headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(input),
+    });
+
+    const json = await res.json();
+
+    if (json.status_code !== 200) {
+        throw new Error(json.status_message || 'Failed to process RFQ action');
+    }
+
+    return json;
+}
+
+export async function deleteRfq(sales_rfq_id: string): Promise<any> {
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL;
+    const token = localStorage.getItem("token");
+
+    const res = await fetch(`${baseUrl}sales/inquiries.php?sales_rfq_id=${sales_rfq_id}`, {
+        method: 'DELETE',
+        headers: {
+            Authorization: `Bearer ${token}`,
+        },
+    });
+
+    const json = await res.json();
+
+    if (json.status_code !== 200) {
+        throw new Error(json.status_message || 'Failed to delete sales RFQ');
+    }
+
+    return json;
 }

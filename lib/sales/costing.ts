@@ -29,6 +29,48 @@ export interface GetSalesCostingData {
   created_at: string;
 }
 
+export interface GetDetailCostingHeader {
+  sales_costing_expense_id: string;
+  sales_costing_no: string;
+  customer_name: string;
+  ship_via_name: string;
+  origin_port_name: string;
+  destination_port_name: string;
+  notes: string;
+}
+
+export interface GetDetailCostingItem {
+  sales_costing_expense_item_id: string;
+  costing_category_name: string;
+  description: string;
+  supplier: string;
+  currency_code: string;
+  exchange_rate: number;
+  amount: number;
+}
+
+export interface GetDetailCostingHistory {
+  action: string;
+  created_by: string;
+  note: string;
+  created_at: string;
+}
+
+export interface GetDetailCostingResponse {
+  header: GetDetailCostingHeader;
+  items: GetDetailCostingItem[];
+  history: GetDetailCostingHistory[];
+}
+
+export interface UpdateSalesCostingData {
+  costing_id: string;
+  booking_no?: string;
+  ship_via_id?: string;
+  origin_port?: string;
+  destination_port?: string;
+  notes?: string;
+}
+
 export async function generateSalesCostingNumber(): Promise<GetSalesCostingNumber> {
   const baseUrl = process.env.NEXT_PUBLIC_API_URL;
   const token = localStorage.getItem("token");
@@ -73,7 +115,7 @@ export async function createSalesCosting(input: CreateCostingData) : Promise<any
 
   const json = await res.json();
 
-  //Jika statusnya bukan 201 atau 200 maka error 
+  //Jika statusnya bukan 201 atau 200 maka error
   if (json.status_code !== 201 && json.status_code !== 200) {
       throw new Error(json.status_message || 'Failed to create sales costing');
   }
@@ -102,4 +144,66 @@ export async function getSalesCosting(page: number = 1, limit : number = 10, sea
         data: json.data?.data || [],
         pagination: json.data?.pagination || {}
     };
+}
+
+export async function getDetailSalesCosting(costing_id: string): Promise<GetDetailCostingResponse> {
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL;
+    const token = localStorage.getItem("token");
+
+    const res = await fetch(`${baseUrl}sales/costings.php?costing_id=${costing_id}`, {
+        method: 'GET',
+        headers: {
+            Authorization: `Bearer ${token}`,
+        },
+    });
+
+    const json = await res.json();
+
+    if (json.status_code !== 200) {
+        throw new Error(json.status_message || 'Failed to fetch sales costing detail');
+    }
+
+    return json.data;
+}
+
+export async function updateSalesCosting(input: UpdateSalesCostingData): Promise<any> {
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL;
+    const token = localStorage.getItem("token");
+
+    const res = await fetch(`${baseUrl}sales/costings.php`, {
+        method: 'PUT',
+        headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(input),
+    });
+
+    const json = await res.json();
+
+    if (json.status_code !== 200) {
+        throw new Error(json.status_message || 'Failed to update sales costing');
+    }
+
+    return json;
+}
+
+export async function deleteSalesCosting(costing_id: string): Promise<any> {
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL;
+    const token = localStorage.getItem("token");
+
+    const res = await fetch(`${baseUrl}sales/costings.php?costing_id=${costing_id}`, {
+        method: 'DELETE',
+        headers: {
+            Authorization: `Bearer ${token}`,
+        },
+    });
+
+    const json = await res.json();
+
+    if (json.status_code !== 200) {
+        throw new Error(json.status_message || 'Failed to delete sales costing');
+    }
+
+    return json;
 }

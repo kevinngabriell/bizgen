@@ -139,6 +139,14 @@ export const id = {
     reject: "Tolak",
     approve: "Setujui"
   },
+  reject_dialog: {
+    title: "Konfirmasi Penolakan",
+    description: "Silakan berikan alasan penolakan. Ini akan dicatat dalam riwayat.",
+    reason_label: "Alasan Penolakan",
+    reason_placeholder: "Masukkan alasan penolakan...",
+    cancel: "Batal",
+    confirm: "Tolak",
+  },
   customer: {
     title: "Data Master Customer",
     create_button: "Tambah Customer",
@@ -875,7 +883,9 @@ sales_quotation: {
   error_6 : "Minimal harus ada satu item",
   error_msg : "Gagal membuat Quotation",
   valid_until : "Tanggal Akhir Penawaran",
-  error_7 : "Customer tidak ditemukan di master data. Anda hanya dapat menyimpan sebagai draft."
+  error_7 : "Customer tidak ditemukan di master data. Anda hanya dapat menyimpan sebagai draft.",
+  title_view: "Detail Penawaran",
+  title_edit: "Edit Penawaran",
 },
 booking_confirmation: {
   title: "Konfirmasi Booking / Job Order",

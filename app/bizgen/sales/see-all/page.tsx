@@ -13,63 +13,16 @@ import { getSalesProfit, GetSalesProfitItemData } from "@/lib/sales/profit";
 import { getSalesRfq, GetRfq } from "@/lib/sales/rfq";
 import { getSalesOrder, GetSalesOrderItemData } from "@/lib/sales/sales-order";
 import { getSalesQuotations, GetSalesQuotationsData } from "@/lib/sales/quotation";
-import {
-  Badge,
-  Box,
-  Breadcrumb,
-  Button,
-  ButtonGroup,
-  Card,
-  Flex,
-  Heading,
-  IconButton,
-  Input,
-  Pagination,
-  Spinner,
-  Table,
-  Text,
-} from "@chakra-ui/react";
+import { Badge, Box, Breadcrumb, Button, ButtonGroup, Card, Flex, Heading, IconButton, Input, Pagination, Spinner, Table, Text } from "@chakra-ui/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import { FiSearch, FiX } from "react-icons/fi";
 import { LuChevronLeft, LuChevronRight } from "react-icons/lu";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+type ModuleType = | "inquiry" | "quotation" | "booking" | "shipment" | "costing" | "sales_order" | "delivery" | "profit" | "invoice";
+type AnyRecord = | GetRfq | GetSalesQuotationsData | GetSalesBookingData | GetSalesDocumentItemData | GetSalesCostingData | GetSalesOrderItemData | GetSalesDeliveryItemData | GetSalesProfitItemData | GetSalesInvoiceItemData;
 
-type ModuleType =
-  | "inquiry"
-  | "quotation"
-  | "booking"
-  | "shipment"
-  | "costing"
-  | "sales_order"
-  | "delivery"
-  | "profit"
-  | "invoice";
-
-type AnyRecord =
-  | GetRfq
-  | GetSalesQuotationsData
-  | GetSalesBookingData
-  | GetSalesDocumentItemData
-  | GetSalesCostingData
-  | GetSalesOrderItemData
-  | GetSalesDeliveryItemData
-  | GetSalesProfitItemData
-  | GetSalesInvoiceItemData;
-
-// ─── Status badge helper ───────────────────────────────────────────────────────
-
-const STATUS_COLOR: Record<string, string> = {
-  draft: "gray",
-  submitted: "blue",
-  approved: "green",
-  rejected: "red",
-  quoted: "purple",
-  confirmed: "teal",
-  sent: "cyan",
-  cancelled: "red",
-};
+const STATUS_COLOR: Record<string, string> = { draft: "gray", submitted: "blue", approved: "green", rejected: "red", quoted: "purple", confirmed: "teal", sent: "cyan", cancelled: "red" };
 
 function StatusBadge({ status }: { status: string }) {
   const color = STATUS_COLOR[status?.toLowerCase()] ?? "gray";
@@ -79,8 +32,6 @@ function StatusBadge({ status }: { status: string }) {
     </Badge>
   );
 }
-
-// ─── Column definitions per module ────────────────────────────────────────────
 
 interface ColumnDef {
   label: string;
@@ -157,7 +108,7 @@ function getDetailRoute(type: ModuleType, id: string): string {
     case "booking":     return `/bizgen/sales/booking-confirmation?booking_id=${id}`;
     case "shipment":    return `/bizgen/sales/shipment-process?shipment_id=${id}`;
     case "costing":     return `/bizgen/sales/costing-expense?shipment_id=${id}`;
-    case "sales_order": return `/bizgen/sales/sales-order?shipment_id=${id}`;
+    case "sales_order": return `/bizgen/sales/sales-order?sales_order_id=${id}`;
     case "delivery":    return `/bizgen/sales/delivery-order?delivery_order_id=${id}`;
     case "profit":      return `/bizgen/sales/profit-summary?profit_id=${id}`;
     case "invoice":     return `/bizgen/sales/invoice?invoice_id=${id}`;
@@ -299,15 +250,9 @@ function SeeAllContent() {
       <Flex justify="space-between" align="flex-end" mb={5}>
         <Box>
           <Heading size="lg">{MODULE_LABEL[type]}</Heading>
-          <Text fontSize="sm" color="gray.500" mt={1}>
-            {totalCount > 0 ? `${totalCount} record${totalCount !== 1 ? "s" : ""} found` : "No records found"}
-          </Text>
+          <Text fontSize="sm" color="gray.500" mt={1}>{totalCount > 0 ? `${totalCount} record${totalCount !== 1 ? "s" : ""} found` : "No records found"}</Text>
         </Box>
-        <Button
-          size="sm"
-          bg="#E77A1F"
-          color="white"
-          cursor="pointer"
+        <Button bg="#E77A1F" color="white" cursor="pointer"
           onClick={() => {
             const routes: Record<ModuleType, string> = {
               inquiry:     "/bizgen/sales/inquiry",
@@ -321,8 +266,7 @@ function SeeAllContent() {
               invoice:     "/bizgen/sales/invoice",
             };
             router.push(routes[type]);
-          }}
-        >
+          }}>
           + Create New
         </Button>
       </Flex>
@@ -334,33 +278,15 @@ function SeeAllContent() {
             <Box flex="1" minW="220px">
               <Text fontSize="xs" fontWeight="semibold" color="gray.500" mb={1}>Search</Text>
               <Flex gap={2}>
-                <Input
-                  placeholder="Search by number, customer, or reference..."
-                  value={searchInput}
-                  onChange={(e) => setSearchInput(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-                  size="sm"
-                />
+                <Input placeholder="Search by number, customer, or reference..." value={searchInput} onChange={(e) => setSearchInput(e.target.value)} onKeyDown={(e) => e.key === "Enter" && handleSearch()}/>
                 {appliedSearch && (
-                  <IconButton
-                    aria-label="Clear search"
-                    size="sm"
-                    variant="ghost"
-                    onClick={handleClearSearch}
-                  >
+                  <IconButton aria-label="Clear search" variant="ghost" onClick={handleClearSearch}>
                     <FiX />
                   </IconButton>
                 )}
               </Flex>
             </Box>
-            <Button
-              size="sm"
-              bg="#E77A1F"
-              color="white"
-              cursor="pointer"
-              onClick={handleSearch}
-              minW="100px"
-            >
+            <Button bg="#E77A1F" color="white" cursor="pointer" onClick={handleSearch}minW="100px">
               <FiSearch /> Search
             </Button>
           </Flex>
@@ -416,17 +342,12 @@ function SeeAllContent() {
                         <Table.Cell key={col.label}>{col.render(row)}</Table.Cell>
                       ))}
                       <Table.Cell>
-                        <Button
-                          size="xs"
-                          variant="ghost"
-                          color="#E77A1F"
+                        <Button variant="ghost" color="#E77A1F"
                           onClick={(e) => {
                             e.stopPropagation();
                             router.push(getDetailRoute(type, id));
                           }}
-                        >
-                          View
-                        </Button>
+                        > View </Button>
                       </Table.Cell>
                     </Table.Row>
                   );
@@ -462,8 +383,6 @@ function SeeAllContent() {
     </>
   );
 }
-
-// ─── Page wrapper ──────────────────────────────────────────────────────────────
 
 export default function SeeAllSales() {
   const [auth, setAuth] = useState<DecodedAuthToken | null>(null);

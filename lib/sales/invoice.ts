@@ -33,6 +33,64 @@ export interface GetSalesInvoiceItemData {
   created_at: string;
 }
 
+export interface GetDetailInvoiceHeader {
+  invoice_id: string;
+  invoice_number: string;
+  invoice_date: string;
+  due_date: string;
+  status: string;
+  customer_name: string;
+  currency_code: string;
+  exchange_rate_to_idr: number;
+  sales_order_no: string;
+  delivery_order_no: string;
+  subtotal_amount: number;
+  tax_amount: number;
+  total_amount: number;
+  notes: string;
+}
+
+export interface GetDetailInvoiceItem {
+  invoice_item_id: string;
+  item_name: string;
+  uom_name: string;
+  quantity: number;
+  unit_price: number;
+  tax_percent: number;
+  tax_amount: number;
+  line_total: number;
+}
+
+export interface GetDetailInvoiceHistory {
+  action: string;
+  created_by: string;
+  note: string;
+  created_at: string;
+}
+
+export interface GetDetailInvoiceResponse {
+  header: GetDetailInvoiceHeader;
+  items: GetDetailInvoiceItem[];
+  history: GetDetailInvoiceHistory[];
+}
+
+export interface UpdateSalesInvoiceData {
+  invoice_id: string;
+  invoice_date?: string;
+  due_date?: string;
+  exchange_rate_to_idr?: string;
+  subtotal_amount?: string;
+  tax_amount?: string;
+  total_amount?: string;
+  notes?: string;
+}
+
+export interface ProcessSalesInvoiceActionData {
+  invoice_id: string;
+  action: 'submit' | 'approve' | 'reject';
+  notes?: string;
+}
+
 export async function generateSalesInvoiceNumber(): Promise<GetSalesInvoiceNumber> {
   const baseUrl = process.env.NEXT_PUBLIC_API_URL;
   const token = localStorage.getItem("token");
@@ -83,7 +141,7 @@ export async function createSalesInvoice(input: CreateSalesInvoiceData) : Promis
 
   const json = await res.json();
 
-  //Jika statusnya bukan 201 atau 200 maka error 
+  //Jika statusnya bukan 201 atau 200 maka error
   if (json.status_code !== 201 && json.status_code !== 200) {
       throw new Error(json.status_message || 'Failed to create sales invoice summary');
   }
@@ -112,4 +170,88 @@ export async function getSalesInvoice(page: number = 1, limit : number = 10, sea
         data: json.data?.data || [],
         pagination: json.data?.pagination || {}
     };
+}
+
+export async function getDetailSalesInvoice(invoice_id: string): Promise<GetDetailInvoiceResponse> {
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL;
+    const token = localStorage.getItem("token");
+
+    const res = await fetch(`${baseUrl}sales/invoices.php?invoice_id=${invoice_id}`, {
+        method: 'GET',
+        headers: {
+            Authorization: `Bearer ${token}`,
+        },
+    });
+
+    const json = await res.json();
+
+    if (json.status_code !== 200) {
+        throw new Error(json.status_message || 'Failed to fetch sales invoice detail');
+    }
+
+    return json.data;
+}
+
+export async function updateSalesInvoice(input: UpdateSalesInvoiceData): Promise<any> {
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL;
+    const token = localStorage.getItem("token");
+
+    const res = await fetch(`${baseUrl}sales/invoices.php`, {
+        method: 'PUT',
+        headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(input),
+    });
+
+    const json = await res.json();
+
+    if (json.status_code !== 200) {
+        throw new Error(json.status_message || 'Failed to update sales invoice');
+    }
+
+    return json;
+}
+
+export async function processSalesInvoiceAction(input: ProcessSalesInvoiceActionData): Promise<any> {
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL;
+    const token = localStorage.getItem("token");
+
+    const res = await fetch(`${baseUrl}sales/invoices.php?action=${input.action}`, {
+        method: 'PUT',
+        headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(input),
+    });
+
+    const json = await res.json();
+
+    if (json.status_code !== 200) {
+        throw new Error(json.status_message || 'Failed to process sales invoice action');
+    }
+
+    return json;
+}
+
+export async function deleteSalesInvoice(invoice_id: string): Promise<any> {
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL;
+    const token = localStorage.getItem("token");
+
+    const res = await fetch(`${baseUrl}sales/invoices.php?invoice_id=${invoice_id}`, {
+        method: 'DELETE',
+        headers: {
+            Authorization: `Bearer ${token}`,
+        },
+    });
+
+    const json = await res.json();
+
+    if (json.status_code !== 200) {
+        throw new Error(json.status_message || 'Failed to delete sales invoice');
+    }
+
+    return json;
 }

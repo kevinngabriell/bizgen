@@ -6,20 +6,32 @@ import DeliveryOrderLookup from "@/components/lookup/DeliveryOrderLookup";
 import SalesOrderLookup from "@/components/lookup/SalesOrderLookup";
 import SidebarWithHeader from "@/components/ui/SidebarWithHeader";
 import { AlertMessage } from "@/components/ui/alert";
+import RejectDialog from "@/components/dialog/RejectDialog";
 import { DecodedAuthToken, checkAuthOrRedirect, getAuthInfo } from "@/lib/auth/auth";
 import { getLang } from "@/lib/i18n";
 import { getAllCurrency, GetCurrencyData } from "@/lib/master/currency";
 import { GetCustomerData } from "@/lib/master/customer";
 import { getAllItem, GetItemData } from "@/lib/master/item";
-import { createSalesInvoice, generateSalesInvoiceNumber } from "@/lib/sales/invoice";
+import {
+  createSalesInvoice,
+  generateSalesInvoiceNumber,
+  getDetailSalesInvoice,
+  updateSalesInvoice,
+  processSalesInvoiceAction,
+  GetDetailInvoiceHistory,
+} from "@/lib/sales/invoice";
 import { GetSalesDeliveryItemData } from "@/lib/sales/delivery-order";
 import { GetSalesOrderItemData } from "@/lib/sales/sales-order";
-import { Badge, Box, Button, Card, Combobox, createListCollection, Field, Flex, Heading, IconButton, Input, Portal, Select, Separator, SimpleGrid, Text, Textarea, useFilter, useListCollection } from "@chakra-ui/react";
+import {
+  Badge, Box, Button, Card, Combobox, createListCollection, Field, Flex,
+  Heading, IconButton, Input, Portal, Select, Separator, SimpleGrid, Text,
+  Textarea, useFilter, useListCollection,
+} from "@chakra-ui/react";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { FaTrash } from "react-icons/fa";
 
-type InvoiceMode = "create" | "view" | "edit";
+type InvoiceMode = "create" | "view";
 
 export default function CreateInvoicePage() {
   return (
@@ -38,7 +50,17 @@ function InvoiceContent() {
   const searchParams = useSearchParams();
   const invoiceID = searchParams.get("invoice_id");
 
+  const [invoiceStatus, setInvoiceStatus] = useState<string>();
+  const [invoiceDetailId, setInvoiceDetailId] = useState<string>("");
+
   const [mode, setMode] = useState<InvoiceMode>("create");
+  // Only lock when status is explicitly submitted or confirmed
+  const isReadOnly = mode === "view" && (invoiceStatus === "submitted" || invoiceStatus === "confirmed");
+
+  const [isRejectDialogOpen, setIsRejectDialogOpen] = useState(false);
+  const [rejectLoading, setRejectLoading] = useState(false);
+
+  const [historyData, setHistoryData] = useState<GetDetailInvoiceHistory[]>([]);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -74,7 +96,6 @@ function InvoiceContent() {
   const [invoiceNo, setInvoiceNo] = useState("");
   const [invoiceDate, setInvoiceDate] = useState("");
   const [dueDate, setDueDate] = useState("");
-  const [jobReference, setJobReference] = useState("");
   const [salesOrderNo, setSalesOrderNo] = useState("");
   const [salesOrderId, setSalesOrderId] = useState("");
   const [deliveryOrderNo, setDeliveryOrderNo] = useState("");
@@ -88,42 +109,89 @@ function InvoiceContent() {
   const isIDR = selectedCurrencyData?.currency_symbol === "IDR" || selectedCurrencyData?.currency_code === "IDR";
 
   const [items, setItems] = useState([
-    { id: crypto.randomUUID(), itemId: "", quantity: 1, unitPrice: 0, unitPriceInput: "", taxPercent: 0 },
+    { id: crypto.randomUUID(), invoiceItemId: "", itemId: "", itemDisplayName: "", quantity: 1, unitPrice: 0, unitPriceInput: "", taxPercent: 0 },
   ]);
 
+  const showSuccess = (msg: string) => {
+    setShowAlert(true); setIsSuccess(true);
+    setTitlePopup(t.master.success); setMessagePopup(msg);
+    setTimeout(() => setShowAlert(false), 6000);
+  };
+
+  const showError = (msg: string) => {
+    setShowAlert(true); setIsSuccess(false);
+    setTitlePopup(t.master.error); setMessagePopup(msg);
+    setTimeout(() => setShowAlert(false), 6000);
+  };
+
   useEffect(() => {
-    const init = async () => {
-      const valid = await checkAuthOrRedirect();
-      if (!valid) return;
-      const info = getAuthInfo();
-      setAuth(info);
-      const language = info?.language === "id" ? "id" : "en";
-      setLang(language);
-    };
-
-    const loadMaster = async () => {
-      const [currencyRes, itemRes] = await Promise.all([
-        getAllCurrency(1, 1000),
-        getAllItem(1, 10000),
-      ]);
-      setCurrencyOptions(currencyRes?.data ?? []);
-      const itemData = itemRes?.data ?? [];
-      setItemCollection(itemData);
-      setItemCollections(itemData);
-    };
-
-    const loadGeneratedNumber = async () => {
-      if (invoiceID) return;
-      const res = await generateSalesInvoiceNumber();
-      setInvoiceNo(res.number);
-    };
-
     const loadAll = async () => {
       try {
         setLoading(true);
-        await init();
-        await loadMaster();
-        await loadGeneratedNumber();
+
+        const valid = await checkAuthOrRedirect();
+        if (!valid) return;
+        const info = getAuthInfo();
+        setAuth(info);
+        setLang(info?.language === "id" ? "id" : "en");
+
+        const [currencyRes, itemRes] = await Promise.all([
+          getAllCurrency(1, 1000),
+          getAllItem(1, 10000),
+        ]);
+
+        const currencyData = currencyRes?.data ?? [];
+        const itemData = itemRes?.data ?? [];
+
+        setCurrencyOptions(currencyData);
+        setItemCollection(itemData);
+        setItemCollections(itemData);
+
+        if (invoiceID) {
+          setMode("view");
+          const res = await getDetailSalesInvoice(invoiceID);
+          const h = res.header as any;
+
+          setInvoiceDetailId(h.invoice_id ?? "");
+          setInvoiceNo(h.invoice_number ?? "");
+          setInvoiceDate(h.invoice_date ?? "");
+          setDueDate(h.due_date ?? "");
+          setCustomer(h.customer_name ?? "");
+          setSalesOrderNo(h.sales_order_no ?? "");
+          setDeliveryOrderNo(h.delivery_order_no ?? "");
+          setNotes(h.notes ?? "");
+          setInvoiceStatus(h.status?.toLowerCase() ?? "");
+
+          const rate = Number(h.exchange_rate_to_idr) || 15000;
+          setExchangeRate(rate);
+          setExchangeRateInput(rate.toLocaleString());
+
+          const matchedCurrency = currencyData.find(
+            (c) => c.currency_code === h.currency_code || c.currency_symbol === h.currency_code
+          );
+          if (matchedCurrency) setCurrencySelected(matchedCurrency.currency_id);
+
+          setItems(
+            res.items.map((item) => {
+              const matched = itemData.find((i) => i.item_name === item.item_name);
+              return {
+                id: crypto.randomUUID(),
+                invoiceItemId: item.invoice_item_id ?? "",
+                itemId: matched?.item_id ?? "",
+                itemDisplayName: item.item_name,
+                quantity: item.quantity,
+                unitPrice: item.unit_price,
+                unitPriceInput: item.unit_price.toLocaleString(),
+                taxPercent: item.tax_percent,
+              };
+            })
+          );
+
+          setHistoryData(res.history);
+        } else {
+          const res = await generateSalesInvoiceNumber();
+          setInvoiceNo(res.number);
+        }
       } catch (err) {
         console.error(err);
       } finally {
@@ -138,7 +206,7 @@ function InvoiceContent() {
     setErrors((prev) => { const e = { ...prev }; delete e.subtotal_amount; delete e.grand_total; delete e.items; return e; });
 
   const addItem = () => {
-    setItems((prev) => [...prev, { id: crypto.randomUUID(), itemId: "", quantity: 1, unitPrice: 0, unitPriceInput: "", taxPercent: 0 }]);
+    setItems((prev) => [...prev, { id: crypto.randomUUID(), invoiceItemId: "", itemId: "", itemDisplayName: "", quantity: 1, unitPrice: 0, unitPriceInput: "", taxPercent: 0 }]);
     clearAmountErrors();
   };
 
@@ -231,267 +299,481 @@ function InvoiceContent() {
         }),
       });
 
-      setShowAlert(true);
-      setIsSuccess(true);
-      setTitlePopup(t.master.success);
-      setMessagePopup(t.sales_invoice.success_create);
+      showSuccess(t.sales_invoice.success_create);
 
-      // Reset form
       const newNumber = await generateSalesInvoiceNumber();
       setInvoiceNo(newNumber.number);
-      setCustomer("");
-      setCustomerId("");
-      setInvoiceDate("");
-      setDueDate("");
-      setJobReference("");
-      setSalesOrderNo("");
-      setSalesOrderId("");
-      setDeliveryOrderNo("");
-      setDeliveryOrderId("");
+      setCustomer(""); setCustomerId("");
+      setInvoiceDate(""); setDueDate("");
+      setSalesOrderNo(""); setSalesOrderId("");
+      setDeliveryOrderNo(""); setDeliveryOrderId("");
       setCurrencySelected(undefined);
-      setExchangeRate(15000);
-      setExchangeRateInput("15,000");
+      setExchangeRate(15000); setExchangeRateInput("15,000");
       setNotes("");
-      setItems([{ id: crypto.randomUUID(), itemId: "", quantity: 1, unitPrice: 0, unitPriceInput: "", taxPercent: 0 }]);
-
-      setTimeout(() => setShowAlert(false), 6000);
+      setItems([{ id: crypto.randomUUID(), invoiceItemId: "", itemId: "", itemDisplayName: "", quantity: 1, unitPrice: 0, unitPriceInput: "", taxPercent: 0 }]);
     } catch (err: any) {
-      setShowAlert(true);
-      setIsSuccess(false);
-      setTitlePopup(t.master.error);
-      setMessagePopup(err.message || t.sales_invoice.success_create);
-      setTimeout(() => setShowAlert(false), 6000);
+      showError(err.message || t.sales_invoice.success_create);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleUpdate = async () => {
+    try {
+      if (!invoiceDetailId) throw new Error("Invoice ID not found");
+      setLoading(true);
+
+      await updateSalesInvoice({
+        invoice_id: invoiceDetailId,
+        invoice_date: invoiceDate,
+        due_date: dueDate,
+        exchange_rate_to_idr: String(exchangeRate),
+        subtotal_amount: String(subTotal),
+        tax_amount: String(taxAmount),
+        total_amount: String(grandTotal),
+        notes: notes,
+      });
+
+      showSuccess(t.sales_invoice.success_update ?? "Invoice updated successfully.");
+    } catch (err: any) {
+      showError(err.message || "Failed to update invoice.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSubmitInvoice = async () => {
+    try {
+      if (!invoiceDetailId) throw new Error("Invoice ID not found");
+      setLoading(true);
+
+      await processSalesInvoiceAction({ invoice_id: invoiceDetailId, action: "submit" });
+
+      setInvoiceStatus("submitted");
+      showSuccess("Invoice submitted successfully.");
+    } catch (err: any) {
+      showError(err.message || "Failed to submit invoice.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleApprove = async () => {
+    try {
+      if (!invoiceDetailId) throw new Error("Invoice ID not found");
+      setLoading(true);
+
+      await processSalesInvoiceAction({ invoice_id: invoiceDetailId, action: "approve" });
+
+      setInvoiceStatus("confirmed");
+      showSuccess("Invoice approved successfully.");
+    } catch (err: any) {
+      showError(err.message || "Failed to approve invoice.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleReject = async (reason: string) => {
+    try {
+      if (!invoiceDetailId) throw new Error("Invoice ID not found");
+      setRejectLoading(true);
+
+      await processSalesInvoiceAction({ invoice_id: invoiceDetailId, action: "reject", notes: reason });
+
+      setIsRejectDialogOpen(false);
+      setInvoiceStatus("cancelled");
+      showSuccess("Invoice rejected successfully.");
+    } catch (err: any) {
+      showError(err.message || "Failed to reject invoice.");
+    } finally {
+      setRejectLoading(false);
     }
   };
 
   if (loading) return <Loading />;
 
   return (
-    <SidebarWithHeader username={auth?.username ?? "Unknown"} daysToExpire={auth?.days_remaining ?? 0}>
+    <>
+      <SidebarWithHeader username={auth?.username ?? "Unknown"} daysToExpire={auth?.days_remaining ?? 0}>
 
-      <Flex justify="space-between" align="center" mb={4}>
-        <Heading size="lg">{t.sales_invoice.title_create}</Heading>
-      </Flex>
+        <Heading size="lg" mb={4}>
+          {mode === "create" ? t.sales_invoice.title_create : t.sales_invoice.title_view}
+        </Heading>
 
-      <CustomerLookup isOpen={customerModalOpen} onClose={() => setCustomerModalOpen(false)} onChoose={handleChooseCustomer} />
-      <SalesOrderLookup isOpen={salesOrderModalOpen} onClose={() => setSalesOrderModalOpen(false)} onChoose={handleChooseSalesOrder} />
-      <DeliveryOrderLookup isOpen={deliveryOrderModalOpen} onClose={() => setDeliveryOrderModalOpen(false)} onChoose={handleChooseDeliveryOrder} />
+        <CustomerLookup isOpen={customerModalOpen} onClose={() => setCustomerModalOpen(false)} onChoose={handleChooseCustomer} />
+        <SalesOrderLookup isOpen={salesOrderModalOpen} onClose={() => setSalesOrderModalOpen(false)} onChoose={handleChooseSalesOrder} />
+        <DeliveryOrderLookup isOpen={deliveryOrderModalOpen} onClose={() => setDeliveryOrderModalOpen(false)} onChoose={handleChooseDeliveryOrder} />
 
-      {showAlert && <AlertMessage title={titlePopup} description={messagePopup} isSuccess={isSuccess} />}
+        {showAlert && <AlertMessage title={titlePopup} description={messagePopup} isSuccess={isSuccess} />}
 
-      {/* Invoice Information */}
-      <Card.Root mb={6}>
-        <Card.Header>
-          <Heading size="md">{t.sales_invoice.invoice_information}</Heading>
-        </Card.Header>
-        <Card.Body>
-          <SimpleGrid columns={{ base: 1, md: 3 }} gap={4}>
-            <Field.Root required invalid={!!errors.invoice_number}>
-              <Field.Label>{t.sales_invoice.invoice_number}<Field.RequiredIndicator/></Field.Label>
-              <Input placeholder={t.sales_invoice.invoice_number_placeholder} value={invoiceNo} onChange={(e) => { setInvoiceNo(e.target.value); setErrors((prev) => { const e = { ...prev }; delete e.invoice_number; return e; }); }} />
-              <Field.ErrorText>{errors.invoice_number}</Field.ErrorText>
-            </Field.Root>
-            <Field.Root required invalid={!!errors.invoice_date}>
-              <Field.Label>{t.sales_invoice.invoice_date}<Field.RequiredIndicator/></Field.Label>
-              <Input type="date" value={invoiceDate} onChange={(e) => { setInvoiceDate(e.target.value); setErrors((prev) => { const e = { ...prev }; delete e.invoice_date; return e; }); }} />
-              <Field.ErrorText>{errors.invoice_date}</Field.ErrorText>
-            </Field.Root>
-            <Field.Root>
-              <Field.Label>{t.sales_invoice.due_date}</Field.Label>
-              <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
-            </Field.Root>
-          </SimpleGrid>
+        {/* Status Badge */}
+        {mode === "view" && (
+          <Card.Root mb={4}>
+            <Card.Body>
+              <Badge
+                variant="solid"
+                colorPalette={
+                  invoiceStatus === "confirmed" ? "green"
+                  : invoiceStatus === "cancelled" ? "red"
+                  : invoiceStatus === "submitted" ? "blue"
+                  : "yellow"
+                }
+              >
+                {invoiceStatus}
+              </Badge>
+            </Card.Body>
+          </Card.Root>
+        )}
 
-          <SimpleGrid columns={{ base: 1, md: 3 }} gap={4} mt={4}>
-            <Field.Root required invalid={!!errors.customer_id}>
-              <Field.Label>{t.sales_invoice.customer}<Field.RequiredIndicator/></Field.Label>
-              <Input placeholder={t.sales_invoice.customer_placeholder} value={customer} readOnly cursor="pointer" onClick={() => setCustomerModalOpen(true)} />
-              <Field.ErrorText>{errors.customer_id}</Field.ErrorText>
-            </Field.Root>
-            <Field.Root required invalid={!!errors.sales_order_id}>
-              <Field.Label>{t.sales_invoice.sales_order_no}<Field.RequiredIndicator/></Field.Label>
-              <Input placeholder={t.sales_invoice.sales_order_no_placeholder} value={salesOrderNo} readOnly cursor="pointer" onClick={() => setSalesOrderModalOpen(true)} />
-              <Field.ErrorText>{errors.sales_order_id}</Field.ErrorText>
-            </Field.Root>
-            <Field.Root required invalid={!!errors.delivery_order_id}>
-              <Field.Label>{t.sales_invoice.delivery_order_no}<Field.RequiredIndicator/></Field.Label>
-              <Input placeholder={t.sales_invoice.delivery_order_no_placeholder} value={deliveryOrderNo} readOnly cursor="pointer" onClick={() => setDeliveryOrderModalOpen(true)} />
-              <Field.ErrorText>{errors.delivery_order_id}</Field.ErrorText>
-            </Field.Root>
-          </SimpleGrid>
-
-          <SimpleGrid columns={{ base: 1, lg: isIDR ? 1 : 2 }} gap={4} mt={4}>
-            <Field.Root required invalid={!!errors.currency_id}>
-              <Field.Label>{t.sales_invoice.currency}<Field.RequiredIndicator/></Field.Label>
-              <Select.Root w="100%" collection={currencyCollection} value={currencySelected ? [currencySelected] : []} onValueChange={(details) => { setCurrencySelected(details.value[0]); setErrors((prev) => { const e = { ...prev }; delete e.currency_id; return e; }); }}>
-                <Select.HiddenSelect />
-                <Select.Control>
-                  <Select.Trigger>
-                    <Select.ValueText placeholder={t.sales_invoice.currency_placeholder} />
-                  </Select.Trigger>
-                  <Select.IndicatorGroup>
-                    <Select.Indicator />
-                  </Select.IndicatorGroup>
-                </Select.Control>
-                <Portal>
-                  <Select.Positioner>
-                    <Select.Content>
-                      {currencyCollection.items.map((cur) => (
-                        <Select.Item item={cur} key={cur.value}>
-                          {cur.label}
-                          <Select.ItemIndicator />
-                        </Select.Item>
-                      ))}
-                    </Select.Content>
-                  </Select.Positioner>
-                </Portal>
-              </Select.Root>
-              <Field.ErrorText>{errors.currency_id}</Field.ErrorText>
-            </Field.Root>
-            {!isIDR && (
-              <Field.Root>
-                <Field.Label>{t.sales_invoice.exchange_rate}</Field.Label>
+        {/* Invoice Information */}
+        <Card.Root mb={6}>
+          <Card.Header>
+            <Heading size="md">{t.sales_invoice.invoice_information}</Heading>
+          </Card.Header>
+          <Card.Body>
+            <SimpleGrid columns={{ base: 1, md: 3 }} gap={4}>
+              <Field.Root required invalid={!!errors.invoice_number}>
+                <Field.Label>{t.sales_invoice.invoice_number}<Field.RequiredIndicator /></Field.Label>
                 <Input
-                  value={exchangeRateInput}
-                  onChange={(e) => {
-                    const raw = e.target.value;
-                    setExchangeRateInput(raw);
-                    setExchangeRate(parseFloat(raw.replace(/[^0-9.]/g, "")) || 0);
-                  }}
-                  onBlur={() => setExchangeRateInput(exchangeRate === 0 ? "" : exchangeRate.toLocaleString())}
-                  onFocus={() => setExchangeRateInput(exchangeRate === 0 ? "" : String(exchangeRate))}
+                  placeholder={t.sales_invoice.invoice_number_placeholder}
+                  value={invoiceNo}
+                  readOnly={mode === "view"}
+                  onChange={(e) => { setInvoiceNo(e.target.value); setErrors((prev) => { const e = { ...prev }; delete e.invoice_number; return e; }); }}
+                />
+                <Field.ErrorText>{errors.invoice_number}</Field.ErrorText>
+              </Field.Root>
+              <Field.Root required invalid={!!errors.invoice_date}>
+                <Field.Label>{t.sales_invoice.invoice_date}<Field.RequiredIndicator /></Field.Label>
+                <Input
+                  type="date"
+                  value={invoiceDate}
+                  readOnly={isReadOnly}
+                  onChange={(e) => { setInvoiceDate(e.target.value); setErrors((prev) => { const e = { ...prev }; delete e.invoice_date; return e; }); }}
+                />
+                <Field.ErrorText>{errors.invoice_date}</Field.ErrorText>
+              </Field.Root>
+              <Field.Root>
+                <Field.Label>{t.sales_invoice.due_date}</Field.Label>
+                <Input
+                  type="date"
+                  value={dueDate}
+                  readOnly={isReadOnly}
+                  onChange={(e) => setDueDate(e.target.value)}
                 />
               </Field.Root>
-            )}
-          </SimpleGrid>
-        </Card.Body>
-      </Card.Root>
+            </SimpleGrid>
 
-      {/* Line Items */}
-      <Card.Root mb={6}>
-        <Card.Header>
-          <Flex justify="space-between" align="center">
-            <Flex align="center" gap={2}>
-              <Heading size="md">{t.sales_invoice.line_items}</Heading>
-              {errors.items && <Text color="red.500" fontSize="sm">{errors.items}</Text>}
+            <SimpleGrid columns={{ base: 1, md: 3 }} gap={4} mt={4}>
+              <Field.Root required invalid={!!errors.customer_id}>
+                <Field.Label>{t.sales_invoice.customer}<Field.RequiredIndicator /></Field.Label>
+                <Input
+                  placeholder={t.sales_invoice.customer_placeholder}
+                  value={customer}
+                  readOnly
+                  cursor={mode === "view" ? "default" : "pointer"}
+                  onClick={() => mode !== "view" && setCustomerModalOpen(true)}
+                />
+                <Field.ErrorText>{errors.customer_id}</Field.ErrorText>
+              </Field.Root>
+              <Field.Root required invalid={!!errors.sales_order_id}>
+                <Field.Label>{t.sales_invoice.sales_order_no}<Field.RequiredIndicator /></Field.Label>
+                <Input
+                  placeholder={t.sales_invoice.sales_order_no_placeholder}
+                  value={salesOrderNo}
+                  readOnly
+                  cursor={mode === "view" ? "default" : "pointer"}
+                  onClick={() => mode !== "view" && setSalesOrderModalOpen(true)}
+                />
+                <Field.ErrorText>{errors.sales_order_id}</Field.ErrorText>
+              </Field.Root>
+              <Field.Root required invalid={!!errors.delivery_order_id}>
+                <Field.Label>{t.sales_invoice.delivery_order_no}<Field.RequiredIndicator /></Field.Label>
+                <Input
+                  placeholder={t.sales_invoice.delivery_order_no_placeholder}
+                  value={deliveryOrderNo}
+                  readOnly
+                  cursor={mode === "view" ? "default" : "pointer"}
+                  onClick={() => mode !== "view" && setDeliveryOrderModalOpen(true)}
+                />
+                <Field.ErrorText>{errors.delivery_order_id}</Field.ErrorText>
+              </Field.Root>
+            </SimpleGrid>
+
+            <SimpleGrid columns={{ base: 1, lg: isIDR ? 1 : 2 }} gap={4} mt={4}>
+              <Field.Root required invalid={!!errors.currency_id}>
+                <Field.Label>{t.sales_invoice.currency}<Field.RequiredIndicator /></Field.Label>
+                <Select.Root
+                  disabled={mode === "view"}
+                  w="100%"
+                  collection={currencyCollection}
+                  value={currencySelected ? [currencySelected] : []}
+                  onValueChange={(details) => { setCurrencySelected(details.value[0]); setErrors((prev) => { const e = { ...prev }; delete e.currency_id; return e; }); }}
+                >
+                  <Select.HiddenSelect />
+                  <Select.Control>
+                    <Select.Trigger>
+                      <Select.ValueText placeholder={t.sales_invoice.currency_placeholder} />
+                    </Select.Trigger>
+                    <Select.IndicatorGroup><Select.Indicator /></Select.IndicatorGroup>
+                  </Select.Control>
+                  <Portal>
+                    <Select.Positioner>
+                      <Select.Content>
+                        {currencyCollection.items.map((cur) => (
+                          <Select.Item item={cur} key={cur.value}>{cur.label}<Select.ItemIndicator /></Select.Item>
+                        ))}
+                      </Select.Content>
+                    </Select.Positioner>
+                  </Portal>
+                </Select.Root>
+                <Field.ErrorText>{errors.currency_id}</Field.ErrorText>
+              </Field.Root>
+              {!isIDR && (
+                <Field.Root>
+                  <Field.Label>{t.sales_invoice.exchange_rate}</Field.Label>
+                  <Input
+                    value={exchangeRateInput}
+                    readOnly={isReadOnly}
+                    onChange={(e) => {
+                      const raw = e.target.value;
+                      setExchangeRateInput(raw);
+                      setExchangeRate(parseFloat(raw.replace(/[^0-9.]/g, "")) || 0);
+                    }}
+                    onBlur={() => setExchangeRateInput(exchangeRate === 0 ? "" : exchangeRate.toLocaleString())}
+                    onFocus={() => setExchangeRateInput(exchangeRate === 0 ? "" : String(exchangeRate))}
+                  />
+                </Field.Root>
+              )}
+            </SimpleGrid>
+          </Card.Body>
+        </Card.Root>
+
+        {/* Line Items */}
+        <Card.Root mb={6}>
+          <Card.Header>
+            <Flex justify="space-between" align="center">
+              <Flex align="center" gap={2}>
+                <Heading size="md">{t.sales_invoice.line_items}</Heading>
+                {errors.items && <Text color="red.500" fontSize="sm">{errors.items}</Text>}
+              </Flex>
+              {!isReadOnly && mode === "create" && (
+                <Button size="sm" bg="#E77A1F" color="white" onClick={addItem}>{t.sales_invoice.add_item}</Button>
+              )}
             </Flex>
-            <Button size="sm" bg="#E77A1F" color="white" onClick={addItem}>{t.sales_invoice.add_item}</Button>
-          </Flex>
-        </Card.Header>
-        <Card.Body>
-          <Box overflowX="auto">
-            {items.map((item) => {
-              const base = item.quantity * item.unitPrice;
-              const amount = base + base * (item.taxPercent / 100);
-              return (
-                <SimpleGrid templateColumns="2fr 100px 180px 100px 160px 60px" key={item.id} gap={4} mb={3}>
-                  <Field.Root>
-                    <Field.Label>{t.sales_invoice.description_label}</Field.Label>
-                    <Combobox.Root
-                      collection={itemCollection}
-                      onValueChange={(details) => updateItem(item.id, "itemId", details.value?.[0] ?? "")}
-                      onInputValueChange={(e) => {
-                        const input = e.inputValue ?? "";
-                        if (!input.trim()) { setItemCollection(itemCollections); return; }
-                        setItemCollection(itemCollections.filter((i) => contains(`${i.item_code} - ${i.item_name}`, input)));
-                      }}
-                    >
-                      <Combobox.Control>
-                        <Combobox.Input placeholder={t.sales_invoice.description_placeholder} onFocus={() => setItemCollection(itemCollections)} />
-                        <Combobox.IndicatorGroup>
-                          <Combobox.ClearTrigger />
-                          <Combobox.Trigger />
-                        </Combobox.IndicatorGroup>
-                      </Combobox.Control>
-                      <Portal>
-                        <Combobox.Positioner>
-                          <Combobox.Content>
-                            <Combobox.Empty>No items found</Combobox.Empty>
-                            {itemCollection.items.map((i) => (
-                              <Combobox.Item item={i} key={i.item_id}>
-                                {i.item_code} - {i.item_name}
-                                <Combobox.ItemIndicator />
-                              </Combobox.Item>
-                            ))}
-                          </Combobox.Content>
-                        </Combobox.Positioner>
-                      </Portal>
-                    </Combobox.Root>
-                  </Field.Root>
-                  <Field.Root>
-                    <Field.Label>{t.sales_invoice.quantity}</Field.Label>
-                    <Input type="number" placeholder="0" value={item.quantity === 0 ? "" : item.quantity} onChange={(e) => updateItem(item.id, "quantity", parseFloat(e.target.value) || 0)} />
-                  </Field.Root>
-                  <Field.Root>
-                    <Field.Label>{t.sales_invoice.unit_price}</Field.Label>
-                    <Input
-                      placeholder="0"
-                      value={item.unitPriceInput}
-                      onChange={(e) => updateUnitPrice(item.id, e.target.value)}
-                      onBlur={() => blurUnitPrice(item.id)}
-                      onFocus={() => focusUnitPrice(item.id)}
-                    />
-                  </Field.Root>
-                  <Field.Root>
-                    <Field.Label>{t.sales_invoice.tax_percent}</Field.Label>
-                    <Input type="number" placeholder="0" value={item.taxPercent === 0 ? "" : item.taxPercent} onChange={(e) => updateItem(item.id, "taxPercent", parseFloat(e.target.value) || 0)} />
-                  </Field.Root>
-                  <Field.Root>
-                    <Field.Label>{t.sales_invoice.amount} ({currencySymbol})</Field.Label>
-                    <Text pt={2} fontWeight="medium">{amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Text>
-                  </Field.Root>
-                  <Flex align="flex-end" pb={1}>
-                    <IconButton aria-label="Remove" variant="ghost" color="red" onClick={() => removeItem(item.id)}>
-                      <FaTrash />
-                    </IconButton>
-                  </Flex>
-                </SimpleGrid>
-              );
-            })}
-          </Box>
-
-          <Separator mt={4} />
-
-          <Flex justify="flex-end" mt={4}>
-            <Box w={{ base: "100%", md: "320px" }}>
-              <Flex justify="space-between" mb={1}>
-                <Text color="gray.600">{t.sales_invoice.subtotal} ({currencySymbol})</Text>
-                <Text fontWeight="semibold">{subTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Text>
-              </Flex>
-              {errors.subtotal_amount && <Text color="red.500" fontSize="sm" mb={1}>{errors.subtotal_amount}</Text>}
-              <Flex justify="space-between" mb={2}>
-                <Text color="gray.600">{t.sales_invoice.tax_amount}</Text>
-                <Text fontWeight="semibold">{taxAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Text>
-              </Flex>
-              <Separator mb={2} />
-              <Flex justify="space-between">
-                <Text fontWeight="bold">{t.sales_invoice.grand_total} ({currencySymbol})</Text>
-                <Text fontWeight="bold" color={errors.grand_total ? "red.500" : undefined}>{grandTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Text>
-              </Flex>
-              {errors.grand_total && <Text color="red.500" fontSize="sm" mt={1}>{errors.grand_total}</Text>}
+          </Card.Header>
+          <Card.Body>
+            <Box overflowX="auto">
+              {items.map((item) => {
+                const base = item.quantity * item.unitPrice;
+                const amount = base + base * (item.taxPercent / 100);
+                return (
+                  <SimpleGrid templateColumns="2fr 100px 180px 100px 160px 60px" key={item.id} gap={4} mb={3}>
+                    <Field.Root>
+                      <Field.Label>{t.sales_invoice.description_label}</Field.Label>
+                      {isReadOnly || mode === "view" ? (
+                        <Input value={item.itemDisplayName || item.itemId} readOnly />
+                      ) : (
+                        <Combobox.Root
+                          collection={itemCollection}
+                          value={item.itemId ? [item.itemId] : []}
+                          onValueChange={(details) => {
+                            const selectedId = details.value?.[0] ?? "";
+                            const selectedItem = itemCollections.find((i) => i.item_id === selectedId);
+                            setItems((prev) => prev.map((i) => i.id === item.id ? {
+                              ...i,
+                              itemId: selectedId,
+                              itemDisplayName: selectedItem ? `${selectedItem.item_code} - ${selectedItem.item_name}` : selectedId,
+                            } : i));
+                            clearAmountErrors();
+                          }}
+                          onInputValueChange={(e) => {
+                            const input = e.inputValue ?? "";
+                            if (!input.trim()) { setItemCollection(itemCollections); return; }
+                            setItemCollection(itemCollections.filter((i) => contains(`${i.item_code} - ${i.item_name}`, input)));
+                          }}
+                        >
+                          <Combobox.Control>
+                            <Combobox.Input placeholder={t.sales_invoice.description_placeholder} onFocus={() => setItemCollection(itemCollections)} />
+                            <Combobox.IndicatorGroup>
+                              <Combobox.ClearTrigger />
+                              <Combobox.Trigger />
+                            </Combobox.IndicatorGroup>
+                          </Combobox.Control>
+                          <Portal>
+                            <Combobox.Positioner>
+                              <Combobox.Content>
+                                <Combobox.Empty>No items found</Combobox.Empty>
+                                {itemCollection.items.map((i) => (
+                                  <Combobox.Item item={i} key={i.item_id}>
+                                    {i.item_code} - {i.item_name}
+                                    <Combobox.ItemIndicator />
+                                  </Combobox.Item>
+                                ))}
+                              </Combobox.Content>
+                            </Combobox.Positioner>
+                          </Portal>
+                        </Combobox.Root>
+                      )}
+                    </Field.Root>
+                    <Field.Root>
+                      <Field.Label>{t.sales_invoice.quantity}</Field.Label>
+                      <Input
+                        type="number"
+                        placeholder="0"
+                        value={item.quantity === 0 ? "" : item.quantity}
+                        readOnly={mode === "view"}
+                        onChange={(e) => updateItem(item.id, "quantity", parseFloat(e.target.value) || 0)}
+                      />
+                    </Field.Root>
+                    <Field.Root>
+                      <Field.Label>{t.sales_invoice.unit_price}</Field.Label>
+                      <Input
+                        placeholder="0"
+                        value={item.unitPriceInput}
+                        readOnly={mode === "view"}
+                        onChange={(e) => updateUnitPrice(item.id, e.target.value)}
+                        onBlur={() => blurUnitPrice(item.id)}
+                        onFocus={() => focusUnitPrice(item.id)}
+                      />
+                    </Field.Root>
+                    <Field.Root>
+                      <Field.Label>{t.sales_invoice.tax_percent}</Field.Label>
+                      <Input
+                        type="number"
+                        placeholder="0"
+                        value={item.taxPercent === 0 ? "" : item.taxPercent}
+                        readOnly={mode === "view"}
+                        onChange={(e) => updateItem(item.id, "taxPercent", parseFloat(e.target.value) || 0)}
+                      />
+                    </Field.Root>
+                    <Field.Root>
+                      <Field.Label>{t.sales_invoice.amount} ({currencySymbol})</Field.Label>
+                      <Text pt={2} fontWeight="medium">
+                        {amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </Text>
+                    </Field.Root>
+                    {mode === "create" && (
+                      <Flex align="flex-end" pb={1}>
+                        <IconButton aria-label="Remove" variant="ghost" color="red" onClick={() => removeItem(item.id)}>
+                          <FaTrash />
+                        </IconButton>
+                      </Flex>
+                    )}
+                  </SimpleGrid>
+                );
+              })}
             </Box>
+
+            <Separator mt={4} />
+
+            <Flex justify="flex-end" mt={4}>
+              <Box w={{ base: "100%", md: "320px" }}>
+                <Flex justify="space-between" mb={1}>
+                  <Text color="gray.600">{t.sales_invoice.subtotal} ({currencySymbol})</Text>
+                  <Text fontWeight="semibold">{subTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Text>
+                </Flex>
+                {errors.subtotal_amount && <Text color="red.500" fontSize="sm" mb={1}>{errors.subtotal_amount}</Text>}
+                <Flex justify="space-between" mb={2}>
+                  <Text color="gray.600">{t.sales_invoice.tax_amount}</Text>
+                  <Text fontWeight="semibold">{taxAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Text>
+                </Flex>
+                <Separator mb={2} />
+                <Flex justify="space-between">
+                  <Text fontWeight="bold">{t.sales_invoice.grand_total} ({currencySymbol})</Text>
+                  <Text fontWeight="bold" color={errors.grand_total ? "red.500" : undefined}>
+                    {grandTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </Text>
+                </Flex>
+                {errors.grand_total && <Text color="red.500" fontSize="sm" mt={1}>{errors.grand_total}</Text>}
+              </Box>
+            </Flex>
+          </Card.Body>
+        </Card.Root>
+
+        {/* Notes */}
+        <Card.Root mb={6}>
+          <Card.Header>
+            <Heading size="md">{t.sales_invoice.notes}</Heading>
+          </Card.Header>
+          <Card.Body>
+            <Textarea
+              placeholder={t.sales_invoice.notes_placeholder}
+              value={notes}
+              readOnly={isReadOnly}
+              onChange={(e) => setNotes(e.target.value)}
+              rows={4}
+            />
+          </Card.Body>
+        </Card.Root>
+
+        {/* Create mode actions */}
+        {mode === "create" && (
+          <Flex justify="flex-end" mt={4} gap={3}>
+            <Button variant="outline">{t.sales_invoice.cancel}</Button>
+            <Button bg="#E77A1F" color="white" cursor="pointer" onClick={handleSubmit}>{t.sales_invoice.save_invoice}</Button>
           </Flex>
-        </Card.Body>
-      </Card.Root>
+        )}
 
-      {/* Notes */}
-      <Card.Root mb={6}>
-        <Card.Header>
-          <Heading size="md">{t.sales_invoice.notes}</Heading>
-        </Card.Header>
-        <Card.Body>
-          <Textarea placeholder={t.sales_invoice.notes_placeholder} value={notes} onChange={(e) => setNotes(e.target.value)} rows={4} />
-        </Card.Body>
-      </Card.Root>
+        {/* Draft or Cancelled: Save + Submit */}
+        {(invoiceStatus === "draft" || invoiceStatus === "cancelled") && (
+          <Flex justify="flex-end" gap={3} mt={5}>
+            <Button variant="outline" onClick={handleUpdate}>{t.master.save}</Button>
+            <Button bg="#E77A1F" color="white" onClick={handleSubmitInvoice}>{t.master.submit}</Button>
+          </Flex>
+        )}
 
-      {/* Actions */}
-      <Flex justify="flex-end" mt={4} gap={3}>
-        <Button variant="outline">{t.sales_invoice.cancel}</Button>
-        <Button bg="#E77A1F" color="white" cursor="pointer" onClick={handleSubmit}>{t.sales_invoice.save_invoice}</Button>
-      </Flex>
+        {/* Submitted: Export PDF + Reject + Approve */}
+        {invoiceStatus === "submitted" && (
+          <Flex gap={3} justifyContent="space-between" mt={5}>
+            <Button variant="outline">{t.master.export_pdf}</Button>
+            <Flex gap={6}>
+              <Button color="red" borderColor="red" variant="outline" onClick={() => setIsRejectDialogOpen(true)}>{t.master.reject}</Button>
+              <Button backgroundColor="green" onClick={handleApprove}>{t.master.approve}</Button>
+            </Flex>
+          </Flex>
+        )}
 
-    </SidebarWithHeader>
+        {/* Confirmed: Export PDF only */}
+        {invoiceStatus === "confirmed" && (
+          <Flex justify="flex-start" mt={5}>
+            <Button variant="outline">{t.master.export_pdf}</Button>
+          </Flex>
+        )}
+
+        {/* History Log */}
+        {mode === "view" && historyData.length > 0 && (
+          <Card.Root mt={6}>
+            <Card.Body>
+              <Heading size="xl" mb={3}>History Log</Heading>
+              {historyData.map((log, index) => (
+                <Flex key={index} justify="space-between" mb={2}>
+                  <Text fontSize="sm">
+                    {log.note} by <b>{log.created_by}</b>
+                  </Text>
+                  <Text fontSize="xs" color="gray.500">
+                    {log.created_at
+                      ? new Date(log.created_at).toLocaleString(
+                          lang === "id" ? "id-ID" : "en-US",
+                          { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false }
+                        )
+                      : "-"}
+                  </Text>
+                </Flex>
+              ))}
+            </Card.Body>
+          </Card.Root>
+        )}
+
+      </SidebarWithHeader>
+
+      <RejectDialog
+        isOpen={isRejectDialogOpen}
+        onClose={() => setIsRejectDialogOpen(false)}
+        onConfirm={handleReject}
+        loading={rejectLoading}
+        lang={lang}
+      />
+    </>
   );
 }

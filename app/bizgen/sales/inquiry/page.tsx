@@ -12,8 +12,9 @@ import { getAllShipVia, GetShipViaData } from "@/lib/master/ship-via";
 import { getAllOrigin, GetOriginData } from "@/lib/master/origin";
 import { getAllTerm, GetTermData } from "@/lib/master/term";
 import { getAllUOM, UOMData } from "@/lib/master/uom";
-import { createSalesRfq, generateRfqNumber, GetDetailRfqHistory, getDetailSalesRfq } from "@/lib/sales/rfq";
+import { createSalesRfq, generateRfqNumber, GetDetailRfqHistory, getDetailSalesRfq, updateSalesRfq, processRfqAction } from "@/lib/sales/rfq";
 import { AlertMessage } from "@/components/ui/alert";
+import RejectDialog from "@/components/dialog/RejectDialog";
 import { InfoTip } from "@/components/ui/toggle-tip";
 import { getAllCommodity, GetCommodityData } from "@/lib/master/commodity";
 
@@ -40,12 +41,13 @@ function InquiryContent() {
   const rfqId = searchParams.get("rfq_id");
 
   const [rfqStatus, setRfqStatus] = useState<string>();
+  const [rfqDetailId, setRfqDetailId] = useState<string>();
   const [lastUpdatedBy, setLastUpdatedBy] = useState<string>();
   const [lastUpdatedAt, setLastUpdatedAt] = useState<string>();
 
   //set mode for create/update/view
   const [mode, setMode] = useState<InquiryMode>("create");
-  const isReadOnly = mode === "view" && rfqStatus !== "draft" && rfqStatus !== "rejected";
+  const isReadOnly = mode === "view" && rfqStatus !== "draft" && rfqStatus !== "cancelled";
   
   //set shipment type selection
   const [shipmentTypeSelected, setShipmentTypeSelected] = useState<string>();
@@ -90,6 +92,10 @@ function InquiryContent() {
       value: uom.uom_id,
     })),
   });
+
+  //reject dialog state
+  const [isRejectDialogOpen, setIsRejectDialogOpen] = useState(false);
+  const [rejectLoading, setRejectLoading] = useState(false);
 
   //alert & success variable
   const [showAlert, setShowAlert] = useState(false);
@@ -164,6 +170,7 @@ function InquiryContent() {
       });
 
       setRfqStatus(res.header.rfq_status);
+      setRfqDetailId(res.header.sales_rfq_id);
       setLastUpdatedAt(res.header.updated_at);
       // setLastUpdatedBy(res.header.updated_by_name);
 
@@ -356,10 +363,138 @@ function InquiryContent() {
     }
   };
     
+  const handleUpdate = async () => {
+    try {
+      if (!rfqDetailId) throw new Error("RFQ ID not found");
+
+      setLoading(true);
+
+      await updateSalesRfq({
+        sales_rfq_id: rfqDetailId,
+        ship_via_id: shipmentTypeSelected,
+        origin_id: originSelected,
+        destination_id: destinationSelected,
+        incoterm_id: termSelected,
+        commodity_id: commoditySelected,
+        remarks: form.remarks || undefined,
+        items: items.map((row) => ({
+          item_name: row.name,
+          uom_id: row.unit,
+          quantity: Number(row.qty),
+          hs_code: row.hsCode || undefined,
+          weight_kg: row.weight ? Number(row.weight) : undefined,
+          cbm: row.cbm ? Number(row.cbm) : undefined,
+          packaging: row.packaging || undefined,
+        })),
+      });
+
+      setShowAlert(true);
+      setIsSuccess(true);
+      setTitlePopup(t.master.success);
+      setMessagePopup("RFQ updated successfully.");
+      setTimeout(() => setShowAlert(false), 6000);
+    } catch (err: any) {
+      setShowAlert(true);
+      setIsSuccess(false);
+      setTitlePopup(t.master.error);
+      setMessagePopup(err.message || "Failed to update RFQ.");
+      setTimeout(() => setShowAlert(false), 6000);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleApprove = async () => {
+    try {
+      if (!rfqDetailId) throw new Error("RFQ ID not found");
+
+      setLoading(true);
+
+      await processRfqAction({
+        sales_rfq_id: rfqDetailId,
+        action: "approve",
+      });
+
+      setRfqStatus("quoted");
+      setShowAlert(true);
+      setIsSuccess(true);
+      setTitlePopup(t.master.success);
+      setMessagePopup("RFQ approved successfully.");
+      setTimeout(() => setShowAlert(false), 6000);
+    } catch (err: any) {
+      setShowAlert(true);
+      setIsSuccess(false);
+      setTitlePopup(t.master.error);
+      setMessagePopup(err.message || "Failed to approve RFQ.");
+      setTimeout(() => setShowAlert(false), 6000);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleReject = async (reason: string) => {
+    try {
+      if (!rfqDetailId) throw new Error("RFQ ID not found");
+
+      setRejectLoading(true);
+
+      await processRfqAction({
+        sales_rfq_id: rfqDetailId,
+        action: "reject",
+        rejection_reason: reason,
+      });
+
+      setIsRejectDialogOpen(false);
+      setRfqStatus("cancelled");
+      setShowAlert(true);
+      setIsSuccess(true);
+      setTitlePopup(t.master.success);
+      setMessagePopup("RFQ rejected successfully.");
+      setTimeout(() => setShowAlert(false), 6000);
+    } catch (err: any) {
+      setShowAlert(true);
+      setIsSuccess(false);
+      setTitlePopup(t.master.error);
+      setMessagePopup(err.message || "Failed to reject RFQ.");
+      setTimeout(() => setShowAlert(false), 6000);
+    } finally {
+      setRejectLoading(false);
+    }
+  };
+
+  const handleSubmitRfq = async () => {
+    try {
+      if (!rfqDetailId) throw new Error("RFQ ID not found");
+
+      setLoading(true);
+
+      await processRfqAction({
+        sales_rfq_id: rfqDetailId,
+        action: "submit",
+      });
+
+      setRfqStatus("submitted");
+      setShowAlert(true);
+      setIsSuccess(true);
+      setTitlePopup(t.master.success);
+      setMessagePopup("RFQ submitted successfully.");
+      setTimeout(() => setShowAlert(false), 6000);
+    } catch (err: any) {
+      setShowAlert(true);
+      setIsSuccess(false);
+      setTitlePopup(t.master.error);
+      setMessagePopup(err.message || "Failed to submit RFQ.");
+      setTimeout(() => setShowAlert(false), 6000);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   //set loading process
   if (loading) return <Loading/>;
 
   return (
+    <>
     <SidebarWithHeader username={auth?.username ?? "Unknown"} daysToExpire={auth?.days_remaining ?? 0}>
       
       <Flex direction="column">
@@ -612,27 +747,28 @@ function InquiryContent() {
             </Card.Root>
 
             <Flex justify="flex-end" mt={5}>
-              {/* if the inqiry was create for the first time then save as draft */}
+              {/* if the inquiry was created for the first time then save as draft */}
               {mode === "create" && (
                 <Button bg="#E77A1F" color="white" onClick={handleSave}>{t.sales_inquiry.save_draft}</Button>
               )}
             </Flex>
 
-            {rfqStatus === "draft" && (
-              <Flex justify={"flex-end"}>
-                <Button bg="#E77A1F" color="white" onClick={handleSave}>{t.master.submit}</Button>
+            {(rfqStatus === "draft" || rfqStatus === "cancelled") && (
+              <Flex justify={"flex-end"} gap={3}>
+                <Button variant="outline" onClick={handleUpdate}>{t.master.save}</Button>
+                <Button bg="#E77A1F" color="white" onClick={handleSubmitRfq}>{t.master.submit}</Button>
               </Flex>
             )}
-            
+
             {rfqStatus === "submitted" && (
-                <Flex gap={3} justifyContent={"space-between"}>
-                  <Button variant="outline">{t.master.export_pdf}</Button>
-                  <Flex gap={6}>
-                    <Button color="red" borderColor={"red"} variant="outline">{t.master.reject}</Button>
-                    <Button backgroundColor="green">{t.master.approve}</Button>
-                  </Flex>
+              <Flex gap={3} justifyContent={"space-between"}>
+                <Button variant="outline">{t.master.export_pdf}</Button>
+                <Flex gap={6}>
+                  <Button color="red" borderColor={"red"} variant="outline" onClick={() => setIsRejectDialogOpen(true)}>{t.master.reject}</Button>
+                  <Button backgroundColor="green" onClick={handleApprove}>{t.master.approve}</Button>
                 </Flex>
-              )}
+              </Flex>
+            )}
           </Card.Body>
         </Card.Root>
 
@@ -669,7 +805,15 @@ function InquiryContent() {
   </Card.Root>
 )}
 
-        
       </SidebarWithHeader>
-    );
+
+      <RejectDialog
+        isOpen={isRejectDialogOpen}
+        onClose={() => setIsRejectDialogOpen(false)}
+        onConfirm={handleReject}
+        loading={rejectLoading}
+        lang={lang}
+      />
+    </>
+  );
 }
