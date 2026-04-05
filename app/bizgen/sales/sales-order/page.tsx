@@ -42,6 +42,8 @@ function SalesOrderContent() {
 
   const [salesOrderStatus, setSalesOrderStatus] = useState<string>();
   const [salesOrderDetailId, setSalesOrderDetailId] = useState<string>("");
+  const [lastUpdatedBy, setLastUpdatedBy] = useState<string>();
+  const [lastUpdatedAt, setLastUpdatedAt] = useState<string>();
 
   const [mode, setMode] = useState<SalesOrderMode>("create");
   // Only lock when status is explicitly submitted or confirmed
@@ -169,6 +171,8 @@ function SalesOrderContent() {
           setSalesOrderNumber(res.header.sales_order_no);
           setOrderDate(res.header.order_date);
           setSalesOrderStatus(res.header.status);
+          setLastUpdatedBy(res.header.updated_by ?? res.header.created_by);
+          setLastUpdatedAt(res.header.updated_at ?? res.header.created_at);
           setEta(res.header.eta);
           setEtd(res.header.etd);
           setSalesPerson(res.header.sales_person ?? "");
@@ -465,17 +469,22 @@ function SalesOrderContent() {
         {mode === "view" && (
           <Card.Root mt={3}>
             <Card.Body>
-              <Badge
-                variant="solid"
-                colorPalette={
-                  salesOrderStatus === "confirmed" ? "green"
-                  : salesOrderStatus === "cancelled" ? "red"
-                  : salesOrderStatus === "submitted" ? "blue"
-                  : "yellow"
-                }
-              >
-                {salesOrderStatus}
-              </Badge>
+              <Flex justifyContent="space-between">
+                <Badge
+                  variant="solid"
+                  colorPalette={
+                    salesOrderStatus === "confirmed" ? "green"
+                    : salesOrderStatus === "cancelled" ? "red"
+                    : salesOrderStatus === "submitted" ? "blue"
+                    : "yellow"
+                  }
+                >
+                  {salesOrderStatus ? salesOrderStatus.charAt(0).toUpperCase() + salesOrderStatus.slice(1) : ""}
+                </Badge>
+                <Text fontSize="xs" color="gray.600">
+                  {t.master.last_update_by} <b>{lastUpdatedBy || "System"}</b> • {lastUpdatedAt ? new Date(lastUpdatedAt).toLocaleDateString(lang === "id" ? "id-ID" : "en-US", { day: "2-digit", month: "short", year: "numeric" }) : "-"}
+                </Text>
+              </Flex>
             </Card.Body>
           </Card.Root>
         )}

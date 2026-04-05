@@ -107,7 +107,7 @@ function getDetailRoute(type: ModuleType, id: string): string {
     case "quotation":   return `/bizgen/sales/quotation?quotation_id=${id}`;
     case "booking":     return `/bizgen/sales/booking-confirmation?booking_id=${id}`;
     case "shipment":    return `/bizgen/sales/shipment-process?shipment_id=${id}`;
-    case "costing":     return `/bizgen/sales/costing-expense?shipment_id=${id}`;
+    case "costing":     return `/bizgen/sales/costing-expense?costing_id=${id}`;
     case "sales_order": return `/bizgen/sales/sales-order?sales_order_id=${id}`;
     case "delivery":    return `/bizgen/sales/delivery-order?delivery_order_id=${id}`;
     case "profit":      return `/bizgen/sales/profit-summary?profit_id=${id}`;

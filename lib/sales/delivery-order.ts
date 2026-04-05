@@ -35,6 +35,10 @@ export interface GetDetailDeliveryHeader {
   sales_order_no: string;
   warehouse_name: string;
   remarks: string;
+  updated_by?: string;
+  updated_at?: string;
+  created_by?: string;
+  created_at?: string;
 }
 
 export interface GetDetailDeliveryItem {

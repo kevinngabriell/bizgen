@@ -37,6 +37,10 @@ export interface GetDetailCostingHeader {
   origin_port_name: string;
   destination_port_name: string;
   notes: string;
+  created_at: string;
+  created_by: string;
+  updated_at: string;
+  updated_by: string;
 }
 
 export interface GetDetailCostingItem {

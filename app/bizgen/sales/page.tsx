@@ -159,7 +159,7 @@ export default function Sales (){
   }
 
   const handleDirectToCosting = (costing_id: string) => {
-    router.push(`/bizgen/sales/costing-expense?shipment_id=${costing_id}`);
+    router.push(`/bizgen/sales/costing-expense?costing_id=${costing_id}`);
   }
 
   const handleDirectToSalesOrderDetail = (sales_order_id: string) => {

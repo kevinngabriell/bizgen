@@ -90,6 +90,10 @@ export interface GetDetailShipmentHeader {
   term_name: string;
   job_order_no: string;
   status?: string;
+  updated_at: string;
+  updated_by: string;
+  created_at: string;
+  created_by: string;
 }
 
 export interface GetDetailShipmentRoute {

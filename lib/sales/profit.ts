@@ -40,6 +40,8 @@ export interface GetDetailProfitHeader {
   cost_total_usd: number;
   gross_profit_usd: number;
   gross_profit_idr: number;
+  updated_by?: string;
+  updated_at?: string;
 }
 
 export interface GetDetailProfitItem {

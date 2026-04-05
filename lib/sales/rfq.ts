@@ -41,21 +41,22 @@ export interface GetRfq {
 export interface GetDetailRfq {
   rfq_status: string;
   updated_at: string;
-    sales_rfq_id: string;
-    sales_rfq_number: string;
-    customer_name: string;
-    phone_whatsapp: string;
-    pic_customer_name: string;
-    ship_via_id: string;
-    ship_via_name: string;
-    origin_id: string;
-    origin_name: string;
-    destination_id: string;
-    commodity_id: string;
-    commodity_name: string;
-    incoterm_id: string;
-    term_name: string;
-    remarks: string;
+  sales_rfq_id: string;
+  sales_rfq_number: string;
+  customer_name: string;
+  phone_whatsapp: string;
+  pic_customer_name: string;
+  ship_via_id: string;
+  ship_via_name: string;
+  origin_id: string;
+  origin_name: string;
+  destination_id: string;
+  commodity_id: string;
+  commodity_name: string;
+  incoterm_id: string;
+  term_name: string;
+  remarks: string;
+  updated_by: string;
 }
 
 export interface GetDetailRfqItem {

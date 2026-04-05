@@ -46,6 +46,7 @@ function ShipmentProcessContent() {
   const [shipmentDetailId, setShipmentDetailId] = useState<string>();
   const [shipmentStatus, setShipmentStatus] = useState<string>();
   const [lastUpdatedAt, setLastUpdatedAt] = useState<string>();
+  const [lastUpdatedBy, setLastUpdatedBy] = useState<string>();
   const [historyData, setHistoryData] = useState<GetDetailShipmentHistory[]>([]);
 
   const [mode, setMode] = useState<ShipmentMode>("create");
@@ -183,6 +184,8 @@ function ShipmentProcessContent() {
           setShipmentDetailId(res.header.shipment_id);
           setShipmentStatus(res.header.status);
           setLinkedJobOrder(res.header.job_order_no ?? "");
+          setLastUpdatedAt(res.header.updated_at ?? res.header.created_at);
+          setLastUpdatedBy(res.header.updated_by ?? res.header.created_by);
 
           // match IDs by name
           const matchedShipVia = shipViaData.find(sv => sv.ship_via_name === res.header.ship_via_name);
@@ -398,10 +401,10 @@ function ShipmentProcessContent() {
                       : "yellow"
                     }
                   >
-                    {shipmentStatus ?? "draft"}
+                    {shipmentStatus ? shipmentStatus.charAt(0).toUpperCase() + shipmentStatus.slice(1) : "Draft"}
                   </Badge>
                   <Text fontSize="xs" color="gray.600">
-                    {t.master.last_update_by} <b>System</b> •{" "}
+                    {t.master.last_update_by} <b>{lastUpdatedBy}</b> •{" "}
                     {lastUpdatedAt
                       ? new Date(lastUpdatedAt).toLocaleDateString(
                           lang === "id" ? "id-ID" : "en-US",

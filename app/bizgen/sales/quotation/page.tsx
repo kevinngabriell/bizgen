@@ -53,6 +53,7 @@ function QuotationContent() {
   const [quotationStatus, setQuotationStatus] = useState<string>();
   const [quotationDetailId, setQuotationDetailId] = useState<string>();
   const [lastUpdatedAt, setLastUpdatedAt] = useState<string>();
+  const [lastUpdatedBy, setLastUpdatedBy] = useState<string>();
   const [historyData, setHistoryData] = useState<GetDetailQuotationHistory[]>([]);
 
   //set mode for create/view
@@ -138,8 +139,9 @@ function QuotationContent() {
           setQuotationDate(res.header.quotation_date);
           setValidUntil(res.header.valid_until);
           setQuotationStatus(res.header.quotation_status);
-          // setLastUpdatedAt(res.header.updated_at ?? "");
-
+          setLastUpdatedAt(res.header.updated_at ?? "");
+          setLastUpdatedBy(res.header.updated_by ?? "");
+          
           //set customer display
           setSelectedCustomer({
             customer_id: "",
@@ -416,10 +418,10 @@ function QuotationContent() {
                       : "yellow"
                     }
                   >
-                    {quotationStatus}
+                    {quotationStatus ? quotationStatus.charAt(0).toUpperCase() + quotationStatus.slice(1) : ""}
                   </Badge>
                   <Text fontSize="xs" color="gray.600">
-                    {t.master.last_update_by} <b>System</b> •{" "}
+                    {t.master.last_update_by} <b>{lastUpdatedBy}</b> •{" "}
                     {lastUpdatedAt
                       ? new Date(lastUpdatedAt).toLocaleDateString(
                           lang === "id" ? "id-ID" : "en-US",

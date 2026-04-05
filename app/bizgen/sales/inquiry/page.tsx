@@ -172,7 +172,7 @@ function InquiryContent() {
       setRfqStatus(res.header.rfq_status);
       setRfqDetailId(res.header.sales_rfq_id);
       setLastUpdatedAt(res.header.updated_at);
-      // setLastUpdatedBy(res.header.updated_by_name);
+      setLastUpdatedBy(res.header.updated_by);
 
       setShipmentTypeSelected(res.header.ship_via_id);
       setOriginSelected(res.header.origin_id);
@@ -507,8 +507,8 @@ function InquiryContent() {
           <Card.Root mt={3}>
             <Card.Body>
               <Flex justifyContent={"space-between"}>
-                <Badge variant={"solid"} colorPalette={ rfqStatus === "APPROVED"  ? "green" : rfqStatus === "REJECTED" ? "red" : "yellow"}>
-                  {rfqStatus}
+                <Badge variant={"solid"} colorPalette={ rfqStatus === "quoted" ? "green" : rfqStatus === "cancelled" ? "red" : "yellow"}>
+                  {rfqStatus ? rfqStatus.charAt(0).toUpperCase() + rfqStatus.slice(1) : ""}
                 </Badge>
                 <Text fontSize="xs" color="gray.600">
                   {t.master.last_update_by} <b>{lastUpdatedBy || "System"}</b> • {lastUpdatedAt ? new Date(lastUpdatedAt).toLocaleDateString(lang === "id" ? "id-ID" : "en-US", { day: "2-digit", month: "short", year: "numeric" }) : "-"}

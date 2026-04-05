@@ -388,7 +388,7 @@ function BookingConfirmationContent() {
             <Card.Root mt={3}>
               <Card.Body>
                 <Flex justifyContent="space-between">
-                  <Badge variant="solid" colorPalette={bookingStatus === "confirmed" ? "green" : bookingStatus === "cancelled" ? "red" : bookingStatus === "submitted" ? "blue" : "yellow"}>{bookingStatus}</Badge>
+                  <Badge variant="solid" colorPalette={bookingStatus === "confirmed" ? "green" : bookingStatus === "cancelled" ? "red" : bookingStatus === "submitted" ? "blue" : "yellow"}>{bookingStatus ? bookingStatus.charAt(0).toUpperCase() + bookingStatus.slice(1) : ""}</Badge>
                   <Text fontSize="xs" color="gray.600">
                     {t.master.last_update_by} <b>{lastUpdatedBy}</b> •{" "}
                     {lastUpdatedAt

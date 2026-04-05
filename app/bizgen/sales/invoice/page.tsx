@@ -52,6 +52,8 @@ function InvoiceContent() {
 
   const [invoiceStatus, setInvoiceStatus] = useState<string>();
   const [invoiceDetailId, setInvoiceDetailId] = useState<string>("");
+  const [lastUpdatedBy, setLastUpdatedBy] = useState<string>();
+  const [lastUpdatedAt, setLastUpdatedAt] = useState<string>();
 
   const [mode, setMode] = useState<InvoiceMode>("create");
   // Only lock when status is explicitly submitted or confirmed
@@ -158,9 +160,11 @@ function InvoiceContent() {
           setDueDate(h.due_date ?? "");
           setCustomer(h.customer_name ?? "");
           setSalesOrderNo(h.sales_order_no ?? "");
-          setDeliveryOrderNo(h.delivery_order_no ?? "");
+          setDeliveryOrderNo(h.delivery_order_no ?? h.do_number ?? "");
           setNotes(h.notes ?? "");
           setInvoiceStatus(h.status?.toLowerCase() ?? "");
+          setLastUpdatedBy(h.updated_by ?? h.created_by);
+          setLastUpdatedAt(h.updated_at ?? h.created_at);
 
           const rate = Number(h.exchange_rate_to_idr) || 15000;
           setExchangeRate(rate);
@@ -182,7 +186,7 @@ function InvoiceContent() {
                 quantity: item.quantity,
                 unitPrice: item.unit_price,
                 unitPriceInput: item.unit_price.toLocaleString(),
-                taxPercent: item.tax_percent,
+                taxPercent: (item as any).tax_percent ?? (item as any).tax_rate ?? 0,
               };
             })
           );
@@ -411,17 +415,22 @@ function InvoiceContent() {
         {mode === "view" && (
           <Card.Root mb={4}>
             <Card.Body>
-              <Badge
-                variant="solid"
-                colorPalette={
-                  invoiceStatus === "confirmed" ? "green"
-                  : invoiceStatus === "cancelled" ? "red"
-                  : invoiceStatus === "submitted" ? "blue"
-                  : "yellow"
-                }
-              >
-                {invoiceStatus}
-              </Badge>
+              <Flex justifyContent="space-between">
+                <Badge
+                  variant="solid"
+                  colorPalette={
+                    invoiceStatus === "confirmed" ? "green"
+                    : invoiceStatus === "cancelled" ? "red"
+                    : invoiceStatus === "submitted" ? "blue"
+                    : "yellow"
+                  }
+                >
+                  {invoiceStatus ? invoiceStatus.charAt(0).toUpperCase() + invoiceStatus.slice(1) : ""}
+                </Badge>
+                <Text fontSize="xs" color="gray.600">
+                  {t.master.last_update_by} <b>{lastUpdatedBy || "System"}</b> • {lastUpdatedAt ? new Date(lastUpdatedAt).toLocaleDateString(lang === "id" ? "id-ID" : "en-US", { day: "2-digit", month: "short", year: "numeric" }) : "-"}
+                </Text>
+              </Flex>
             </Card.Body>
           </Card.Root>
         )}
@@ -557,7 +566,7 @@ function InvoiceContent() {
                 <Heading size="md">{t.sales_invoice.line_items}</Heading>
                 {errors.items && <Text color="red.500" fontSize="sm">{errors.items}</Text>}
               </Flex>
-              {!isReadOnly && mode === "create" && (
+              {!isReadOnly && (
                 <Button size="sm" bg="#E77A1F" color="white" onClick={addItem}>{t.sales_invoice.add_item}</Button>
               )}
             </Flex>
@@ -571,7 +580,7 @@ function InvoiceContent() {
                   <SimpleGrid templateColumns="2fr 100px 180px 100px 160px 60px" key={item.id} gap={4} mb={3}>
                     <Field.Root>
                       <Field.Label>{t.sales_invoice.description_label}</Field.Label>
-                      {isReadOnly || mode === "view" ? (
+                      {isReadOnly ? (
                         <Input value={item.itemDisplayName || item.itemId} readOnly />
                       ) : (
                         <Combobox.Root
@@ -622,7 +631,7 @@ function InvoiceContent() {
                         type="number"
                         placeholder="0"
                         value={item.quantity === 0 ? "" : item.quantity}
-                        readOnly={mode === "view"}
+                        readOnly={isReadOnly}
                         onChange={(e) => updateItem(item.id, "quantity", parseFloat(e.target.value) || 0)}
                       />
                     </Field.Root>
@@ -631,7 +640,7 @@ function InvoiceContent() {
                       <Input
                         placeholder="0"
                         value={item.unitPriceInput}
-                        readOnly={mode === "view"}
+                        readOnly={isReadOnly}
                         onChange={(e) => updateUnitPrice(item.id, e.target.value)}
                         onBlur={() => blurUnitPrice(item.id)}
                         onFocus={() => focusUnitPrice(item.id)}
@@ -643,7 +652,7 @@ function InvoiceContent() {
                         type="number"
                         placeholder="0"
                         value={item.taxPercent === 0 ? "" : item.taxPercent}
-                        readOnly={mode === "view"}
+                        readOnly={isReadOnly}
                         onChange={(e) => updateItem(item.id, "taxPercent", parseFloat(e.target.value) || 0)}
                       />
                     </Field.Root>
@@ -653,7 +662,7 @@ function InvoiceContent() {
                         {amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </Text>
                     </Field.Root>
-                    {mode === "create" && (
+                    {!isReadOnly && (
                       <Flex align="flex-end" pb={1}>
                         <IconButton aria-label="Remove" variant="ghost" color="red" onClick={() => removeItem(item.id)}>
                           <FaTrash />

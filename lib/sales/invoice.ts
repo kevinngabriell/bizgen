@@ -48,6 +48,8 @@ export interface GetDetailInvoiceHeader {
   tax_amount: number;
   total_amount: number;
   notes: string;
+  updated_by: string;
+  updated_at: string;
 }
 
 export interface GetDetailInvoiceItem {

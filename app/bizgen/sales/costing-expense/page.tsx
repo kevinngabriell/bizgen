@@ -181,6 +181,8 @@ function CostingExpenseContent() {
           const res = await getDetailSalesCosting(costingID);
 
           setCostingDetailId(res.header.sales_costing_expense_id);
+          setLastUpdatedAt(res.header.updated_at ?? res.header.created_at);
+          setLastUpdatedBy(res.header.updated_by ?? res.header.created_by)
 
           setShipmentInfo({
             costingNo: res.header.sales_costing_no,

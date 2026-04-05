@@ -45,6 +45,8 @@ export interface GetDetailQuotationHeader {
     currency_symbol: string;
     subtotal: number;
     total_amount: number;
+    updated_at: string;
+    updated_by: string;
 }
 
 export interface GetDetailQuotationItem {
