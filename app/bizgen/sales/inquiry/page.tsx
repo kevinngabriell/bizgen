@@ -5,7 +5,7 @@ import { Button, Flex, Input, Textarea, Heading, Badge, Field, Card, Text, Table
 import SidebarWithHeader from "@/components/ui/SidebarWithHeader";
 import { FaTrash } from "react-icons/fa";
 import Loading from "@/components/loading";
-import { DecodedAuthToken, checkAuthOrRedirect, getAuthInfo } from "@/lib/auth/auth";
+import { SALES_APPROVAL_ROLES, SALES_CREATE_ROLES, DecodedAuthToken, checkAuthOrRedirect, getAuthInfo } from "@/lib/auth/auth";
 import { useSearchParams } from "next/navigation";
 import { getLang } from "@/lib/i18n";
 import { getAllShipVia, GetShipViaData } from "@/lib/master/ship-via";
@@ -35,6 +35,9 @@ function InquiryContent() {
   //language state 
   const [lang, setLang] = useState<"en" | "id">("en");
   const t = getLang(lang);
+
+  const canApprove = SALES_APPROVAL_ROLES.has(auth?.app_role_id ?? "");
+  const canCreate = SALES_CREATE_ROLES.has(auth?.app_role_id ?? "");
 
   //retrieve rfq ID
   const searchParams = useSearchParams();
@@ -748,7 +751,7 @@ function InquiryContent() {
 
             <Flex justify="flex-end" mt={5}>
               {/* if the inquiry was created for the first time then save as draft */}
-              {mode === "create" && (
+              {mode === "create" && canCreate && (
                 <Button bg="#E77A1F" color="white" onClick={handleSave}>{t.sales_inquiry.save_draft}</Button>
               )}
             </Flex>
@@ -764,8 +767,8 @@ function InquiryContent() {
               <Flex gap={3} justifyContent={"space-between"}>
                 <Button variant="outline">{t.master.export_pdf}</Button>
                 <Flex gap={6}>
-                  <Button color="red" borderColor={"red"} variant="outline" onClick={() => setIsRejectDialogOpen(true)}>{t.master.reject}</Button>
-                  <Button backgroundColor="green" onClick={handleApprove}>{t.master.approve}</Button>
+                  {canApprove && <Button color="red" borderColor={"red"} variant="outline" onClick={() => setIsRejectDialogOpen(true)}>{t.master.reject}</Button>}
+                  {canApprove && <Button backgroundColor="green" onClick={handleApprove}>{t.master.approve}</Button>}
                 </Flex>
               </Flex>
             )}

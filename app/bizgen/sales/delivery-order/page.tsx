@@ -5,7 +5,7 @@ import CustomerLookup from '@/components/lookup/CustomerLookup';
 import SalesOrderLookup from '@/components/lookup/SalesOrderLookup';
 import { AlertMessage } from '@/components/ui/alert';
 import SidebarWithHeader from '@/components/ui/SidebarWithHeader';
-import { DecodedAuthToken, checkAuthOrRedirect, getAuthInfo } from '@/lib/auth/auth';
+import { SALES_APPROVAL_ROLES, SALES_CREATE_ROLES, DecodedAuthToken, checkAuthOrRedirect, getAuthInfo } from '@/lib/auth/auth';
 import { getLang } from '@/lib/i18n';
 import { GetCustomerData } from '@/lib/master/customer';
 import { getAllItem, GetItemData } from '@/lib/master/item';
@@ -44,6 +44,9 @@ function DeliveryOrderContent() {
 
   const [lang, setLang] = useState<"en" | "id">("en");
   const t = getLang(lang);
+
+  const canApprove = SALES_APPROVAL_ROLES.has(auth?.app_role_id ?? "");
+  const canCreate = SALES_CREATE_ROLES.has(auth?.app_role_id ?? "");
 
   const searchParams = useSearchParams();
   const deliveryOrderID = searchParams.get("delivery_order_id");
@@ -569,7 +572,7 @@ function DeliveryOrderContent() {
             </Field.Root>
 
             {/* Create mode */}
-            {mode === "create" && (
+            {mode === "create" && canCreate && (
               <Flex justify="flex-end" gap={3} mt={4}>
                 <Button variant="ghost">{t.sales_delivery_order.cancel}</Button>
                 <Button bg="#E77A1F" color="white" cursor="pointer" onClick={handleSubmit}>{t.sales_delivery_order.save}</Button>
@@ -589,8 +592,8 @@ function DeliveryOrderContent() {
               <Flex gap={3} justifyContent="space-between" mt={4}>
                 <Button variant="outline">{t.master.export_pdf}</Button>
                 <Flex gap={6}>
-                  <Button color="red" borderColor="red" variant="outline" onClick={() => setIsRejectDialogOpen(true)}>{t.master.reject}</Button>
-                  <Button backgroundColor="green" onClick={handleApprove}>{t.master.approve}</Button>
+                  {canApprove && <Button color="red" borderColor="red" variant="outline" onClick={() => setIsRejectDialogOpen(true)}>{t.master.reject}</Button>}
+                  {canApprove && <Button backgroundColor="green" onClick={handleApprove}>{t.master.approve}</Button>}
                 </Flex>
               </Flex>
             )}

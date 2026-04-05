@@ -4,6 +4,19 @@ interface JwtPayload {
   exp: number;
 }
 
+export const SALES_APPROVAL_ROLES = new Set([
+  "app_role697021616784e",
+  "app_role697021a40a55b",
+  "app_role6977737ab889a",
+]);
+
+export const SALES_CREATE_ROLES = new Set([
+  "app_role6970213604dfb",
+  "app_role697021616784e",
+  "app_role697021a40a55b",
+  "app_role6977737ab889a",
+]);
+
 export interface DecodedAuthToken {
   iat: number;
   exp: number;

@@ -4,7 +4,7 @@ import { Suspense, useEffect, useState } from 'react';
 import { Badge, Box, Button, Card, Combobox, createListCollection, Field, Flex, Heading, Input, Portal, Select, Separator, SimpleGrid, Text, Textarea, useFilter, useListCollection } from '@chakra-ui/react';
 import { useSearchParams } from 'next/navigation';
 import SidebarWithHeader from '@/components/ui/SidebarWithHeader';
-import { checkAuthOrRedirect, DecodedAuthToken, getAuthInfo } from '@/lib/auth/auth';
+import { SALES_APPROVAL_ROLES, checkAuthOrRedirect, SALES_CREATE_ROLES, DecodedAuthToken, getAuthInfo } from '@/lib/auth/auth';
 import Loading from '@/components/loading';
 import { getLang } from '@/lib/i18n';
 import { getAllShipVia, GetShipViaData } from '@/lib/master/ship-via';
@@ -36,6 +36,9 @@ function SalesOrderContent() {
 
   const [lang, setLang] = useState<"en" | "id">("en");
   const t = getLang(lang);
+
+  const canApprove = SALES_APPROVAL_ROLES.has(auth?.app_role_id ?? "");
+  const canCreate = SALES_CREATE_ROLES.has(auth?.app_role_id ?? "");
 
   const searchParams = useSearchParams();
   const salesOrderID = searchParams.get("sales_order_id");
@@ -912,7 +915,7 @@ function SalesOrderContent() {
             </Field.Root>
 
             {/* Create mode */}
-            {mode === "create" && (
+            {mode === "create" && canCreate && (
               <Flex justify="flex-end" gap={3} mt={5}>
                 <Button variant="outline" bg="transparent" borderColor="#E77A1F" color="#E77A1F" cursor="pointer">{t.delete_popup.cancel}</Button>
                 <Button bg="#E77A1F" color="white" cursor="pointer" onClick={handleSubmit}>{t.sales_order.save_sales_order}</Button>
@@ -932,8 +935,8 @@ function SalesOrderContent() {
               <Flex gap={3} justifyContent="space-between" mt={5}>
                 <Button variant="outline">{t.master.export_pdf}</Button>
                 <Flex gap={6}>
-                  <Button color="red" borderColor="red" variant="outline" onClick={() => setIsRejectDialogOpen(true)}>{t.master.reject}</Button>
-                  <Button backgroundColor="green" onClick={handleApprove}>{t.master.approve}</Button>
+                  {canApprove && <Button color="red" borderColor="red" variant="outline" onClick={() => setIsRejectDialogOpen(true)}>{t.master.reject}</Button>}
+                  {canApprove && <Button backgroundColor="green" onClick={handleApprove}>{t.master.approve}</Button>}
                 </Flex>
               </Flex>
             )}
