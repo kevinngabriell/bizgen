@@ -97,7 +97,7 @@ export default function PurchaseOrderLookup({ isOpen, onClose, onChoose }: Props
   const getId = (entry: PurchaseOrderEntry) =>
     entry.purchase_type === "local"
       ? (entry as GetPurchaseLocalData & { purchase_type: "local" }).purchase_id
-      : (entry as GetPurchaseImportData & { purchase_type: "import" }).purchase_import_id;
+      : (entry as GetPurchaseImportData & { purchase_type: "import" }).purchase_id;
 
   return (
     <Dialog.Root open={isOpen} onOpenChange={(e) => { if (!e.open) onClose(); }}>
