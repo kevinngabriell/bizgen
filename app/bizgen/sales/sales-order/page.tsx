@@ -269,13 +269,8 @@ function SalesOrderContent() {
         let ppn = 0;
         if (selectedTax) {
           const rate = parseFloat(selectedTax.tax_rate || "0");
-          if (rate === 12) {
-            dpp = baseDpp * 11 / 12;
-            ppn = dpp * (12 / 100);
-          } else {
-            dpp = baseDpp;
-            ppn = baseDpp * (rate / 100);
-          }
+          dpp = baseDpp;
+          ppn = baseDpp * (rate / 100);
         }
         const total = dpp + ppn;
         return { ...updated, dpp: dpp.toFixed(2), ppn: ppn.toFixed(2), total: total.toFixed(2) };
@@ -334,7 +329,6 @@ function SalesOrderContent() {
       if (!salesOrderNumber) throw new Error(t.sales_order.error_1);
       if (!selectedCustomer?.customer_id) throw new Error(t.sales_order.error_2);
       if (!orderDate) throw new Error(t.sales_order.error_3);
-      if (!termSelected) throw new Error(t.sales_order.error_4);
       if (!etd) throw new Error(t.sales_order.error_5);
       if (!eta) throw new Error(t.sales_order.error_6);
       if (items.length === 0) throw new Error(t.sales_order.error_7);
@@ -533,13 +527,8 @@ function SalesOrderContent() {
                         let ppn = 0;
                         if (selectedTax) {
                           const rate = parseFloat(selectedTax.tax_rate || "0");
-                          if (rate === 12) {
-                            dpp = baseDpp * 11 / 12;
-                            ppn = dpp * (12 / 100);
-                          } else {
-                            dpp = baseDpp;
-                            ppn = baseDpp * (rate / 100);
-                          }
+                          dpp = baseDpp;
+                          ppn = baseDpp * (rate / 100);
                         }
                         const total = dpp + ppn;
                         return { ...item, dpp: dpp.toFixed(2), ppn: ppn.toFixed(2), total: total.toFixed(2) };
@@ -708,8 +697,8 @@ function SalesOrderContent() {
                   </Portal>
                 </Select.Root>
               </Field.Root>
-              <Field.Root required>
-                <Field.Label>{t.sales_order.incoterm}<Field.RequiredIndicator /></Field.Label>
+              <Field.Root>
+                <Field.Label>{t.sales_order.incoterm}</Field.Label>
                 <Select.Root
                   disabled={mode === "view"}
                   collection={termCollection}
