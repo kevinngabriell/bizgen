@@ -12,13 +12,13 @@ import { getActiveAnnouncements, Announcement } from "@/lib/system/announcement"
 import AnnouncementPopup from "@/components/announcement/AnnouncementPopup";
 
 export default function Dashboard() {
+    //authentication & loading
     const [auth, setAuth] = useState<DecodedAuthToken | null>(null);
     const [loading, setLoading] = useState(false);
-    const router = useRouter();
-
+    //language
     const [lang, setLang] = useState<"en" | "id">("en");
     const t = getLang(lang);
-
+    //announcement & popup
     const [announcements, setAnnouncements] = useState<Announcement[]>([]);
     const [showPopup, setShowPopup] = useState(false);
 
@@ -34,8 +34,6 @@ export default function Dashboard() {
         const language = info?.language === "id" ? "id" : "en";
         setLang(language);
 
-        // Check if popup was already shown for this login session.
-        // Key is tied to the last 8 chars of the token so a new login always triggers the popup.
         const token = localStorage.getItem("token") ?? "";
         const sessionKey = `announcement_shown_${token.slice(-8)}`;
 
@@ -47,7 +45,7 @@ export default function Dashboard() {
                     setShowPopup(true);
                 }
             } catch {
-                // silently ignore — don't block dashboard on announcement errors
+                console.log("error while catch the session key");
             }
             sessionStorage.setItem(sessionKey, "true");
         }
@@ -69,16 +67,11 @@ export default function Dashboard() {
 
     return (
         <SidebarWithHeader username={auth?.username ?? "Unknown"} daysToExpire={auth?.days_remaining ?? 0}>
-
             {/* Announcement popup — shown once per login session */}
-            <AnnouncementPopup
-                announcements={announcements}
-                open={showPopup}
-                onClose={() => setShowPopup(false)}
-            />
-
+            <AnnouncementPopup announcements={announcements} open={showPopup} onClose={() => setShowPopup(false)}/>
+            
             <Heading mb={4}>ERP Dashboard</Heading>
-
+            
             <SimpleGrid columns={{ base: 1, md: 2, lg: 4 }} gap="20px">
                 <StatCard title="Target" value="Rp 150jt" />
                 <StatCard title="Orders" value="320" />

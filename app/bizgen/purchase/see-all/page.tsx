@@ -58,27 +58,27 @@ const COLUMNS: Record<ModuleType, ColumnDef[]> = {
   requisition: [
     { label: "PR Number",  render: (r: GetPurchaseRequisitionData) => <Text fontWeight="medium" fontSize="sm">{r.pr_number}</Text> },
     { label: "PR Date",    render: (r: GetPurchaseRequisitionData) => <Text fontSize="xs" color="gray.600">{fmtDate(r.pr_date)}</Text> },
-    { label: "Created",    render: (r: GetPurchaseRequisitionData) => <Text fontSize="xs" color="gray.500">{fmtDate(r.created_at)}</Text> },
+    { label: "Supplier",   render: (r: GetPurchaseRequisitionData) => <Text fontSize="xs" color="gray.500">{r.supplier_name}</Text> },
   ],
   local: [
     { label: "PO Number",  render: (r: GetPurchaseLocalData) => <Text fontWeight="medium" fontSize="sm">{r.po_number}</Text> },
     { label: "PO Date",    render: (r: GetPurchaseLocalData) => <Text fontSize="xs" color="gray.600">{fmtDate(r.po_date)}</Text> },
-    { label: "Created",    render: (r: GetPurchaseLocalData) => <Text fontSize="xs" color="gray.500">{fmtDate(r.created_at)}</Text> },
+    { label: "Supplier",   render: (r: GetPurchaseLocalData) => <Text fontSize="xs" color="gray.500">{r.supplier_name}</Text> },
   ],
   import: [
     { label: "PO Number",  render: (r: GetPurchaseImportData) => <Text fontWeight="medium" fontSize="sm">{r.po_number}</Text> },
     { label: "PO Date",    render: (r: GetPurchaseImportData) => <Text fontSize="xs" color="gray.600">{fmtDate(r.po_date)}</Text> },
-    { label: "Created",    render: (r: GetPurchaseImportData) => <Text fontSize="xs" color="gray.500">{fmtDate(r.created_at)}</Text> },
+    { label: "Supplier",   render: (r: GetPurchaseImportData) => <Text fontSize="xs" color="gray.500">{r.supplier_name}</Text> },
   ],
   goods_receipt: [
     { label: "Receipt No", render: (r: GetGoodsReceiptData) => <Text fontWeight="medium" fontSize="sm">{r.receipt_number}</Text> },
     { label: "Receipt Date", render: (r: GetGoodsReceiptData) => <Text fontSize="xs" color="gray.600">{fmtDate(r.receipt_date)}</Text> },
-    { label: "Created",    render: (r: GetGoodsReceiptData) => <Text fontSize="xs" color="gray.500">{fmtDate(r.created_at)}</Text> },
+    { label: "Supplier",   render: (r: GetGoodsReceiptData) => <Text fontSize="xs" color="gray.500">{r.supplier_name}</Text> },
   ],
   invoice: [
     { label: "Invoice No", render: (r: GetPurchaseInvoiceData) => <Text fontWeight="medium" fontSize="sm">{r.invoice_number}</Text> },
     { label: "Invoice Date", render: (r: GetPurchaseInvoiceData) => <Text fontSize="xs" color="gray.600">{fmtDate(r.invoice_date)}</Text> },
-    { label: "Created",    render: (r: GetPurchaseInvoiceData) => <Text fontSize="xs" color="gray.500">{fmtDate(r.created_at)}</Text> },
+    { label: "Supplier",   render: (r: GetPurchaseInvoiceData) => <Text fontSize="xs" color="gray.500">{r.supplier_name}</Text> },
   ],
 };
 
@@ -89,7 +89,7 @@ function getRowId(type: ModuleType, row: AnyRecord): string {
     case "quotation":    return "";
     case "requisition":  return (row as GetPurchaseRequisitionData).pr_id;
     case "local":        return (row as GetPurchaseLocalData).purchase_id;
-    case "import":       return (row as GetPurchaseImportData).purchase_import_id;
+    case "import":       return (row as GetPurchaseImportData).purchase_id;
     case "goods_receipt":return (row as GetGoodsReceiptData).receipt_id;
     case "invoice":      return (row as GetPurchaseInvoiceData).purchase_invoice_id;
   }

@@ -405,7 +405,7 @@ export const en = {
     supplier_info: "Supplier Information",
 
     po_number: "PO Number / Reference",
-    po_number_placeholder: "Select PO (coming soon)",
+    po_number_placeholder: "Click to select PO",
 
     invoice_date: "Invoice Date",
     ship_date: "Ship Date",

@@ -98,7 +98,7 @@ export default function Sales (){
       const salesInvoiceRes = await getSalesInvoice(1, 3, "");
       setSalesInvoiceData(salesInvoiceRes.data);
 
-    }catch (error: any){
+    } catch (error: any){
       setSalesRfqData([]);
       setSalesQuotationData([]);
     } finally {
@@ -188,9 +188,7 @@ export default function Sales (){
   const renderList = (data: any[], renderItem: (item: any) => JSX.Element) => {
     if (!data || data.length === 0) {
       return (
-        <Text fontSize="xs" color="gray.400" fontStyle="italic">
-          No data available
-        </Text>
+        <Text fontSize="xs" color="gray.400" fontStyle="italic">No data available</Text>
       );
     }
 

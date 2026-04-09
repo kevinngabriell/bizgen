@@ -268,12 +268,13 @@ function SalesOrderContent() {
         let dpp = baseDpp;
         let ppn = 0;
         if (selectedTax) {
-          const rate = parseFloat(selectedTax.tax_rate || "0") / 100;
-          if (selectedTax.calculation_method === "normal") {
-            ppn = baseDpp * rate;
-          } else if (selectedTax.calculation_method === "dpp_adjusted") {
-            dpp = baseDpp / 1.11;
-            ppn = dpp * rate;
+          const rate = parseFloat(selectedTax.tax_rate || "0");
+          if (rate === 12) {
+            dpp = baseDpp * 11 / 12;
+            ppn = dpp * (12 / 100);
+          } else {
+            dpp = baseDpp;
+            ppn = baseDpp * (rate / 100);
           }
         }
         const total = dpp + ppn;
@@ -531,12 +532,13 @@ function SalesOrderContent() {
                         let dpp = baseDpp;
                         let ppn = 0;
                         if (selectedTax) {
-                          const rate = parseFloat(selectedTax.tax_rate || "0") / 100;
-                          if (selectedTax.calculation_method === "normal") {
-                            ppn = baseDpp * rate;
-                          } else if (selectedTax.calculation_method === "dpp_adjusted") {
-                            dpp = baseDpp / 1.11;
-                            ppn = dpp * rate;
+                          const rate = parseFloat(selectedTax.tax_rate || "0");
+                          if (rate === 12) {
+                            dpp = baseDpp * 11 / 12;
+                            ppn = dpp * (12 / 100);
+                          } else {
+                            dpp = baseDpp;
+                            ppn = baseDpp * (rate / 100);
                           }
                         }
                         const total = dpp + ppn;

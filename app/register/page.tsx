@@ -112,7 +112,8 @@ export default function Register() {
       if (isOwner === true) {
           return !!businessName.trim() && !!businessCategory.trim() && !!businessAddress.trim();
       }
-            // non-owner
+
+      // non-owner
       return !!companyCode.trim();
     }
 
@@ -208,22 +209,14 @@ export default function Register() {
   return (
     <Flex w="100vw" minH="100vh" bg="white" bgGradient="linear(to-br, #FFF7ED, #FFE6C9)" align="center" justify="center" p={{ base: 6, md: 10 }}>
       <Box w="70%" maxW="100vw" bg="white" rounded="2xl" shadow="lg" p={{ base: 6, md: 10 }}>
+        
         {/* Title */}
         <Flex flexDir={"column"} gap={2} mb={8} alignItems={"center"}>
           <Heading size="lg" color={"gray.800"}>{t.register.title}</Heading>
           <Text color="gray.600">{t.register.description}</Text>
         </Flex>
-        {showAlert && (
-          <AlertMessage
-            title={titlePopup}
-            description={
-              isSuccess && countdown !== null
-                ? `User successfully created. Redirecting to login in ${countdown}...`
-                : messagePopup
-            }
-            isSuccess={isSuccess}
-          />
-        )}
+
+        {showAlert && (<AlertMessage title={titlePopup} description={ isSuccess && countdown !== null ? `User successfully created. Redirecting to login in ${countdown}...` : messagePopup} isSuccess={isSuccess}/>)}
         
         <Steps.Root defaultStep={0} count={steps.length} step={activeStep} onStepChange={(details) => setActiveStep(details.step)} colorPalette={"orange"} >
           <Steps.List>
@@ -239,18 +232,9 @@ export default function Register() {
           {/* Steps 1 -> Role  */}
           <Steps.Content index={0}>
             <Text fontWeight="semibold" color={"black"} mb={6}>{t.register.step_one_title}</Text>
-
             <SimpleGrid columns={{ base: 1, md: 2 }} gap={4}>
               {/* Business Owner Box */}
-              <Box
-                p={5}
-                borderWidth="1px"
-                borderRadius="xl"
-                cursor="not-allowed"
-                opacity={0.6}
-                bg={'white'}
-                borderColor={'gray.200'}
-              >
+              <Box p={5} borderWidth={"1px"} borderRadius={"xl"} cursor={"not-allowed"} opacity={0.6} bg={'white'} borderColor={'gray.200'}>
                 <Flex justify="space-between" align="center" mb={2}>
                   <Text fontWeight="bold" color={"black"}>{t.register.step_one_card_1}</Text>
                   <Badge colorPalette="gray">Coming Soon</Badge>
@@ -384,9 +368,7 @@ export default function Register() {
                   <Text fontSize="sm"><b>{t.register.step_two_card_4}</b> {companyCode || '-'}</Text>
                 </Box>
 
-                <Button mt={8} w="100%" colorScheme="orange" onClick={onRegister}>
-                  Register
-                </Button>
+                <Button mt={8} w="100%" colorScheme="orange" onClick={onRegister}>Register</Button>
               </>
             )}
           </Steps.Content>

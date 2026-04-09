@@ -2,9 +2,10 @@
 
 import Loading from '@/components/loading';
 import SupplierLookup from '@/components/lookup/SupplierLookup';
+import RejectDialog from '@/components/dialog/RejectDialog';
 import { AlertMessage } from '@/components/ui/alert';
 import SidebarWithHeader from '@/components/ui/SidebarWithHeader';
-import { checkAuthOrRedirect, DecodedAuthToken, getAuthInfo } from '@/lib/auth/auth';
+import { SALES_APPROVAL_ROLES, checkAuthOrRedirect, DecodedAuthToken, getAuthInfo } from '@/lib/auth/auth';
 import { getLang } from '@/lib/i18n';
 import { getCompanyProfile, GetCompanyProfile } from '@/lib/account/company';
 import { getAllCurrency, GetCurrencyData } from '@/lib/master/currency';
@@ -13,13 +14,28 @@ import { getAllPaymentMethod, GetPaymentMethodData } from '@/lib/master/payment-
 import { getAllTax, GetTaxData } from '@/lib/master/tax';
 import { getAllUOM, UOMData } from '@/lib/master/uom';
 import { GetSupplierData } from '@/lib/master/supplier';
-import { createPurchaseLocal, generatePurchaseLocalNumber } from '@/lib/purchase/local';
-import { Box, Button, Card, Combobox, createListCollection, Field, Flex, Heading, Icon, IconButton, Input, Portal, Select, Separator, SimpleGrid, Stack, Text, Textarea, useFilter, useListCollection } from '@chakra-ui/react';
+import {
+  createPurchaseLocal,
+  generatePurchaseLocalNumber,
+  getPurchaseLocalDetail,
+  updatePurchaseLocal,
+  processPurchaseLocalAction,
+  GetPurchaseLocalHistoryDetailData,
+} from '@/lib/purchase/local';
+import {
+  Badge, Box, Button, Card, Combobox, createListCollection,
+  Field, Flex, Heading, Icon, IconButton, Input, Portal,
+  Select, Separator, SimpleGrid, Stack, Text, Textarea,
+  useFilter, useListCollection,
+} from '@chakra-ui/react';
 import { Suspense, useEffect, useRef, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { FaTrash } from 'react-icons/fa';
 import { FiFileText, FiUpload, FiX } from 'react-icons/fi';
 
 const BIZGEN_COLOR = '#E77A1F';
+
+type LocalMode = 'create' | 'view';
 
 type PurchaseItem = {
   id: string;
@@ -53,14 +69,14 @@ function calcItem(item: PurchaseItem, tax: GetTaxData | undefined): PurchaseItem
   let ppn = 0;
 
   if (tax) {
-    const rate = parseFloat(tax.tax_rate || '0') / 100;
-    if (tax.calculation_method === 'normal') {
+    const rate = parseFloat(tax.tax_rate || '0');
+    if (rate === 12) {
+      dpp = base * 11 / 12;
+      ppn = dpp * (12 / 100);
+    } else {
+      // 10%, 11%, and any other rate
       dpp = base;
-      ppn = base * rate;
-    } else if (tax.calculation_method === 'dpp_adjusted') {
-      // PMK 131/2024 — DPP Nilai Lain = 11/12 × Harga Jual, PPN = DPP × 12%
-      dpp = base / 1.11;
-      ppn = dpp * rate;
+      ppn = base * (rate / 100);
     }
   }
 
@@ -82,91 +98,98 @@ export default function CreatePurchaseLocalPage() {
 }
 
 function PurchaseLocalContent() {
+  const searchParams = useSearchParams();
+  const purchaseId = searchParams.get('purchase_id');
+
   const [auth, setAuth] = useState<DecodedAuthToken | null>(null);
   const [loading, setLoading] = useState(false);
   const [lang, setLang] = useState<'en' | 'id'>('en');
   const t = getLang(lang);
   const tr = t.purchase_local;
 
+  const canApprove = SALES_APPROVAL_ROLES.has(auth?.app_role_id ?? '');
+
+  const [mode, setMode] = useState<LocalMode>('create');
+  const [localId, setLocalId] = useState('');
+  const [localStatus, setLocalStatus] = useState('');
+  const [historyData, setHistoryData] = useState<GetPurchaseLocalHistoryDetailData[]>([]);
+
+  const [isRejectDialogOpen, setIsRejectDialogOpen] = useState(false);
+  const [rejectLoading, setRejectLoading] = useState(false);
+
   const [showAlert, setShowAlert] = useState(false);
   const [titlePopup, setTitlePopup] = useState('');
   const [messagePopup, setMessagePopup] = useState('');
   const [isSuccess, setIsSuccess] = useState(false);
 
-  // Company profile for Invoice Under
+  const showSuccess = (msg: string) => {
+    setShowAlert(true); setIsSuccess(true);
+    setTitlePopup(t.master.success); setMessagePopup(msg);
+    setTimeout(() => setShowAlert(false), 6000);
+  };
+  const showError = (msg: string) => {
+    setShowAlert(true); setIsSuccess(false);
+    setTitlePopup(t.master.error); setMessagePopup(msg);
+    setTimeout(() => setShowAlert(false), 6000);
+  };
+
   const [companyProfile, setCompanyProfile] = useState<GetCompanyProfile | null>(null);
 
-  // Master data
   const [currencyOptions, setCurrencyOptions] = useState<GetCurrencyData[]>([]);
   const [uomOptions, setUomOptions] = useState<UOMData[]>([]);
   const [taxOptions, setTaxOptions] = useState<GetTaxData[]>([]);
 
   const currencyCollection = createListCollection({
-    items: currencyOptions.map((c) => ({
-      label: `${c.currency_code} — ${c.currency_name}`,
-      value: c.currency_id,
-    })),
+    items: currencyOptions.map((c) => ({ label: `${c.currency_code} — ${c.currency_name}`, value: c.currency_id })),
   });
-
   const uomCollection = createListCollection({
     items: uomOptions.map((u) => ({ label: u.uom_name, value: u.uom_id })),
   });
-
   const taxCollection = createListCollection({
-    items: taxOptions.map((tx) => ({
-      label: `${tx.tax_name} (${tx.tax_rate}%)`,
-      value: tx.tax_id,
-    })),
+    items: taxOptions.map((tx) => ({ label: `${tx.tax_name} (${tx.tax_rate}%)`, value: tx.tax_id })),
   });
 
-  // Item master — searchable combobox
   const [itemMasterAll, setItemMasterAll] = useState<GetItemData[]>([]);
   const { contains } = useFilter({ sensitivity: 'base' });
-  const { collection: itemCollection, set: setItemCollection } =
-    useListCollection<GetItemData>({
-      initialItems: [],
-      itemToString: (i) => `${i.item_code} — ${i.item_name}`,
-      itemToValue: (i) => i.item_id,
-    });
+  const { collection: itemCollection, set: setItemCollection } = useListCollection<GetItemData>({
+    initialItems: [],
+    itemToString: (i) => `${i.item_code} — ${i.item_name}`,
+    itemToValue: (i) => i.item_id,
+  });
 
-  // Payment method — searchable combobox
   const [paymentMasterAll, setPaymentMasterAll] = useState<GetPaymentMethodData[]>([]);
-  const { collection: paymentCollection, set: setPaymentCollection } =
-    useListCollection<GetPaymentMethodData>({
-      initialItems: [],
-      itemToString: (p) => p.payment_name,
-      itemToValue: (p) => p.payment_id,
-    });
+  const { collection: paymentCollection, set: setPaymentCollection } = useListCollection<GetPaymentMethodData>({
+    initialItems: [],
+    itemToString: (p) => p.payment_name,
+    itemToValue: (p) => p.payment_id,
+  });
   const [paymentSelected, setPaymentSelected] = useState('');
   const [paymentSelectedId, setPaymentSelectedId] = useState('');
 
-  // Supplier lookup
   const [supplierModalOpen, setSupplierModalOpen] = useState(false);
   const [selectedSupplier, setSelectedSupplier] = useState<GetSupplierData | null>(null);
 
-  // Header form
   const [form, setForm] = useState({
     po_number: '',
     po_date: '',
     shipment_date: '',
     delivery_address: '',
     notes: '',
-    exchange_rate_idr: ''
+    exchange_rate_idr: '',
   });
 
   const [currencySelected, setCurrencySelected] = useState<string>();
   const [taxSelected, setTaxSelected] = useState<string>();
 
   const selectedTax = taxOptions.find((tx) => tx.tax_id === taxSelected);
-  const selectedCurrencyCode =
-    currencyOptions.find((c) => c.currency_id === currencySelected)?.currency_code ?? '';
+  const selectedCurrencyCode = currencyOptions.find((c) => c.currency_id === currencySelected)?.currency_code ?? '';
 
-  // Items
   const [items, setItems] = useState<PurchaseItem[]>([newItem()]);
 
-  // Documents
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
+
+  const isReadOnly = mode === 'view' && (localStatus === 'submitted' || localStatus === 'approved');
 
   useEffect(() => {
     const loadAll = async () => {
@@ -180,8 +203,7 @@ function PurchaseLocalContent() {
         setAuth(info);
         setLang(info?.language === 'id' ? 'id' : 'en');
 
-        const [numberRes, currencyRes, uomRes, taxRes, paymentRes, itemRes] = await Promise.all([
-          generatePurchaseLocalNumber(),
+        const [currencyRes, uomRes, taxRes, paymentRes, itemRes] = await Promise.all([
           getAllCurrency(1, 1000),
           getAllUOM(1, 1000),
           getAllTax(1, 1000),
@@ -189,25 +211,90 @@ function PurchaseLocalContent() {
           getAllItem(1, 1000),
         ]);
 
-        setForm((prev) => ({ ...prev, po_number: numberRes.number }));
-        setCurrencyOptions(currencyRes?.data ?? []);
-        setUomOptions(uomRes?.data ?? []);
-        setTaxOptions(taxRes?.data ?? []);
-
+        const currencyData = currencyRes?.data ?? [];
+        const uomData = uomRes?.data ?? [];
+        const taxData = taxRes?.data ?? [];
         const paymentData = paymentRes?.data ?? [];
+        const itemData = itemRes?.data ?? [];
+
+        setCurrencyOptions(currencyData);
+        setUomOptions(uomData);
+        setTaxOptions(taxData);
         setPaymentMasterAll(paymentData);
         setPaymentCollection(paymentData);
-
-        const itemData = itemRes?.data ?? [];
         setItemMasterAll(itemData);
         setItemCollection(itemData);
 
-        // Company profile — non-blocking
         try {
           const profile = await getCompanyProfile();
           setCompanyProfile(profile);
-        } catch {
-          // silently ignore if company profile not yet available
+        } catch { /* silently ignore */ }
+
+        if (purchaseId) {
+          setMode('view');
+          const detail = await getPurchaseLocalDetail(purchaseId);
+          const h = detail.header;
+
+          setLocalId(h.purchase_id);
+          setLocalStatus(h.status);
+          setHistoryData(detail.history);
+
+          setForm((prev) => ({
+            ...prev,
+            po_number: h.po_number,
+            po_date: h.po_date,
+            shipment_date: h.delivery_date,
+            exchange_rate_idr: h.exchange_rate_idr ?? '',
+            notes: h.notes ?? '',
+            delivery_address: h.delivery_address ?? '',
+          }));
+
+          const currency = currencyData.find((c) => c.currency_code === h.currency_code);
+          if (currency) setCurrencySelected(currency.currency_id);
+
+          const tax = taxData.find((tx) => tx.tax_name === h.tax_name);
+          if (tax) setTaxSelected(tax.tax_id);
+
+          if (h.payment_id && h.payment_name) {
+            setPaymentSelectedId(h.payment_id);
+            setPaymentSelected(h.payment_name);
+          } else {
+            const payment = paymentData.find(
+              (p) => p.payment_name === (h.payment_name ?? h.payment_method_name)
+            );
+            if (payment) {
+              setPaymentSelectedId(payment.payment_id);
+              setPaymentSelected(payment.payment_name);
+            }
+          }
+
+          setSelectedSupplier({ supplier_name: h.supplier_name } as GetSupplierData);
+
+          setItems(
+            detail.items.map((item) => {
+              const uom = uomData.find((u) => u.uom_name === item.uom_name);
+              const qty = item.qty ?? '0';
+              const price = item.unit_price ?? '0';
+              const base: PurchaseItem = {
+                id: crypto.randomUUID(),
+                itemId: item.item_id,
+                description: item.item_name,
+                qty,
+                uomId: uom?.uom_id ?? '',
+                packageSize: '',
+                unitPrice: price,
+                total: '0',
+                dpp: '0',
+                ppn: '0',
+                grandTotal: '0',
+                remarks: item.remarks ?? '',
+              };
+              return calcItem(base, tax);
+            })
+          );
+        } else {
+          const numberRes = await generatePurchaseLocalNumber();
+          setForm((prev) => ({ ...prev, po_number: numberRes.number }));
         }
       } catch (err) {
         console.error('Failed to initialize:', err);
@@ -217,15 +304,13 @@ function PurchaseLocalContent() {
     };
 
     loadAll();
-  }, []);
+  }, [purchaseId]);
 
-  // Item handlers
   const handleItemChange = (id: string, field: keyof PurchaseItem, value: string) => {
     setItems((prev) =>
       prev.map((item) => {
         if (item.id !== id) return item;
-        const updated = { ...item, [field]: value };
-        return calcItem(updated, selectedTax);
+        return calcItem({ ...item, [field]: value }, selectedTax);
       })
     );
   };
@@ -251,38 +336,51 @@ function PurchaseLocalContent() {
   };
 
   const addItem = () => setItems((prev) => [...prev, newItem()]);
-
   const removeItem = (id: string) => {
     setItems((prev) => (prev.length === 1 ? prev : prev.filter((i) => i.id !== id)));
   };
 
-  // Footer totals
   const totalSubtotal = items.reduce((s, i) => s + (parseFloat(i.total) || 0), 0);
   const totalPpn = items.reduce((s, i) => s + (parseFloat(i.ppn) || 0), 0);
   const totalGrand = items.reduce((s, i) => s + (parseFloat(i.grandTotal) || 0), 0);
+  const fmt = (n: number) => n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-  const fmt = (n: number) =>
-    n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-
-  // Document handlers
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files ?? []);
     setUploadedFiles((prev) => [...prev, ...files]);
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
-
-  const removeFile = (index: number) => {
-    setUploadedFiles((prev) => prev.filter((_, i) => i !== index));
-  };
+  const removeFile = (index: number) => setUploadedFiles((prev) => prev.filter((_, i) => i !== index));
 
   const handleChooseSupplier = (supplier: GetSupplierData) => {
     setSelectedSupplier(supplier);
     setSupplierModalOpen(false);
   };
 
+  const validateForm = () => {
+    if (!form.po_number) throw new Error(tr.error_po_number);
+    if (!form.po_date) throw new Error(tr.error_po_date);
+    if (!selectedSupplier?.supplier_id) throw new Error(tr.error_supplier);
+    if (!form.shipment_date) throw new Error(tr.error_delivery_date);
+    if (!paymentSelectedId) throw new Error(tr.error_payment);
+    if (items.length === 0) throw new Error(tr.error_items);
+    if (items.some((i) => !i.itemId)) throw new Error(tr.error_item_id);
+    if (items.some((i) => Number(i.qty) <= 0)) throw new Error(tr.error_item_qty);
+    if (items.some((i) => Number(i.unitPrice) <= 0)) throw new Error(tr.error_item_price);
+  };
+
+  const buildPayloadItems = () =>
+    items.map(({ id: _id, ...rest }) => ({
+      item_id: rest.itemId,
+      qty: Number(rest.qty),
+      unit_price: Number(rest.unitPrice),
+      uom_id: rest.uomId,
+      remarks: rest.remarks,
+    }));
+
   const resetForm = async () => {
     const res = await generatePurchaseLocalNumber();
-    setForm({ po_number: res.number, po_date: '', shipment_date: '', delivery_address: '', exchange_rate_idr: '0', notes: '' });
+    setForm({ po_number: res.number, po_date: '', shipment_date: '', delivery_address: '', exchange_rate_idr: '', notes: '' });
     setSelectedSupplier(null);
     setCurrencySelected(undefined);
     setTaxSelected(undefined);
@@ -292,75 +390,189 @@ function PurchaseLocalContent() {
     setUploadedFiles([]);
   };
 
-  const handleSubmit = async (mode: 'draft' | 'submitted') => {
+  const handleSaveDraft = async () => {
     try {
-      if (!form.po_number) throw new Error(tr.error_po_number);
-      if (!form.po_date) throw new Error(tr.error_po_date);
-      if (!selectedSupplier?.supplier_id) throw new Error(tr.error_supplier);
-      if (!form.shipment_date) throw new Error(tr.error_delivery_date);
-      if (!paymentSelectedId) throw new Error(tr.error_payment);
-      if (items.length === 0) throw new Error(tr.error_items);
-      if (items.some((i) => !i.itemId)) throw new Error(tr.error_item_id);
-      if (items.some((i) => Number(i.qty) <= 0)) throw new Error(tr.error_item_qty);
-      if (items.some((i) => Number(i.unitPrice) <= 0)) throw new Error(tr.error_item_price);
-
+      validateForm();
       setLoading(true);
-
       await createPurchaseLocal({
         purchase_type: 'local',
         po_number: form.po_number,
         po_date: form.po_date,
         delivery_date: form.shipment_date,
-        supplier_id: selectedSupplier.supplier_id,
+        supplier_id: selectedSupplier!.supplier_id,
         payment_id: paymentSelectedId,
         currency_id: currencySelected ?? '',
         tax_id: taxSelected ?? '',
-        exchange_rate_idr: form.exchange_rate_idr,
+        exchange_rate_idr: Number(form.exchange_rate_idr) || undefined,
         notes: form.notes,
-        items: items.map(({ id: _id, ...rest }) => ({
-          item_id: rest.itemId,
-          qty: rest.qty,
-          unit_price: rest.unitPrice,
-          uom_id: rest.uomId,
-          remarks: rest.remarks,
-        })),
+        items: buildPayloadItems(),
       });
-
-      setIsSuccess(true);
-      setTitlePopup(t.master.success);
-      setMessagePopup(mode === 'draft' ? tr.success_draft : tr.success_create);
-      setShowAlert(true);
-      setTimeout(() => setShowAlert(false), 6000);
-
+      showSuccess(tr.success_draft);
       await resetForm();
     } catch (err: any) {
-      setIsSuccess(false);
-      setTitlePopup(t.master.error);
-      setMessagePopup(err.message || t.master.error_msg);
-      setShowAlert(true);
-      setTimeout(() => setShowAlert(false), 6000);
+      showError(err.message || t.master.error_msg);
     } finally {
       setLoading(false);
     }
   };
 
-  if (loading) return <Loading />;
+  const handleCreateAndSubmit = async () => {
+    try {
+      validateForm();
+      setLoading(true);
+      const res = await createPurchaseLocal({
+        purchase_type: 'local',
+        po_number: form.po_number,
+        po_date: form.po_date,
+        delivery_date: form.shipment_date,
+        supplier_id: selectedSupplier!.supplier_id,
+        payment_id: paymentSelectedId,
+        currency_id: currencySelected ?? '',
+        tax_id: taxSelected ?? '',
+        exchange_rate_idr: Number(form.exchange_rate_idr) || undefined,
+        notes: form.notes,
+        items: buildPayloadItems(),
+      });
+      const newId = res?.data?.purchase_id ?? res?.purchase_id ?? '';
+      if (newId) {
+        await processPurchaseLocalAction({ purchase_id: newId, action: 'submit' });
+      }
+      showSuccess(tr.success_create);
+      await resetForm();
+    } catch (err: any) {
+      showError(err.message || t.master.error_msg);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUpdate = async () => {
+    try {
+      setLoading(true);
+      await updatePurchaseLocal({
+        purchase_id: localId,
+        po_date: form.po_date,
+        delivery_date: form.shipment_date,
+        supplier_id: selectedSupplier?.supplier_id,
+        payment_id: paymentSelectedId || undefined,
+        currency_id: currencySelected,
+        exchange_rate_idr: Number(form.exchange_rate_idr) || undefined,
+        notes: form.notes,
+        items: buildPayloadItems(),
+      });
+      setLocalStatus('draft');
+      showSuccess(tr.success_draft);
+    } catch (err: any) {
+      showError(err.message || t.master.error_msg);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSubmitAction = async () => {
+    try {
+      setLoading(true);
+      await processPurchaseLocalAction({ purchase_id: localId, action: 'submit' });
+      setLocalStatus('submitted');
+      showSuccess(tr.success_create);
+    } catch (err: any) {
+      showError(err.message || t.master.error_msg);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleApprove = async () => {
+    try {
+      setLoading(true);
+      await processPurchaseLocalAction({ purchase_id: localId, action: 'approve' });
+      setLocalStatus('approved');
+      showSuccess('Purchase Order approved.');
+    } catch (err: any) {
+      showError(err.message || t.master.error_msg);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleReject = async (reason: string) => {
+    try {
+      setRejectLoading(true);
+      await processPurchaseLocalAction({ purchase_id: localId, action: 'reject', notes: reason });
+      setLocalStatus('cancelled');
+      setIsRejectDialogOpen(false);
+      showSuccess('Purchase Order rejected.');
+    } catch (err: any) {
+      showError(err.message || t.master.error_msg);
+    } finally {
+      setRejectLoading(false);
+    }
+  };
+
+  const statusBadge = (status: string) => {
+    const map: Record<string, { label: string; colorPalette: string }> = {
+      draft:     { label: 'Draft',     colorPalette: 'yellow' },
+      submitted: { label: 'Submitted', colorPalette: 'blue'   },
+      approved:  { label: 'Approved',  colorPalette: 'green'  },
+      cancelled: { label: 'Cancelled', colorPalette: 'red'    },
+    };
+    const s = map[status] ?? { label: status, colorPalette: 'gray' };
+    return <Badge colorPalette={s.colorPalette} variant="subtle" ml={3}>{s.label}</Badge>;
+  };
+
+  const ActionButtons = () => {
+    if (mode === 'create') {
+      return (
+        <Flex gap={3}>
+          <Button variant="outline" color={BIZGEN_COLOR} borderColor={BIZGEN_COLOR} onClick={handleSaveDraft} loading={loading}>
+            {tr.save_draft}
+          </Button>
+          <Button bg={BIZGEN_COLOR} color="white" onClick={handleCreateAndSubmit} loading={loading}>
+            {tr.submit_purchase}
+          </Button>
+        </Flex>
+      );
+    }
+    if (localStatus === 'draft' || localStatus === 'cancelled') {
+      return (
+        <Flex gap={3}>
+          <Button variant="outline" color={BIZGEN_COLOR} borderColor={BIZGEN_COLOR} onClick={handleUpdate} loading={loading}>
+            Update
+          </Button>
+          <Button bg={BIZGEN_COLOR} color="white" onClick={handleSubmitAction} loading={loading}>
+            Submit
+          </Button>
+        </Flex>
+      );
+    }
+    if (localStatus === 'submitted' && canApprove) {
+      return (
+        <Flex gap={3}>
+          <Button variant="outline" colorPalette="red" onClick={() => setIsRejectDialogOpen(true)}>
+            Reject
+          </Button>
+          <Button bg={BIZGEN_COLOR} color="white" onClick={handleApprove} loading={loading}>
+            Approve
+          </Button>
+        </Flex>
+      );
+    }
+    return null;
+  };
+
+  if (loading && mode === 'create') return <Loading />;
 
   return (
     <SidebarWithHeader username={auth?.username ?? 'Unknown'} daysToExpire={auth?.days_remaining ?? 0}>
       <Flex justify="space-between" align="center" mb={6}>
         <Flex flexDir="column">
-          <Heading size="lg">{tr.title}</Heading>
+          <Flex align="center">
+            <Heading size="lg">{tr.title}</Heading>
+            {mode === 'view' && statusBadge(localStatus)}
+          </Flex>
           <Text color="gray.500" fontSize="sm">{tr.subtitle}</Text>
         </Flex>
-        <Flex gap={3}>
-          <Button variant="outline" color={BIZGEN_COLOR} borderColor={BIZGEN_COLOR} onClick={() => handleSubmit('draft')}>
-            {tr.save_draft}
-          </Button>
-          <Button bg={BIZGEN_COLOR} color="white" onClick={() => handleSubmit('submitted')}>
-            {tr.submit_purchase}
-          </Button>
-        </Flex>
+        <ActionButtons />
       </Flex>
 
       {showAlert && <AlertMessage title={titlePopup} description={messagePopup} isSuccess={isSuccess} />}
@@ -369,6 +581,13 @@ function PurchaseLocalContent() {
         isOpen={supplierModalOpen}
         onClose={() => setSupplierModalOpen(false)}
         onChoose={handleChooseSupplier}
+      />
+
+      <RejectDialog
+        isOpen={isRejectDialogOpen}
+        onClose={() => setIsRejectDialogOpen(false)}
+        onConfirm={handleReject}
+        loading={rejectLoading}
       />
 
       <Stack gap={6}>
@@ -385,6 +604,7 @@ function PurchaseLocalContent() {
                   value={form.po_number}
                   onChange={(e) => setForm({ ...form, po_number: e.target.value })}
                   placeholder={tr.po_number_placeholder}
+                  readOnly={isReadOnly}
                 />
               </Field.Root>
               <Field.Root required>
@@ -393,6 +613,7 @@ function PurchaseLocalContent() {
                   type="date"
                   value={form.po_date}
                   onChange={(e) => setForm({ ...form, po_date: e.target.value })}
+                  readOnly={isReadOnly}
                 />
               </Field.Root>
               <Field.Root required>
@@ -401,22 +622,21 @@ function PurchaseLocalContent() {
                   type="date"
                   value={form.shipment_date}
                   onChange={(e) => setForm({ ...form, shipment_date: e.target.value })}
+                  readOnly={isReadOnly}
                 />
               </Field.Root>
 
-              {/* Supplier */}
               <Field.Root required>
                 <Field.Label fontSize="sm">{tr.supplier}<Field.RequiredIndicator /></Field.Label>
                 <Input
                   value={selectedSupplier?.supplier_name ?? ''}
                   readOnly
-                  cursor="pointer"
+                  cursor={isReadOnly ? 'default' : 'pointer'}
                   placeholder={tr.supplier_placeholder}
-                  onClick={() => setSupplierModalOpen(true)}
+                  onClick={() => !isReadOnly && setSupplierModalOpen(true)}
                 />
               </Field.Root>
 
-              {/* Supplier info */}
               <Field.Root>
                 <Field.Label fontSize="sm">{tr.supplier_info}</Field.Label>
                 <Box fontSize="xs" color="gray.500" lineHeight="short" pt={1}>
@@ -426,13 +646,13 @@ function PurchaseLocalContent() {
                 </Box>
               </Field.Root>
 
-              {/* Currency */}
               <Field.Root>
                 <Field.Label fontSize="sm">{tr.currency}</Field.Label>
                 <Select.Root
                   collection={currencyCollection}
                   value={currencySelected ? [currencySelected] : []}
                   onValueChange={(d) => setCurrencySelected(d.value[0])}
+                  disabled={isReadOnly}
                 >
                   <Select.HiddenSelect />
                   <Select.Control>
@@ -453,7 +673,6 @@ function PurchaseLocalContent() {
                 </Select.Root>
               </Field.Root>
 
-              {/* Exchange Rate IDR */}
               <Field.Root>
                 <Field.Label fontSize="sm">{tr.exchange_rate_idr}</Field.Label>
                 <Input
@@ -461,10 +680,10 @@ function PurchaseLocalContent() {
                   value={form.exchange_rate_idr}
                   onChange={(e) => setForm({ ...form, exchange_rate_idr: e.target.value })}
                   placeholder="0"
+                  readOnly={isReadOnly}
                 />
               </Field.Root>
 
-              {/* Payment Method — searchable combobox */}
               <Field.Root required>
                 <Field.Label fontSize="sm">{tr.payment_method}<Field.RequiredIndicator /></Field.Label>
                 <Combobox.Root
@@ -479,10 +698,9 @@ function PurchaseLocalContent() {
                     const input = e.inputValue ?? '';
                     setPaymentSelected(input);
                     if (!input.trim()) { setPaymentCollection(paymentMasterAll); return; }
-                    setPaymentCollection(
-                      paymentMasterAll.filter((p) => contains(p.payment_name, input))
-                    );
+                    setPaymentCollection(paymentMasterAll.filter((p) => contains(p.payment_name, input)));
                   }}
+                  disabled={isReadOnly}
                 >
                   <Combobox.Control>
                     <Combobox.Input
@@ -491,7 +709,9 @@ function PurchaseLocalContent() {
                       onFocus={() => setPaymentCollection(paymentMasterAll)}
                     />
                     <Combobox.IndicatorGroup>
-                      <Combobox.ClearTrigger onClick={() => { setPaymentSelected(''); setPaymentSelectedId(''); }} />
+                      {!isReadOnly && (
+                        <Combobox.ClearTrigger onClick={() => { setPaymentSelected(''); setPaymentSelectedId(''); }} />
+                      )}
                       <Combobox.Trigger />
                     </Combobox.IndicatorGroup>
                   </Combobox.Control>
@@ -510,13 +730,13 @@ function PurchaseLocalContent() {
                 </Combobox.Root>
               </Field.Root>
 
-              {/* Tax */}
               <Field.Root>
                 <Field.Label fontSize="sm">{tr.tax}</Field.Label>
                 <Select.Root
                   collection={taxCollection}
                   value={taxSelected ? [taxSelected] : []}
                   onValueChange={(d) => handleTaxChange(d.value[0])}
+                  disabled={isReadOnly}
                 >
                   <Select.HiddenSelect />
                   <Select.Control>
@@ -545,6 +765,7 @@ function PurchaseLocalContent() {
                 value={form.notes}
                 onChange={(e) => setForm({ ...form, notes: e.target.value })}
                 placeholder={tr.notes_placeholder}
+                readOnly={isReadOnly}
               />
             </Field.Root>
           </Card.Body>
@@ -555,14 +776,15 @@ function PurchaseLocalContent() {
           <Card.Header>
             <Flex justify="space-between" align="center">
               <Heading size="md">{tr.purchase_items}</Heading>
-              <Button size="sm" bg={BIZGEN_COLOR} color="white" onClick={addItem}>
-                {tr.add_item}
-              </Button>
+              {!isReadOnly && (
+                <Button size="sm" bg={BIZGEN_COLOR} color="white" onClick={addItem}>
+                  {tr.add_item}
+                </Button>
+              )}
             </Flex>
           </Card.Header>
           <Card.Body>
             <Box overflowX="auto">
-              {/* Column headers */}
               <Flex minW="1420px" gap={3} mb={2} px={1}>
                 {[
                   ['32px', '#'],
@@ -584,7 +806,6 @@ function PurchaseLocalContent() {
                 ))}
               </Flex>
 
-              {/* Item rows */}
               {items.map((item, idx) => (
                 <Flex key={item.id} minW="1420px" gap={3} mb={3} align="center" px={1}>
                   <Box w="32px" flexShrink={0}>
@@ -601,6 +822,7 @@ function PurchaseLocalContent() {
                           contains(i.item_name, input) || contains(i.item_code, input)
                         ));
                       }}
+                      disabled={isReadOnly}
                     >
                       <Combobox.Control>
                         <Combobox.Input
@@ -619,8 +841,7 @@ function PurchaseLocalContent() {
                             <Combobox.Empty>No items found</Combobox.Empty>
                             {itemCollection.items.map((i) => (
                               <Combobox.Item item={i} key={i.item_id}>
-                                {i.item_code} — {i.item_name}
-                                <Combobox.ItemIndicator />
+                                {i.item_code} — {i.item_name}<Combobox.ItemIndicator />
                               </Combobox.Item>
                             ))}
                           </Combobox.Content>
@@ -629,12 +850,8 @@ function PurchaseLocalContent() {
                     </Combobox.Root>
                   </Box>
                   <Box w="80px" flexShrink={0}>
-                    <Input
-                      type="number"
-                      placeholder="0"
-                      value={item.qty}
-                      onChange={(e) => handleItemChange(item.id, 'qty', e.target.value)}
-                    />
+                    <Input type="number" placeholder="0" value={item.qty}
+                      onChange={(e) => handleItemChange(item.id, 'qty', e.target.value)} readOnly={isReadOnly} />
                   </Box>
                   <Box w="130px" flexShrink={0}>
                     <Select.Root
@@ -642,6 +859,7 @@ function PurchaseLocalContent() {
                       value={item.uomId ? [item.uomId] : []}
                       onValueChange={(d) => handleItemChange(item.id, 'uomId', d.value[0])}
                       width="100%"
+                      disabled={isReadOnly}
                     >
                       <Select.HiddenSelect />
                       <Select.Control>
@@ -662,19 +880,12 @@ function PurchaseLocalContent() {
                     </Select.Root>
                   </Box>
                   <Box w="130px" flexShrink={0}>
-                    <Input
-                      placeholder={tr.packaging_size_placeholder}
-                      value={item.packageSize}
-                      onChange={(e) => handleItemChange(item.id, 'packageSize', e.target.value)}
-                    />
+                    <Input placeholder={tr.packaging_size_placeholder} value={item.packageSize}
+                      onChange={(e) => handleItemChange(item.id, 'packageSize', e.target.value)} readOnly={isReadOnly} />
                   </Box>
                   <Box w="140px" flexShrink={0}>
-                    <Input
-                      type="number"
-                      placeholder="0"
-                      value={item.unitPrice}
-                      onChange={(e) => handleItemChange(item.id, 'unitPrice', e.target.value)}
-                    />
+                    <Input type="number" placeholder="0" value={item.unitPrice}
+                      onChange={(e) => handleItemChange(item.id, 'unitPrice', e.target.value)} readOnly={isReadOnly} />
                   </Box>
                   <Box w="140px" flexShrink={0}>
                     <Input value={fmt(parseFloat(item.total) || 0)} readOnly bg="gray.50" />
@@ -689,21 +900,19 @@ function PurchaseLocalContent() {
                     <Input value={fmt(parseFloat(item.grandTotal) || 0)} readOnly bg="gray.50" fontWeight="semibold" />
                   </Box>
                   <Box w="110px" flexShrink={0}>
-                    <Input
-                      placeholder={tr.remarks_placeholder}
-                      value={item.remarks}
-                      onChange={(e) => handleItemChange(item.id, 'remarks', e.target.value)}
-                    />
+                    <Input placeholder={tr.remarks_placeholder} value={item.remarks}
+                      onChange={(e) => handleItemChange(item.id, 'remarks', e.target.value)} readOnly={isReadOnly} />
                   </Box>
                   <Box w="40px" flexShrink={0}>
-                    <IconButton aria-label="Remove item" variant="ghost" color="red.500" size="sm" onClick={() => removeItem(item.id)}>
-                      <FaTrash />
-                    </IconButton>
+                    {!isReadOnly && (
+                      <IconButton aria-label="Remove item" variant="ghost" color="red.500" size="sm" onClick={() => removeItem(item.id)}>
+                        <FaTrash />
+                      </IconButton>
+                    )}
                   </Box>
                 </Flex>
               ))}
 
-              {/* Totals footer */}
               <Separator mt={2} mb={4} />
               <Flex justify="flex-end" minW="1420px" pr={1}>
                 <Box w="420px">
@@ -734,7 +943,6 @@ function PurchaseLocalContent() {
         <Card.Root>
           <Card.Body>
             <SimpleGrid columns={{ base: 1, md: 2 }} gap={6}>
-              {/* Invoice Under — read-only company profile */}
               <Box>
                 <Text fontSize="sm" fontWeight="semibold" color="gray.500" mb={2} textTransform="uppercase" letterSpacing="wide">
                   {tr.invoice_under}
@@ -751,8 +959,6 @@ function PurchaseLocalContent() {
                   <Text fontSize="sm" color="gray.400" fontStyle="italic">—</Text>
                 )}
               </Box>
-
-              {/* Delivery Address — editable */}
               <Field.Root>
                 <Field.Label fontSize="sm" fontWeight="semibold" color="gray.500" textTransform="uppercase" letterSpacing="wide">
                   {tr.delivery_address}
@@ -763,6 +969,7 @@ function PurchaseLocalContent() {
                   onChange={(e) => setForm({ ...form, delivery_address: e.target.value })}
                   placeholder={tr.delivery_address_placeholder}
                   borderColor="gray.200"
+                  readOnly={isReadOnly}
                 />
               </Field.Root>
             </SimpleGrid>
@@ -770,87 +977,80 @@ function PurchaseLocalContent() {
         </Card.Root>
 
         {/* Document Upload */}
-        <Card.Root>
-          <Card.Header>
-            <Heading size="md">{tr.document}</Heading>
-          </Card.Header>
-          <Card.Body>
-            {/* Upload zone */}
-            <Flex
-              border="1px dashed"
-              borderColor="gray.300"
-              borderRadius="lg"
-              p={6}
-              align="center"
-              justify="center"
-              direction="column"
-              gap={2}
-              textAlign="center"
-              cursor="pointer"
-              _hover={{ borderColor: BIZGEN_COLOR, bg: 'orange.50' }}
-              onClick={() => fileInputRef.current?.click()}
-            >
-              <Icon as={FiUpload} boxSize={7} color="gray.400" />
-              <Text fontSize="sm" color="gray.500">{tr.document_upload_hint}</Text>
-              <Button size="sm" variant="outline" color={BIZGEN_COLOR} borderColor={BIZGEN_COLOR} pointerEvents="none">
-                {tr.document_choose}
-              </Button>
-            </Flex>
-
-            <input
-              ref={fileInputRef}
-              type="file"
-              multiple
-              hidden
-              onChange={handleFileChange}
-            />
-
-            {/* Uploaded file list */}
-            {uploadedFiles.length > 0 && (
-              <Stack mt={4} gap={2}>
-                {uploadedFiles.map((file, idx) => (
-                  <Flex
-                    key={idx}
-                    align="center"
-                    justify="space-between"
-                    px={3}
-                    py={2}
-                    borderRadius="md"
-                    border="1px solid"
-                    borderColor="gray.200"
-                    bg="gray.50"
-                  >
-                    <Flex align="center" gap={2}>
-                      <Icon as={FiFileText} color="gray.500" />
-                      <Text fontSize="sm" color="gray.700">{file.name}</Text>
-                      <Text fontSize="xs" color="gray.400">
-                        ({(file.size / 1024).toFixed(1)} KB)
-                      </Text>
+        {!isReadOnly && (
+          <Card.Root>
+            <Card.Header>
+              <Heading size="md">{tr.document}</Heading>
+            </Card.Header>
+            <Card.Body>
+              <Flex
+                border="1px dashed"
+                borderColor="gray.300"
+                borderRadius="lg"
+                p={6}
+                align="center"
+                justify="center"
+                direction="column"
+                gap={2}
+                textAlign="center"
+                cursor="pointer"
+                _hover={{ borderColor: BIZGEN_COLOR, bg: 'orange.50' }}
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <Icon as={FiUpload} boxSize={7} color="gray.400" />
+                <Text fontSize="sm" color="gray.500">{tr.document_upload_hint}</Text>
+                <Button size="sm" variant="outline" color={BIZGEN_COLOR} borderColor={BIZGEN_COLOR} pointerEvents="none">
+                  {tr.document_choose}
+                </Button>
+              </Flex>
+              <input ref={fileInputRef} type="file" multiple hidden onChange={handleFileChange} />
+              {uploadedFiles.length > 0 && (
+                <Stack mt={4} gap={2}>
+                  {uploadedFiles.map((file, idx) => (
+                    <Flex key={idx} align="center" justify="space-between" px={3} py={2}
+                      borderRadius="md" border="1px solid" borderColor="gray.200" bg="gray.50">
+                      <Flex align="center" gap={2}>
+                        <Icon as={FiFileText} color="gray.500" />
+                        <Text fontSize="sm" color="gray.700">{file.name}</Text>
+                        <Text fontSize="xs" color="gray.400">({(file.size / 1024).toFixed(1)} KB)</Text>
+                      </Flex>
+                      <IconButton aria-label="Remove file" variant="ghost" size="xs" color="red.400" onClick={() => removeFile(idx)}>
+                        <FiX />
+                      </IconButton>
                     </Flex>
-                    <IconButton
-                      aria-label="Remove file"
-                      variant="ghost"
-                      size="xs"
-                      color="red.400"
-                      onClick={() => removeFile(idx)}
-                    >
-                      <FiX />
-                    </IconButton>
+                  ))}
+                </Stack>
+              )}
+            </Card.Body>
+          </Card.Root>
+        )}
+
+        {/* History */}
+        {mode === 'view' && historyData.length > 0 && (
+          <Card.Root>
+            <Card.Header>
+              <Heading size="md">History</Heading>
+            </Card.Header>
+            <Card.Body>
+              <Stack gap={3}>
+                {historyData.map((h, idx) => (
+                  <Flex key={idx} gap={3} align="flex-start">
+                    <Box minW="8px" h="8px" mt="6px" borderRadius="full" bg={BIZGEN_COLOR} />
+                    <Box>
+                      <Text fontSize="sm" fontWeight="semibold" textTransform="capitalize">{h.action}</Text>
+                      {h.note && <Text fontSize="xs" color="gray.500">{h.note}</Text>}
+                      <Text fontSize="xs" color="gray.400">{h.created_by} · {new Date(h.created_at).toLocaleString()}</Text>
+                    </Box>
                   </Flex>
                 ))}
               </Stack>
-            )}
-          </Card.Body>
-        </Card.Root>
+            </Card.Body>
+          </Card.Root>
+        )}
       </Stack>
 
       <Flex justify="flex-end" gap={3} mt={6}>
-        <Button variant="outline" color={BIZGEN_COLOR} borderColor={BIZGEN_COLOR} onClick={() => handleSubmit('draft')}>
-          {tr.save_draft}
-        </Button>
-        <Button bg={BIZGEN_COLOR} color="white" onClick={() => handleSubmit('submitted')}>
-          {tr.submit_purchase}
-        </Button>
+        <ActionButtons />
       </Flex>
     </SidebarWithHeader>
   );

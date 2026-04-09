@@ -221,7 +221,7 @@ export default function Purchase() {
               <Flex direction="column" gap={1}>
                 {renderList(importData, (po) => (
                   <Flex key={po.purchase_import_id} justify="space-between">
-                    <Text fontSize="xs" color="gray.600" maxLines={1} onClick={() => goTo(`/bizgen/purchase/purchase-import?purchase_import_id=${po.purchase_import_id}`)}>{po.po_number}</Text>
+                    <Text fontSize="xs" color="gray.600" maxLines={1} onClick={() => goTo(`/bizgen/purchase/purchase-import?purchase_import_id=${po.purchase_id}`)}>{po.po_number}</Text>
                     <Badge colorScheme="gray" variant="subtle">{formatDate(po.created_at)}</Badge>
                   </Flex>
                 ))}

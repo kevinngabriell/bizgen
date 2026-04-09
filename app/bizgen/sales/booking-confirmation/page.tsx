@@ -394,12 +394,7 @@ function BookingConfirmationContent() {
                   <Badge variant="solid" colorPalette={bookingStatus === "confirmed" ? "green" : bookingStatus === "cancelled" ? "red" : bookingStatus === "submitted" ? "blue" : "yellow"}>{bookingStatus ? bookingStatus.charAt(0).toUpperCase() + bookingStatus.slice(1) : ""}</Badge>
                   <Text fontSize="xs" color="gray.600">
                     {t.master.last_update_by} <b>{lastUpdatedBy}</b> •{" "}
-                    {lastUpdatedAt
-                      ? new Date(lastUpdatedAt).toLocaleDateString(
-                          lang === "id" ? "id-ID" : "en-US",
-                          { day: "2-digit", month: "short", year: "numeric" }
-                        )
-                      : "-"}
+                    {lastUpdatedAt ? new Date(lastUpdatedAt).toLocaleDateString(lang === "id" ? "id-ID" : "en-US", { day: "2-digit", month: "short", year: "numeric" }) : "-"}
                   </Text>
                 </Flex>
               </Card.Body>
@@ -738,13 +733,7 @@ function BookingConfirmationContent() {
 
       </SidebarWithHeader>
 
-      <RejectDialog
-        isOpen={isRejectDialogOpen}
-        onClose={() => setIsRejectDialogOpen(false)}
-        onConfirm={handleReject}
-        loading={rejectLoading}
-        lang={lang}
-      />
+      <RejectDialog isOpen={isRejectDialogOpen} onClose={() => setIsRejectDialogOpen(false)} onConfirm={handleReject} loading={rejectLoading} lang={lang}/>
     </>
   );
 }

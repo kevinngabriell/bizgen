@@ -405,7 +405,7 @@ export const id = {
   supplier_info: "Informasi Pemasok",
 
   po_number: "Nomor PO / Referensi",
-  po_number_placeholder: "Pilih PO (segera hadir)",
+  po_number_placeholder: "Klik untuk memilih PO",
 
   invoice_date: "Tanggal Faktur",
   ship_date: "Tanggal Kirim",

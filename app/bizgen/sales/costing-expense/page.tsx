@@ -1,11 +1,7 @@
 'use client';
 
 import { Suspense, useEffect, useState } from 'react';
-import {
-  Badge, Box, Button, Card, Flex, Heading, IconButton, Input, Stack,
-  Text, Textarea, SimpleGrid, Separator, createListCollection,
-  Select, Portal, Field,
-} from '@chakra-ui/react';
+import { Badge, Box, Button, Card, Flex, Heading, IconButton, Input, Stack, Text, Textarea, SimpleGrid, Separator, createListCollection, Select, Portal, Field } from '@chakra-ui/react';
 import SidebarWithHeader from '@/components/ui/SidebarWithHeader';
 import Loading from '@/components/loading';
 import { DecodedAuthToken, checkAuthOrRedirect, getAuthInfo } from '@/lib/auth/auth';
@@ -17,10 +13,7 @@ import { getAllPort, GetPortData } from '@/lib/master/port';
 import { FaTrash } from 'react-icons/fa';
 import { GetCustomerData } from '@/lib/master/customer';
 import CustomerLookup from '@/components/lookup/CustomerLookup';
-import {
-  createSalesCosting, generateSalesCostingNumber, getDetailSalesCosting,
-  updateSalesCosting, GetDetailCostingHistory,
-} from '@/lib/sales/costing';
+import { createSalesCosting, generateSalesCostingNumber, getDetailSalesCosting, updateSalesCosting, GetDetailCostingHistory } from '@/lib/sales/costing';
 import { AlertMessage } from '@/components/ui/alert';
 import { GetSalesBookingData } from '@/lib/sales/booking-confirmation';
 import SalesBookingLookup from '@/components/lookup/SalesJoborderLookup';
@@ -393,13 +386,7 @@ function CostingExpenseContent() {
               <Flex justifyContent="space-between">
                 <Badge variant="solid" colorPalette="green">Active</Badge>
                 <Text fontSize="xs" color="gray.600">
-                  {t.master.last_update_by} <b>{lastUpdatedBy ?? "System"}</b> •{" "}
-                  {lastUpdatedAt
-                    ? new Date(lastUpdatedAt).toLocaleDateString(
-                        lang === "id" ? "id-ID" : "en-US",
-                        { day: "2-digit", month: "short", year: "numeric" }
-                      )
-                    : "-"}
+                  {t.master.last_update_by} <b>{lastUpdatedBy ?? "System"}</b> •{" "} {lastUpdatedAt ? new Date(lastUpdatedAt).toLocaleDateString(lang === "id" ? "id-ID" : "en-US", { day: "2-digit", month: "short", year: "numeric" }) : "-"}
                 </Text>
               </Flex>
             </Card.Body>
@@ -417,41 +404,19 @@ function CostingExpenseContent() {
             <SimpleGrid columns={{ base: 1, md: 3 }} gap={4}>
               <Field.Root required>
                 <Field.Label>{t.sales_costing_expense.costing_number}<Field.RequiredIndicator /></Field.Label>
-                <Input
-                  placeholder={t.sales_costing_expense.costing_number_placeholder}
-                  value={shipmentInfo.costingNo}
-                  readOnly={isReadOnly}
-                  onChange={(e) => setShipmentInfo({ ...shipmentInfo, costingNo: e.target.value })}
-                />
+                <Input placeholder={t.sales_costing_expense.costing_number_placeholder} value={shipmentInfo.costingNo} readOnly={isReadOnly} onChange={(e) => setShipmentInfo({ ...shipmentInfo, costingNo: e.target.value })}/>
               </Field.Root>
               <Field.Root required>
                 <Field.Label>{t.sales_costing_expense.job_booking_number}<Field.RequiredIndicator /></Field.Label>
-                <Input
-                  placeholder={t.sales_shipment_process.job_booking_no_placeholder}
-                  value={linkedJobOrder}
-                  readOnly
-                  cursor={isReadOnly ? "default" : "pointer"}
-                  onClick={() => !isReadOnly && setJobOrderModalOpen(true)}
-                />
+                <Input placeholder={t.sales_shipment_process.job_booking_no_placeholder} value={linkedJobOrder} readOnly cursor={isReadOnly ? "default" : "pointer"} onClick={() => !isReadOnly && setJobOrderModalOpen(true)}/>
               </Field.Root>
               <Field.Root required>
                 <Field.Label>{t.sales_costing_expense.customer}<Field.RequiredIndicator /></Field.Label>
-                <Input
-                  placeholder={t.sales_costing_expense.customer_placeholder}
-                  value={selectedCustomer?.customer_name ?? ""}
-                  readOnly
-                  cursor={isReadOnly ? "default" : "pointer"}
-                  onClick={() => !isReadOnly && setCustomerModalOpen(true)}
-                />
+                <Input placeholder={t.sales_costing_expense.customer_placeholder} value={selectedCustomer?.customer_name ?? ""} readOnly cursor={isReadOnly ? "default" : "pointer"} onClick={() => !isReadOnly && setCustomerModalOpen(true)}/>
               </Field.Root>
               <Field.Root required>
                 <Field.Label>{t.sales_costing_expense.shipment_type}<Field.RequiredIndicator /></Field.Label>
-                <Select.Root
-                  disabled={isReadOnly}
-                  collection={shipmentTypeCollection}
-                  value={shipmentTypeSelected ? [shipmentTypeSelected] : []}
-                  onValueChange={(details) => setShipmentTypeSelected(details.value[0])}
-                >
+                <Select.Root disabled={isReadOnly} collection={shipmentTypeCollection} value={shipmentTypeSelected ? [shipmentTypeSelected] : []} onValueChange={(details) => setShipmentTypeSelected(details.value[0])}>
                   <Select.HiddenSelect />
                   <Select.Control>
                     <Select.Trigger>
@@ -647,8 +612,7 @@ function CostingExpenseContent() {
                     </Field.Root>
                     <Field.Root required>
                       <Field.Label>{t.sales_costing_expense.amount}<Field.RequiredIndicator /></Field.Label>
-                      <Input
-                        type="number"
+                      <Input type="number"
                         value={item.amount ?? 0}
                         readOnly={isReadOnly}
                         onChange={(e) => handleChange(item.id, "amount", Number(e.target.value))}
@@ -662,12 +626,7 @@ function CostingExpenseContent() {
                   <Box mt={3}>
                     <Field.Root>
                       <Field.Label>{t.sales_costing_expense.remarks_reference}</Field.Label>
-                      <Textarea
-                        placeholder={t.sales_costing_expense.remarks_reference_placeholder}
-                        value={item.remarks ?? ''}
-                        readOnly={isReadOnly}
-                        onChange={(e) => handleChange(item.id, 'remarks', e.target.value)}
-                      />
+                      <Textarea placeholder={t.sales_costing_expense.remarks_reference_placeholder} value={item.remarks ?? ''} readOnly={isReadOnly} onChange={(e) => handleChange(item.id, 'remarks', e.target.value)}/>
                     </Field.Root>
                   </Box>
                 </Box>
@@ -715,8 +674,7 @@ function CostingExpenseContent() {
                     {log.note} by <b>{log.created_by}</b>
                   </Text>
                   <Text fontSize="xs" color="gray.500">
-                    {log.created_at
-                      ? new Date(log.created_at).toLocaleString(
+                    {log.created_at ? new Date(log.created_at).toLocaleString(
                           lang === "id" ? "id-ID" : "en-US",
                           { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false }
                         )
