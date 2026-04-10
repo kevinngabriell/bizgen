@@ -124,15 +124,24 @@ async function fetchModule(
 ): Promise<{ data: AnyRecord[]; pagination: any }> {
   const limit = 15;
   switch (type) {
-    case "inquiry":     return getSalesRfq(page, limit, search);
-    case "quotation":   return getSalesQuotations(page, limit, search);
-    case "booking":     return getSalesJobOrder(page, limit, search);
-    case "shipment":    return getSalesDocument(page, limit, search);
-    case "costing":     return getSalesCosting(page, limit, search);
-    case "sales_order": return getSalesOrder(page, limit, search);
-    case "delivery":    return getSalesdeliveryOrder(page, limit, search);
-    case "profit":      return getSalesProfit(page, limit, search);
-    case "invoice":     return getSalesInvoice(page, limit, search);
+    case "inquiry":     
+      return getSalesRfq(page, limit, search);
+    case "quotation":   
+      return getSalesQuotations(page, limit, search);
+    case "booking":     
+      return getSalesJobOrder(page, limit, search);
+    case "shipment":    
+      return getSalesDocument(page, limit, search);
+    case "costing":     
+      return getSalesCosting(page, limit, search);
+    case "sales_order": 
+      return getSalesOrder(page, limit, search);
+    case "delivery":    
+      return getSalesdeliveryOrder(page, limit, search);
+    case "profit":      
+      return getSalesProfit(page, limit, search);
+    case "invoice":     
+      return getSalesInvoice(page, limit, search);
   }
 }
 
@@ -170,53 +179,41 @@ function SeeAllContent() {
   const type: ModuleType = (rawType as ModuleType) in MODULE_LABEL ? (rawType as ModuleType) : "inquiry";
 
   const [data, setData] = useState<AnyRecord[]>([]);
-  const [pagination, setPagination] = useState<any>({});
+  const [pagination, setPagination] = useState<{ total_pages: number; page: number; total: number; }>({ total_pages: 1, page: 1, total : 1 });
   const [page, setPage] = useState(1);
   const [searchInput, setSearchInput] = useState("");
   const [appliedSearch, setAppliedSearch] = useState("");
   const [fetching, setFetching] = useState(false);
 
-  const totalCount: number = pagination?.total_items ?? pagination?.total ?? 0;
-  const totalPages: number = pagination?.total_pages ?? (Math.ceil(totalCount / 15) || 1);
+  const totalCount: number = pagination?.total || 0;
+  const totalPages: number = pagination?.total_pages || 1;
 
-  // Reset state and refetch whenever type changes
+  // Reset page and search whenever type changes
   useEffect(() => {
     setPage(1);
     setSearchInput("");
     setAppliedSearch("");
-    setData([]);
-    setPagination({});
-
-    let cancelled = false;
-    setFetching(true);
-    fetchModule(type, 1, "")
-      .then((res) => {
-        if (cancelled) return;
-        setData(res.data);
-        setPagination(res.pagination);
-      })
-      .catch(() => { if (!cancelled) { setData([]); setPagination({}); } })
-      .finally(() => { if (!cancelled) setFetching(false); });
-
-    return () => { cancelled = true; };
   }, [type]);
 
-  // Refetch when page or appliedSearch changes (not on initial mount reset)
+  // Fetch whenever type, page, or search changes
   useEffect(() => {
-    if (page === 1 && appliedSearch === "") return; // initial state, type effect handles it
     let cancelled = false;
     setFetching(true);
     fetchModule(type, page, appliedSearch)
       .then((res) => {
         if (cancelled) return;
         setData(res.data);
-        setPagination(res.pagination);
+        setPagination({
+          total_pages: res.pagination?.total_pages || 1,
+          page,
+          total: res.pagination?.total || 1
+        });
       })
-      .catch(() => { if (!cancelled) { setData([]); setPagination({}); } })
+      .catch(() => { if (!cancelled) { setData([]); setPagination({ total_pages: 1, page: 1, total: 1 }); } })
       .finally(() => { if (!cancelled) setFetching(false); });
 
     return () => { cancelled = true; };
-  }, [page, appliedSearch]);
+  }, [type, page, appliedSearch]);
 
   const handleSearch = () => {
     setPage(1);
@@ -359,27 +356,27 @@ function SeeAllContent() {
       </Card.Root>
 
       {/* Pagination */}
-      {!fetching && totalPages > 1 && (
-        <Flex justify="flex-end" align="center" mt={5}>
-          <Pagination.Root count={totalPages} pageSize={1} page={page} onPageChange={(details) => setPage(details.page)}>
-            <ButtonGroup variant="ghost" size="sm" wrap="wrap">
-              <Pagination.PrevTrigger asChild>
-                <IconButton><LuChevronLeft /></IconButton>
-              </Pagination.PrevTrigger>
+      <Flex display={"flex"} justify="flex-end" alignItems={"end"} width={"100%"} mt={"3"}>
+        <Pagination.Root count={totalPages} pageSize={1} page={page} onPageChange={(details) => setPage(details.page)}>
+          <ButtonGroup variant="ghost" size="sm" wrap="wrap">
+            <Pagination.PrevTrigger asChild>
+              <IconButton>
+                <LuChevronLeft />
+              </IconButton>
+            </Pagination.PrevTrigger>
 
-              <Pagination.Items render={(pageItem) => (
-                <IconButton key={pageItem.value} variant={pageItem.value === page ? "outline" : "ghost"} onClick={() => setPage(pageItem.value)}>
-                  {pageItem.value}
-                </IconButton>
-              )} />
+            <Pagination.Items render={(pageItem) => (
+              <IconButton key={pageItem.value} variant={pageItem.value === page ? "outline" : "ghost"} onClick={() => setPage(pageItem.value)}>{pageItem.value}</IconButton>
+            )}/>
 
-              <Pagination.NextTrigger asChild>
-                <IconButton><LuChevronRight /></IconButton>
-              </Pagination.NextTrigger>
-            </ButtonGroup>
-          </Pagination.Root>
-        </Flex>
-      )}
+            <Pagination.NextTrigger asChild>
+              <IconButton>
+                <LuChevronRight />
+              </IconButton>
+            </Pagination.NextTrigger>
+          </ButtonGroup>
+        </Pagination.Root>
+      </Flex>
     </>
   );
 }

@@ -10,6 +10,7 @@ export interface GetGoodsReceiptData {
   total_cost_idr: string;
   supplier_name: string;
   warehouse_name: string;
+  created_at: string;
 }
 
 export interface GetGoodsReceiptDetailData {

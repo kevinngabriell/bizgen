@@ -1,6 +1,7 @@
 'use client';
 
 import { Suspense, useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Badge, Box, Button, Card, Combobox, createListCollection, Field, Flex, Heading, Input, Portal, Select, Separator, SimpleGrid, Text, Textarea, useFilter, useListCollection } from '@chakra-ui/react';
 import { useSearchParams } from 'next/navigation';
 import SidebarWithHeader from '@/components/ui/SidebarWithHeader';
@@ -13,6 +14,7 @@ import { getAllTerm, GetTermData } from '@/lib/master/term';
 import { GetCustomerData } from '@/lib/master/customer';
 import CustomerLookup from '@/components/lookup/CustomerLookup';
 import { createSalesOrder, generateSalesNumber, getDetailSalesOrder, updateSalesOrder, processSalesOrderAction, GetDetailSalesOrderHistory } from '@/lib/sales/sales-order';
+import { getDeliveryOrderBySalesOrderId } from '@/lib/sales/delivery-order';
 import { AlertMessage } from '@/components/ui/alert';
 import { FaTrash } from 'react-icons/fa';
 import { getAllTax, GetTaxData } from '@/lib/master/tax';
@@ -33,6 +35,7 @@ export default function CreateSalesOrderPage() {
 function SalesOrderContent() {
   const [auth, setAuth] = useState<DecodedAuthToken | null>(null);
   const [loading, setLoading] = useState(false);
+  const router = useRouter();
 
   const [lang, setLang] = useState<"en" | "id">("en");
   const t = getLang(lang);
@@ -47,6 +50,7 @@ function SalesOrderContent() {
   const [salesOrderDetailId, setSalesOrderDetailId] = useState<string>("");
   const [lastUpdatedBy, setLastUpdatedBy] = useState<string>();
   const [lastUpdatedAt, setLastUpdatedAt] = useState<string>();
+  const [deliveryOrderExists, setDeliveryOrderExists] = useState(false);
 
   const [mode, setMode] = useState<SalesOrderMode>("create");
   // Only lock when status is explicitly submitted or confirmed
@@ -180,6 +184,10 @@ function SalesOrderContent() {
           setEtd(res.header.etd);
           setSalesPerson(res.header.sales_person ?? "");
           setRemarks(res.header.remarks ?? "");
+
+          // Check if delivery order exists
+          const deliveryOrder = await getDeliveryOrderBySalesOrderId(salesOrderID);
+          setDeliveryOrderExists(!!deliveryOrder);
 
           setSelectedCustomer({
             customer_id: "",
@@ -453,6 +461,14 @@ function SalesOrderContent() {
     }
   };
 
+  const handleCreateDeliveryOrder = () => {
+    if (!salesOrderDetailId) {
+      showError("Sales Order ID not found");
+      return;
+    }
+    router.push(`/bizgen/sales/delivery-order?sales_order_id=${salesOrderDetailId}`);
+  };
+
   if (loading) return <Loading />;
 
   return (
@@ -556,13 +572,7 @@ function SalesOrderContent() {
               </Field.Root>
               <Field.Root required>
                 <Field.Label>{t.sales_order.customer}<Field.RequiredIndicator /></Field.Label>
-                <Input
-                  placeholder={t.sales_order.customer_placeholder}
-                  value={selectedCustomer?.customer_name ?? ""}
-                  readOnly
-                  cursor={mode === "view" ? "default" : "pointer"}
-                  onClick={() => mode !== "view" && setCustomerModalOpen(true)}
-                />
+                <Input placeholder={t.sales_order.customer_placeholder} value={selectedCustomer?.customer_name ?? ""} readOnly cursor={mode === "view" ? "default" : "pointer"} onClick={() => mode !== "view" && setCustomerModalOpen(true)}/>
               </Field.Root>
               <Field.Root>
                 <Field.Label>{t.sales_order.customer_information}</Field.Label>
@@ -835,12 +845,7 @@ function SalesOrderContent() {
                     </Field.Root>
                     <Field.Root>
                       <Field.Label>{t.sales_order.unit_price}</Field.Label>
-                      <Input
-                        placeholder={t.sales_order.unit_price_placeholder}
-                        value={formatNumber(item.unitPrice)}
-                        readOnly={mode === "view"}
-                        onChange={(e) => handleItemChange(item.id, "unitPrice", parseNumber(e.target.value))}
-                      />
+                      <Input placeholder={t.sales_order.unit_price_placeholder} value={formatNumber(item.unitPrice)} readOnly={mode === "view"} onChange={(e) => handleItemChange(item.id, "unitPrice", parseNumber(e.target.value))}/>
                     </Field.Root>
                     <Field.Root>
                       <Field.Label>{t.sales_order.dpp}</Field.Label>
@@ -929,6 +934,18 @@ function SalesOrderContent() {
                   {canApprove && <Button color="red" borderColor="red" variant="outline" onClick={() => setIsRejectDialogOpen(true)}>{t.master.reject}</Button>}
                   {canApprove && <Button backgroundColor="green" onClick={handleApprove}>{t.master.approve}</Button>}
                 </Flex>
+              </Flex>
+            )}
+
+            {/* Confirmed (Approved): Create Delivery Order if not exists */}
+            {salesOrderStatus === "confirmed" && (
+              <Flex gap={3} justifyContent="flex-end" mt={5}>
+                {!deliveryOrderExists && (
+                  <Button bg="#E77A1F" color="white" onClick={handleCreateDeliveryOrder}>{t.sales_order.create_delivery_order || "Create Delivery Order"}</Button>
+                )}
+                {deliveryOrderExists && (
+                  <Text color="gray.600" fontSize="sm">{t.sales_order.delivery_order_created || "Delivery Order has been created"}</Text>
+                )}
               </Flex>
             )}
           </Card.Body>

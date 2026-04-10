@@ -9,6 +9,7 @@ export interface GetPurchaseRequisitionData {
   priority: string;
   status: string;
   supplier_name: string;
+  created_at: string;
 }
 
 export interface GetPurchaseRequisitionDetailData {

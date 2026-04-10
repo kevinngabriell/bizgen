@@ -1134,7 +1134,9 @@ sales_order: {
   total_placeholder: "Masukkan total",
   notes: "Catatan",
   notes_placeholder: "Masukkan catatan",
-  add_item: "Tambah Item"
+  add_item: "Tambah Item",
+  create_delivery_order: "Buat Delivery Order",
+  delivery_order_created: "Delivery Order sudah dibuat"
 },
 sales_delivery_order: {
   title_create: "Buat Delivery Order",

@@ -1116,7 +1116,9 @@ sales_order: {
   total_placeholder: "Insert Total",
   notes: "Notes",
   notes_placeholder: "Insert notes",
-  add_item: "Add Item"
+  add_item: "Add Item",
+  create_delivery_order: "Create Delivery Order",
+  delivery_order_created: "Delivery Order has been created"
 },
 sales_delivery_order: {
   title_create: "Create Delivery Order",

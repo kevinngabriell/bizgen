@@ -149,6 +149,31 @@ export async function getSalesdeliveryOrder(page: number = 1, limit : number = 1
     };
 }
 
+export async function getDeliveryOrderBySalesOrderId(sales_order_id: string): Promise<GetSalesDeliveryItemData | null> {
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL;
+    const token = localStorage.getItem("token");
+
+    const res = await fetch(`${baseUrl}sales/delivery-orders.php?sales_order_id=${sales_order_id}`, {
+        method: 'GET',
+        headers: {
+            'Authorization': `Bearer ${token}`,
+        },
+    });
+
+    const json = await res.json();
+
+    if (json.status_code !== 200 && json.status_code !== 404) {
+        throw new Error(json.status_message || 'Failed to fetch delivery order by sales order id');
+    }
+
+    // Return null if no delivery order found (404) or empty data
+    if (json.status_code === 404 || !json.data) {
+        return null;
+    }
+
+    return json.data;
+}
+
 export async function getDetailDeliveryOrder(delivery_id: string): Promise<GetDetailDeliveryResponse> {
     const baseUrl = process.env.NEXT_PUBLIC_API_URL;
     const token = localStorage.getItem("token");

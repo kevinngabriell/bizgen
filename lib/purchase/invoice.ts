@@ -10,6 +10,7 @@ export interface GetPurchaseInvoiceData {
   status: string;
   total_amount: string;
   supplier_name: string;
+  created_at: string;
 }
 
 export interface GetPurchaseInvoiceDetailData {

@@ -949,11 +949,11 @@ function PurchaseLocalContent() {
                 </Text>
                 {companyProfile ? (
                   <Box lineHeight="tall">
-                    <Text fontWeight="bold" fontSize="sm">{companyProfile.company_name}</Text>
+                    {/* <Text fontWeight="bold" fontSize="sm">{companyProfile.company_name}</Text> */}
                     <Text fontSize="sm" color="gray.600" whiteSpace="pre-line">{companyProfile.company_address}</Text>
-                    {companyProfile.company_phone && (
+                    {/* {companyProfile.company_phone && (
                       <Text fontSize="sm" color="gray.600">{companyProfile.company_phone}</Text>
-                    )}
+                    )} */}
                   </Box>
                 ) : (
                   <Text fontSize="sm" color="gray.400" fontStyle="italic">—</Text>

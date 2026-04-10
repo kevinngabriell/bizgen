@@ -9,6 +9,7 @@ export interface GetPurchaseLocalData {
   delivery_date: string;
   status: string;
   supplier_name: string;
+  created_at: string;
 }
 
 export interface GetPurchaseLocalDetailData {
