@@ -136,6 +136,7 @@ export const id = {
     last_update_at: "Terakhir diperbaharui pada",
     submit: "Kirim",
     export_pdf: "Ekspor PDF",
+    export_excel: "Ekspor Excel",
     reject: "Tolak",
     approve: "Setujui"
   },
@@ -146,6 +147,19 @@ export const id = {
     reason_placeholder: "Masukkan alasan penolakan...",
     cancel: "Batal",
     confirm: "Tolak",
+  },
+  data_change_confirm_dialog: {
+    title: "Konfirmasi Perubahan Data",
+    description: "Item berikut berbeda dari data sales order asli. Apakah Anda ingin melanjutkan dengan perubahan ini?",
+    field_label: "Kolom",
+    original_label: "Asli (Sales Order)",
+    your_changes_label: "Perubahan Anda",
+    description_label: "Deskripsi",
+    quantity_label: "Jumlah",
+    uom_label: "Satuan",
+    cancel: "Batal",
+    proceed: "Lanjutkan",
+    no_changes: "Tidak ada perubahan terdeteksi.",
   },
   customer: {
     title: "Data Master Customer",

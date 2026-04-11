@@ -18,7 +18,7 @@ import {
   GetDetailProfitHistory,
 } from "@/lib/sales/profit";
 import { AlertMessage } from "@/components/ui/alert";
-import { GetSalesOrderItemData } from "@/lib/sales/sales-order";
+import { GetSalesOrderItemData, getDetailSalesOrder } from "@/lib/sales/sales-order";
 import RejectDialog from "@/components/dialog/RejectDialog";
 import {
   Badge, Box, Button, Card, Combobox, createListCollection, Field, Flex,
@@ -48,6 +48,7 @@ function ProfitSummaryContent() {
 
   const searchParams = useSearchParams();
   const profitID = searchParams.get("profit_id");
+  const salesOrderIDParam = searchParams.get("sales_order_id");
 
   const [profitSummaryStatus, setProfitSummaryStatus] = useState<string>();
   const [profitDetailId, setProfitDetailId] = useState<string>("");
@@ -190,6 +191,10 @@ function ProfitSummaryContent() {
           );
 
           setHistoryData(res.history);
+        } else if (salesOrderIDParam) {
+          const [numberRes] = await Promise.all([generateSalesProfitNumber()]);
+          setReferenceNo(numberRes.number);
+          await prefillFromSalesOrder(salesOrderIDParam, itemData);
         } else {
           const res = await generateSalesProfitNumber();
           setReferenceNo(res.number);
@@ -202,7 +207,7 @@ function ProfitSummaryContent() {
     };
 
     loadAll();
-  }, [profitID]);
+  }, [profitID, salesOrderIDParam]);
 
   const addItem = () =>
     setItems((prev) => [
@@ -236,6 +241,38 @@ function ProfitSummaryContent() {
   const totalCost = items.reduce((sum, i) => sum + i.qty * i.landedCost, 0);
   const grossProfit = totalRevenue - totalCost;
   const grossProfitIdr = grossProfit * exchangeRate;
+
+  const prefillFromSalesOrder = async (soId: string, itemData?: GetItemData[]) => {
+    const resolvedItems = itemData ?? itemCollections;
+    const res = await getDetailSalesOrder(soId);
+
+    setJobOrderNo(res.header.sales_order_no);
+    setSalesOrderId(soId);
+    setCustomer(res.header.customer_name ?? "");
+    setCustomerId(res.header.customer_id ?? "");
+    setErrors({});
+
+    setItems(
+      res.items.map((item) => {
+        const matched = resolvedItems.find(
+          (i) => i.item_id === item.item_id || i.item_name === item.item_name
+        );
+        return {
+          id: crypto.randomUUID(),
+          revenueItemId: "",
+          itemName: matched?.item_id ?? "",
+          itemDisplayName: matched
+            ? `${matched.item_code} - ${matched.item_name}`
+            : item.item_name,
+          qty: item.quantity,
+          sellingPrice: item.unit_price,
+          landedCost: 0,
+          sellingPriceInput: item.unit_price > 0 ? item.unit_price.toLocaleString() : "",
+          landedCostInput: "",
+        };
+      })
+    );
+  };
 
   const handleSubmit = async () => {
     const newErrors: Record<string, string> = {};
@@ -368,6 +405,46 @@ function ProfitSummaryContent() {
     }
   };
 
+  const handleExportPDF = async () => {
+    try {
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL;
+      const token = localStorage.getItem("token");
+      const res = await fetch(`${baseUrl}sales/profit-summary.php?action=export_pdf&profit_id=${profitDetailId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error("Failed to export PDF");
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${referenceNo}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err: any) {
+      showError(err.message || "Failed to export PDF.");
+    }
+  };
+
+  const handleExportExcel = async () => {
+    try {
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL;
+      const token = localStorage.getItem("token");
+      const res = await fetch(`${baseUrl}sales/profit-summary.php?action=export_excel&profit_id=${profitDetailId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error("Failed to export Excel");
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${referenceNo}.xlsx`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err: any) {
+      showError(err.message || "Failed to export Excel.");
+    }
+  };
+
   const handleChooseCustomer = (selectedCustomer: GetCustomerData) => {
     setCustomer(selectedCustomer.customer_name);
     setCustomerId(selectedCustomer.customer_id);
@@ -375,11 +452,16 @@ function ProfitSummaryContent() {
     setCustomerModalOpen(false);
   };
 
-  const handleChooseSalesOrder = (selectedSalesOrder: GetSalesOrderItemData) => {
-    setJobOrderNo(selectedSalesOrder.sales_order_no);
-    setSalesOrderId(selectedSalesOrder.sales_order_id);
-    setErrors((prev) => ({ ...prev, sales_order_id: "" }));
+  const handleChooseSalesOrder = async (selectedSalesOrder: GetSalesOrderItemData) => {
     setSalesOrderModalOpen(false);
+    try {
+      setLoading(true);
+      await prefillFromSalesOrder(selectedSalesOrder.sales_order_id);
+    } catch (err: any) {
+      showError(err.message || "Failed to load sales order data.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (loading) return <Loading />;
@@ -678,11 +760,19 @@ function ProfitSummaryContent() {
         {/* Submitted: Export PDF + Reject + Approve */}
         {profitSummaryStatus === "submitted" && (
           <Flex gap={3} justifyContent="space-between" mt={5}>
-            <Button variant="outline">{t.master.export_pdf}</Button>
+            <Button variant="outline" onClick={handleExportPDF}>{t.master.export_pdf}</Button>
             <Flex gap={6}>
               {canApprove && <Button color="red" borderColor="red" variant="outline" onClick={() => setIsRejectDialogOpen(true)}>{t.master.reject}</Button>}
               {canApprove && <Button backgroundColor="green" onClick={handleApprove}>{t.master.approve}</Button>}
             </Flex>
+          </Flex>
+        )}
+
+        {/* Confirmed: Export PDF + Export Excel */}
+        {profitSummaryStatus === "confirmed" && (
+          <Flex gap={3} mt={5}>
+            <Button variant="outline" onClick={handleExportPDF}>{t.master.export_pdf}</Button>
+            <Button variant="outline" onClick={handleExportExcel}>{t.master.export_excel}</Button>
           </Flex>
         )}
 

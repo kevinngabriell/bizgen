@@ -7,7 +7,7 @@ import { AlertMessage } from '@/components/ui/alert';
 import SidebarWithHeader from '@/components/ui/SidebarWithHeader';
 import { SALES_APPROVAL_ROLES, SALES_CREATE_ROLES, DecodedAuthToken, checkAuthOrRedirect, getAuthInfo } from '@/lib/auth/auth';
 import { getLang } from '@/lib/i18n';
-import { GetCustomerData } from '@/lib/master/customer';
+import { GetCustomerData, getDetailCustomer } from '@/lib/master/customer';
 import { getAllItem, GetItemData } from '@/lib/master/item';
 import { getAllUOM, UOMData } from '@/lib/master/uom';
 import {
@@ -17,16 +17,19 @@ import {
   updateDeliveryOrder,
   processDeliveryOrderAction,
   GetDetailDeliveryHistory,
+  UpdateDeliveryOrderItemData,
 } from '@/lib/sales/delivery-order';
-import { GetSalesOrderItemData } from '@/lib/sales/sales-order';
+import { GetSalesOrderItemData, getDetailSalesOrder } from '@/lib/sales/sales-order';
+import { getProfitBySalesOrderId } from '@/lib/sales/profit';
 import RejectDialog from '@/components/dialog/RejectDialog';
+import DataChangeConfirmDialog, { ItemChangeRow } from '@/components/dialog/DataChangeConfirmDialog';
 import {
   Badge, Button, Card, Flex, Heading, Input, Text, Textarea, Field,
   Separator, NumberInput, SimpleGrid, Box, useListCollection, useFilter,
   createListCollection, Combobox, Portal, Select,
 } from '@chakra-ui/react';
-import { useSearchParams } from 'next/navigation';
-import { Suspense, useEffect, useState } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
+import { Suspense, useEffect, useRef, useState } from 'react';
 
 type DeliveryMode = "create" | "view";
 
@@ -41,6 +44,7 @@ export default function CreateDeliveryOrderPage() {
 function DeliveryOrderContent() {
   const [auth, setAuth] = useState<DecodedAuthToken | null>(null);
   const [loading, setLoading] = useState(false);
+  const router = useRouter();
 
   const [lang, setLang] = useState<"en" | "id">("en");
   const t = getLang(lang);
@@ -50,6 +54,7 @@ function DeliveryOrderContent() {
 
   const searchParams = useSearchParams();
   const deliveryOrderID = searchParams.get("delivery_order_id");
+  const salesOrderIDParam = searchParams.get("sales_order_id");
 
   const [deliveryOrderStatus, setDeliveryOrderStatus] = useState<string>();
   const [deliveryOrderDetailId, setDeliveryOrderDetailId] = useState<string>("");
@@ -62,6 +67,13 @@ function DeliveryOrderContent() {
 
   const [isRejectDialogOpen, setIsRejectDialogOpen] = useState(false);
   const [rejectLoading, setRejectLoading] = useState(false);
+
+  const [isChangeConfirmOpen, setIsChangeConfirmOpen] = useState(false);
+  const [pendingChanges, setPendingChanges] = useState<ItemChangeRow[]>([]);
+  const [pendingAction, setPendingAction] = useState<"create" | "update" | null>(null);
+  const originalLineItems = useRef<{ itemName: string; qty: number; uomName: string }[]>([]);
+  const [deletedItemIds, setDeletedItemIds] = useState<string[]>([]);
+  const [profitSummaryExists, setProfitSummaryExists] = useState(false);
 
   const [showAlert, setShowAlert] = useState(false);
   const [titlePopup, setTitlePopup] = useState('');
@@ -125,7 +137,11 @@ function DeliveryOrderContent() {
         setItemCollection(itemData);
         setItemCollections(itemData);
 
-        if (deliveryOrderID) {
+        if (salesOrderIDParam && !deliveryOrderID) {
+          const numberRes = await generateSalesDeliveryNumber();
+          setDoNumber(numberRes.number);
+          await prefillFromSalesOrder(salesOrderIDParam, itemData, uomRes?.data ?? []);
+        } else if (deliveryOrderID) {
           setMode("view");
           const res = await getDetailDeliveryOrder(deliveryOrderID);
 
@@ -141,23 +157,45 @@ function DeliveryOrderContent() {
           setLastUpdatedBy(header.updated_by ?? header.created_by);
           setLastUpdatedAt(header.updated_at ?? header.created_at);
 
-          setSelectedCustomer({
-            customer_id: "",
-            customer_name: header.customer_name ?? "",
-            customer_phone: "",
-            customer_address: "",
-            customer_pic_name: "",
-            customer_pic_contact: "",
-            customer_top: 0,
-            created_by: "",
-            created_at: "",
-            updated_by: "",
-            updated_at: "",
-            company_id: "",
-          });
+          if (header.customer_id) {
+            const customerRes = await getDetailCustomer(header.customer_id);
+            if (customerRes.data.length > 0) {
+              setSelectedCustomer(customerRes.data[0]);
+            } else {
+              setSelectedCustomer({
+                customer_id: header.customer_id,
+                customer_name: header.customer_name ?? "",
+                customer_phone: "",
+                customer_address: "",
+                customer_pic_name: "",
+                customer_pic_contact: "",
+                customer_top: 0,
+                created_by: "",
+                created_at: "",
+                updated_by: "",
+                updated_at: "",
+                company_id: "",
+              });
+            }
+          } else {
+            setSelectedCustomer({
+              customer_id: "",
+              customer_name: header.customer_name ?? "",
+              customer_phone: "",
+              customer_address: "",
+              customer_pic_name: "",
+              customer_pic_contact: "",
+              customer_top: 0,
+              created_by: "",
+              created_at: "",
+              updated_by: "",
+              updated_at: "",
+              company_id: "",
+            });
+          }
 
           setSelectedSalesOrder({
-            sales_order_id: "",
+            sales_order_id: header.sales_order_id ?? "",
             sales_order_no: header.sales_order_no ?? header.sales_order_number ?? "",
             created_at: "",
           });
@@ -165,17 +203,23 @@ function DeliveryOrderContent() {
           setLineItems(
             res.items.map((item, idx) => ({
               id: Date.now() + idx,
-              itemId: "",
+              doItemId: item.item_id,
+              itemId: item.items_id,
               itemName: item.item_name,
               description: item.item_name,
               qty: item.quantity,
-              uom: "",
+              uom: item.uom_id,
               uomName: item.uom_name,
               notes: item.notes ?? "",
             }))
           );
 
           setHistoryData(res.history);
+
+          if (header.sales_order_id) {
+            const profitCheck = await getProfitBySalesOrderId(header.sales_order_id);
+            setProfitSummaryExists(profitCheck?.exists || false);
+          }
         } else {
           const res = await generateSalesDeliveryNumber();
           setDoNumber(res.number);
@@ -188,7 +232,7 @@ function DeliveryOrderContent() {
     };
 
     loadAll();
-  }, [deliveryOrderID]);
+  }, [deliveryOrderID, salesOrderIDParam]);
 
   const init = async () => {
     const valid = await checkAuthOrRedirect();
@@ -200,7 +244,7 @@ function DeliveryOrderContent() {
   };
 
   const [lineItems, setLineItems] = useState([
-    { id: Date.now(), itemId: '', itemName: '', description: '', qty: 1, uom: '', uomName: '', notes: '' },
+    { id: Date.now(), doItemId: '', itemId: '', itemName: '', description: '', qty: 1, uom: '', uomName: '', notes: '' },
   ]);
 
   const handleItemChange = (id: number, field: string, value: any) => {
@@ -212,11 +256,56 @@ function DeliveryOrderContent() {
   const addRow = () =>
     setLineItems(prev => [
       ...prev,
-      { id: Date.now(), itemId: '', itemName: '', description: '', qty: 1, uom: '', uomName: '', notes: '' },
+      { id: Date.now(), doItemId: '', itemId: '', itemName: '', description: '', qty: 1, uom: '', uomName: '', notes: '' },
     ]);
 
   const removeRow = (id: number) => {
+    const target = lineItems.find(li => li.id === id);
+    if (target?.doItemId) {
+      setDeletedItemIds(prev => [...prev, target.doItemId]);
+    }
     setLineItems(prev => prev.length > 1 ? prev.filter(item => item.id !== id) : prev);
+  };
+
+  const prefillFromSalesOrder = async (soId: string, itemData?: GetItemData[], uomData?: UOMData[]) => {
+    const resolvedItems = itemData ?? itemCollections;
+    const resolvedUoms = uomData ?? uomOptions;
+
+    const res = await getDetailSalesOrder(soId);
+
+    setSelectedSalesOrder({
+      sales_order_id: soId,
+      sales_order_no: res.header.sales_order_no,
+      created_at: res.header.created_at ?? "",
+    });
+
+    if (res.header.customer_id) {
+      const customerRes = await getDetailCustomer(res.header.customer_id);
+      if (customerRes.data.length > 0) setSelectedCustomer(customerRes.data[0]);
+    }
+
+    const mappedItems = res.items.map((item, idx) => {
+      const matchedItem = resolvedItems.find(i => i.item_id === item.item_id || i.item_name === item.item_name);
+      const matchedUom = resolvedUoms.find(u => u.uom_name === item.uom_name);
+      return {
+        id: Date.now() + idx,
+        doItemId: "",
+        itemId: matchedItem?.item_id ?? "",
+        itemName: item.item_name,
+        description: item.item_name,
+        qty: item.quantity,
+        uom: matchedUom?.uom_id ?? "",
+        uomName: item.uom_name,
+        notes: "",
+      };
+    });
+
+    setLineItems(mappedItems);
+    originalLineItems.current = mappedItems.map(i => ({
+      itemName: i.itemName,
+      qty: i.qty,
+      uomName: i.uomName,
+    }));
   };
 
   const handleChooseCustomer = (customer: GetCustomerData) => {
@@ -224,9 +313,95 @@ function DeliveryOrderContent() {
     setCustomerModalOpen(false);
   };
 
-  const handleChooseSalesOrder = (sales_order: GetSalesOrderItemData) => {
-    setSelectedSalesOrder(sales_order);
+  const handleChooseSalesOrder = async (sales_order: GetSalesOrderItemData) => {
     setSalesOrderModalOpen(false);
+    await prefillFromSalesOrder(sales_order.sales_order_id);
+  };
+
+  const buildChanges = (): ItemChangeRow[] =>
+    lineItems.map((li, idx) => {
+      const orig = originalLineItems.current[idx];
+      return {
+        rowIndex: idx,
+        description: {
+          original: orig?.itemName ?? "",
+          modified: li.itemName || li.description,
+          changed: (li.itemName || li.description) !== (orig?.itemName ?? ""),
+        },
+        qty: {
+          original: orig?.qty ?? 0,
+          modified: li.qty,
+          changed: li.qty !== (orig?.qty ?? 0),
+        },
+        uomName: {
+          original: orig?.uomName ?? "",
+          modified: li.uomName,
+          changed: li.uomName !== (orig?.uomName ?? ""),
+        },
+      };
+    });
+
+  const handleSaveWithCheck = (action: "create" | "update") => {
+    if (originalLineItems.current.length === 0) {
+      action === "create" ? handleSubmit() : handleUpdate();
+      return;
+    }
+    const changes = buildChanges();
+    const hasDiff = changes.some(c => c.description.changed || c.qty.changed || c.uomName.changed);
+    if (hasDiff) {
+      setPendingChanges(changes);
+      setPendingAction(action);
+      setIsChangeConfirmOpen(true);
+    } else {
+      action === "create" ? handleSubmit() : handleUpdate();
+    }
+  };
+
+  const handleConfirmChange = () => {
+    setIsChangeConfirmOpen(false);
+    if (pendingAction === "create") handleSubmit();
+    else if (pendingAction === "update") handleUpdate();
+    setPendingAction(null);
+  };
+
+  const handleExportPDF = async () => {
+    try {
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL;
+      const token = localStorage.getItem("token");
+      const res = await fetch(`${baseUrl}sales/delivery-orders.php?action=export_pdf&delivery_id=${deliveryOrderDetailId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error("Failed to export PDF");
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${doNumber}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err: any) {
+      showError(err.message || "Failed to export PDF.");
+    }
+  };
+
+  const handleExportExcel = async () => {
+    try {
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL;
+      const token = localStorage.getItem("token");
+      const res = await fetch(`${baseUrl}sales/delivery-orders.php?action=export_excel&delivery_id=${deliveryOrderDetailId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error("Failed to export Excel");
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${doNumber}.xlsx`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err: any) {
+      showError(err.message || "Failed to export Excel.");
+    }
   };
 
   const handleSubmit = async () => {
@@ -261,7 +436,7 @@ function DeliveryOrderContent() {
       setDeliveryDate("");
       setIssueDate("");
       setRemarks("");
-      setLineItems([{ id: Date.now(), itemId: '', itemName: '', description: '', qty: 1, uom: '', uomName: '', notes: '' }]);
+      setLineItems([{ id: Date.now(), doItemId: '', itemId: '', itemName: '', description: '', qty: 1, uom: '', uomName: '', notes: '' }]);
 
       try {
         const newNumber = await generateSalesDeliveryNumber();
@@ -281,13 +456,25 @@ function DeliveryOrderContent() {
       if (!deliveryOrderDetailId) throw new Error("Delivery Order ID not found");
       setLoading(true);
 
+      const itemsPayload: UpdateDeliveryOrderItemData[] = [
+        ...deletedItemIds.map(id => ({ item_id: id, _delete: true as const })),
+        ...lineItems.map(row => {
+          if (row.doItemId) {
+            return { item_id: row.doItemId, quantity: row.qty, notes: row.notes || "" };
+          }
+          return { items_id: row.itemId, quantity: row.qty, uom_id: row.uom, notes: row.notes || "" };
+        }),
+      ];
+
       await updateDeliveryOrder({
         delivery_id: deliveryOrderDetailId,
         issue_date: issueDate,
         delivery_date: deliveryDate,
         remarks: remarks,
+        items: itemsPayload,
       });
 
+      setDeletedItemIds([]);
       showSuccess(t.sales_delivery_order.success_update);
     } catch (err: any) {
       showError(err.message || "Failed to update delivery order.");
@@ -443,7 +630,7 @@ function DeliveryOrderContent() {
                 <SimpleGrid key={li.id} templateColumns="300px 200px 250px 400px 200px" gap={6} mb={5}>
                   <Field.Root>
                     <Field.Label>{t.sales_delivery_order.description_label}</Field.Label>
-                    {mode === "view" ? (
+                    {isReadOnly ? (
                       <Input value={li.itemName || li.description} readOnly />
                     ) : (
                       <Combobox.Root
@@ -451,8 +638,14 @@ function DeliveryOrderContent() {
                         collection={itemCollection}
                         value={li.itemId ? [li.itemId] : []}
                         onValueChange={(details) => {
-                          const selected = details.value?.[0];
-                          handleItemChange(li.id, 'itemId', selected ?? '');
+                          const selected = details.value?.[0] ?? '';
+                          const matched = itemCollections.find(i => i.item_id === selected);
+                          setLineItems(prev => prev.map(it => it.id === li.id ? {
+                            ...it,
+                            itemId: selected,
+                            itemName: matched?.item_name ?? '',
+                            description: matched?.item_name ?? '',
+                          } : it));
                         }}
                         onInputValueChange={(e) => {
                           const input = e.inputValue ?? "";
@@ -494,7 +687,7 @@ function DeliveryOrderContent() {
                   </Field.Root>
                   <Field.Root w="100%">
                     <Field.Label>{t.sales_delivery_order.quantity}</Field.Label>
-                    {mode === "view" ? (
+                    {isReadOnly ? (
                       <Input value={String(li.qty)} readOnly />
                     ) : (
                       <NumberInput.Root
@@ -509,13 +702,21 @@ function DeliveryOrderContent() {
                   </Field.Root>
                   <Field.Root>
                     <Field.Label>{t.sales_delivery_order.uom}</Field.Label>
-                    {mode === "view" ? (
+                    {isReadOnly ? (
                       <Input value={li.uomName} readOnly />
                     ) : (
                       <Select.Root
                         collection={uomCollection}
                         value={li.uom && uomCollection.items.some(i => i.value === li.uom) ? [li.uom] : []}
-                        onValueChange={(details) => handleItemChange(li.id, "uom", details.value?.[0] ?? "")}
+                        onValueChange={(details) => {
+                          const selected = details.value?.[0] ?? '';
+                          const matched = uomOptions.find(u => u.uom_id === selected);
+                          setLineItems(prev => prev.map(it => it.id === li.id ? {
+                            ...it,
+                            uom: selected,
+                            uomName: matched?.uom_name ?? '',
+                          } : it));
+                        }}
                         width="100%"
                       >
                         <Select.HiddenSelect />
@@ -541,12 +742,12 @@ function DeliveryOrderContent() {
                     <Field.Label>{t.sales_delivery_order.notes}</Field.Label>
                     <Input
                       value={li.notes}
-                      readOnly={mode === "view"}
+                      readOnly={isReadOnly}
                       onChange={(e) => handleItemChange(li.id, 'notes', e.target.value)}
                       placeholder={t.sales_delivery_order.notes_placeholder}
                     />
                   </Field.Root>
-                  {mode !== "view" && (
+                  {!isReadOnly && (
                     <Flex align="flex-end">
                       <Button borderColor="red" color="red" variant="ghost" onClick={() => removeRow(li.id)}>
                         {t.sales_delivery_order.remove}
@@ -557,7 +758,7 @@ function DeliveryOrderContent() {
               ))}
             </Box>
 
-            {mode !== "view" && (
+            {!isReadOnly && (
               <Button mt={4} mb={4} onClick={addRow} variant="outline">{t.sales_delivery_order.add_item}</Button>
             )}
 
@@ -575,14 +776,14 @@ function DeliveryOrderContent() {
             {mode === "create" && canCreate && (
               <Flex justify="flex-end" gap={3} mt={4}>
                 <Button variant="ghost">{t.sales_delivery_order.cancel}</Button>
-                <Button bg="#E77A1F" color="white" cursor="pointer" onClick={handleSubmit}>{t.sales_delivery_order.save}</Button>
+                <Button bg="#E77A1F" color="white" cursor="pointer" onClick={() => handleSaveWithCheck("create")}>{t.sales_delivery_order.save}</Button>
               </Flex>
             )}
 
             {/* Draft or Cancelled: Save + Submit */}
             {(deliveryOrderStatus === "draft" || deliveryOrderStatus === "cancelled") && (
               <Flex justify="flex-end" gap={3} mt={4}>
-                <Button variant="outline" onClick={handleUpdate}>{t.master.save}</Button>
+                <Button variant="outline" onClick={() => handleSaveWithCheck("update")}>{t.master.save}</Button>
                 <Button bg="#E77A1F" color="white" onClick={handleSubmitDO}>{t.master.submit}</Button>
               </Flex>
             )}
@@ -590,11 +791,33 @@ function DeliveryOrderContent() {
             {/* Submitted: Export PDF + Reject + Approve */}
             {deliveryOrderStatus === "submitted" && (
               <Flex gap={3} justifyContent="space-between" mt={4}>
-                <Button variant="outline">{t.master.export_pdf}</Button>
+                <Button variant="outline" onClick={handleExportPDF}>{t.master.export_pdf}</Button>
                 <Flex gap={6}>
                   {canApprove && <Button color="red" borderColor="red" variant="outline" onClick={() => setIsRejectDialogOpen(true)}>{t.master.reject}</Button>}
                   {canApprove && <Button backgroundColor="green" onClick={handleApprove}>{t.master.approve}</Button>}
                 </Flex>
+              </Flex>
+            )}
+
+            {/* Confirmed: Export PDF + Export Excel + Create Profit Summary */}
+            {deliveryOrderStatus === "confirmed" && (
+              <Flex gap={3} justifyContent="space-between" mt={4}>
+                <Flex gap={3}>
+                  <Button variant="outline" onClick={handleExportPDF}>{t.master.export_pdf}</Button>
+                  <Button variant="outline" onClick={handleExportExcel}>{t.master.export_excel}</Button>
+                </Flex>
+                {!profitSummaryExists && (
+                  <Button
+                    bg="#E77A1F"
+                    color="white"
+                    onClick={() => router.push(`/bizgen/sales/profit-summary?sales_order_id=${selectedSalesOrder?.sales_order_id}`)}
+                  >
+                    {t.sales_profit_summary.title_create}
+                  </Button>
+                )}
+                {profitSummaryExists && (
+                  <Text color="gray.600" fontSize="sm">{t.sales_profit_summary.title_view}</Text>
+                )}
               </Flex>
             )}
           </Card.Body>
@@ -630,6 +853,14 @@ function DeliveryOrderContent() {
         onClose={() => setIsRejectDialogOpen(false)}
         onConfirm={handleReject}
         loading={rejectLoading}
+        lang={lang}
+      />
+
+      <DataChangeConfirmDialog
+        isOpen={isChangeConfirmOpen}
+        onClose={() => { setIsChangeConfirmOpen(false); setPendingAction(null); }}
+        onConfirm={handleConfirmChange}
+        changes={pendingChanges}
         lang={lang}
       />
     </>

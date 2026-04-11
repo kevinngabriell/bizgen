@@ -11,7 +11,7 @@ import { getLang } from '@/lib/i18n';
 import { getAllShipVia, GetShipViaData } from '@/lib/master/ship-via';
 import { getAllPort, GetPortData } from '@/lib/master/port';
 import { getAllTerm, GetTermData } from '@/lib/master/term';
-import { GetCustomerData } from '@/lib/master/customer';
+import { GetCustomerData, getDetailCustomer } from '@/lib/master/customer';
 import CustomerLookup from '@/components/lookup/CustomerLookup';
 import { createSalesOrder, generateSalesNumber, getDetailSalesOrder, updateSalesOrder, processSalesOrderAction, GetDetailSalesOrderHistory } from '@/lib/sales/sales-order';
 import { getDeliveryOrderBySalesOrderId } from '@/lib/sales/delivery-order';
@@ -187,22 +187,12 @@ function SalesOrderContent() {
 
           // Check if delivery order exists
           const deliveryOrder = await getDeliveryOrderBySalesOrderId(salesOrderID);
-          setDeliveryOrderExists(!!deliveryOrder);
+          setDeliveryOrderExists(deliveryOrder?.exists || false);
 
-          setSelectedCustomer({
-            customer_id: "",
-            customer_name: res.header.customer_name,
-            customer_phone: "",
-            customer_address: "",
-            customer_pic_name: "",
-            customer_pic_contact: "",
-            customer_top: 0,
-            created_by: "",
-            created_at: "",
-            updated_by: "",
-            updated_at: "",
-            company_id: "",
-          });
+          if (res.header.customer_id) {
+            const customerRes = await getDetailCustomer(res.header.customer_id);
+            if (customerRes.data.length > 0) setSelectedCustomer(customerRes.data[0]);
+          }
 
           // Match dropdown IDs by name from loaded master data
           const sv = shipViaData.find(s => s.ship_via_name === res.header.ship_via_name);
@@ -229,7 +219,7 @@ function SalesOrderContent() {
               purchaseOrderNo: "",
               productName: item.item_name,
               quantity: String(item.quantity),
-              uom: "",
+              uom: uomRes.data?.find(u => u.uom_name === item.uom_name)?.uom_id ?? "",
               unitPrice: String(item.unit_price),
               dpp: String(item.dpp),
               ppn: String(item.ppn),
@@ -360,6 +350,7 @@ function SalesOrderContent() {
           item_id: row.productName,
           quantity: row.quantity,
           unit_price: row.unitPrice,
+          uom_id: row.uom,
           dpp: row.dpp,
           ppn: row.ppn,
           total: String(row.total ?? 0),
@@ -368,7 +359,7 @@ function SalesOrderContent() {
       });
 
       showSuccess(t.sales_order.success_create);
-
+      
       setSalesOrderNumber("");
       setSelectedCustomer(null);
       setOrderDate("");
@@ -383,6 +374,9 @@ function SalesOrderContent() {
       setEta("");
       setRemarks("");
       setItems([{ id: Date.now(), purchaseOrderNo: "", productName: "", quantity: "", uom: "", unitPrice: "", dpp: "", ppn: "", total: "", notes: "" }]);
+
+      
+
     } catch (err: any) {
       showError(err.message || t.sales_costing_expense.error_msg);
     } finally {
@@ -412,6 +406,12 @@ function SalesOrderContent() {
     }
   };
 
+  const refreshHistory = async () => {
+    if (!salesOrderDetailId) return;
+    const res = await getDetailSalesOrder(salesOrderDetailId);
+    setHistoryData(res.history);
+  };
+
   const handleSubmitSalesOrder = async () => {
     try {
       if (!salesOrderDetailId) throw new Error("Sales Order ID not found");
@@ -420,6 +420,7 @@ function SalesOrderContent() {
       await processSalesOrderAction({ so_id: salesOrderDetailId, action: "submit" });
 
       setSalesOrderStatus("submitted");
+      await refreshHistory();
       showSuccess("Sales order submitted successfully.");
     } catch (err: any) {
       showError(err.message || "Failed to submit sales order.");
@@ -436,6 +437,7 @@ function SalesOrderContent() {
       await processSalesOrderAction({ so_id: salesOrderDetailId, action: "approve" });
 
       setSalesOrderStatus("confirmed");
+      await refreshHistory();
       showSuccess("Sales order approved successfully.");
     } catch (err: any) {
       showError(err.message || "Failed to approve sales order.");
@@ -453,11 +455,52 @@ function SalesOrderContent() {
 
       setIsRejectDialogOpen(false);
       setSalesOrderStatus("cancelled");
+      await refreshHistory();
       showSuccess("Sales order rejected successfully.");
     } catch (err: any) {
       showError(err.message || "Failed to reject sales order.");
     } finally {
       setRejectLoading(false);
+    }
+  };
+
+  const handleExportPDF = async () => {
+    try {
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL;
+      const token = localStorage.getItem("token");
+      const res = await fetch(`${baseUrl}sales/sales-orders.php?action=export_pdf&so_id=${salesOrderDetailId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error("Failed to export PDF");
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${salesOrderNumber}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err: any) {
+      showError(err.message || "Failed to export PDF.");
+    }
+  };
+
+  const handleExportExcel = async () => {
+    try {
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL;
+      const token = localStorage.getItem("token");
+      const res = await fetch(`${baseUrl}sales/sales-orders.php?action=export_excel&so_id=${salesOrderDetailId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error("Failed to export Excel");
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${salesOrderNumber}.xlsx`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err: any) {
+      showError(err.message || "Failed to export Excel.");
     }
   };
 
@@ -929,7 +972,7 @@ function SalesOrderContent() {
             {/* Submitted: Export PDF + Reject + Approve */}
             {salesOrderStatus === "submitted" && (
               <Flex gap={3} justifyContent="space-between" mt={5}>
-                <Button variant="outline">{t.master.export_pdf}</Button>
+                <Button variant="outline" onClick={handleExportPDF}>{t.master.export_pdf}</Button>
                 <Flex gap={6}>
                   {canApprove && <Button color="red" borderColor="red" variant="outline" onClick={() => setIsRejectDialogOpen(true)}>{t.master.reject}</Button>}
                   {canApprove && <Button backgroundColor="green" onClick={handleApprove}>{t.master.approve}</Button>}
@@ -937,15 +980,21 @@ function SalesOrderContent() {
               </Flex>
             )}
 
-            {/* Confirmed (Approved): Create Delivery Order if not exists */}
+            {/* Confirmed (Approved): Export PDF + Export Excel + Create Delivery Order */}
             {salesOrderStatus === "confirmed" && (
-              <Flex gap={3} justifyContent="flex-end" mt={5}>
-                {!deliveryOrderExists && (
-                  <Button bg="#E77A1F" color="white" onClick={handleCreateDeliveryOrder}>{t.sales_order.create_delivery_order || "Create Delivery Order"}</Button>
-                )}
-                {deliveryOrderExists && (
-                  <Text color="gray.600" fontSize="sm">{t.sales_order.delivery_order_created || "Delivery Order has been created"}</Text>
-                )}
+              <Flex gap={3} justifyContent="space-between" mt={5}>
+                <Flex gap={3}>
+                  <Button variant="outline" onClick={handleExportPDF}>{t.master.export_pdf}</Button>
+                  <Button variant="outline" onClick={handleExportExcel}>{t.master.export_excel}</Button>
+                </Flex>
+                <Flex gap={3} alignItems="center">
+                  {!deliveryOrderExists && (
+                    <Button bg="#E77A1F" color="white" onClick={handleCreateDeliveryOrder}>{t.sales_order.create_delivery_order || "Create Delivery Order"}</Button>
+                  )}
+                  {deliveryOrderExists && (
+                    <Text color="gray.600" fontSize="sm">{t.sales_order.delivery_order_created || "Delivery Order has been created"}</Text>
+                  )}
+                </Flex>
               </Flex>
             )}
           </Card.Body>

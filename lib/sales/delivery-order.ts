@@ -25,6 +25,11 @@ export interface GetSalesDeliveryItemData {
   created_at: string;
 }
 
+export interface SalesDeliveryExistsCheck {
+    exists: boolean;
+    total_do: number;
+}
+
 export interface GetDetailDeliveryHeader {
   delivery_order_id: string;
   delivery_order_no: string;
@@ -42,11 +47,22 @@ export interface GetDetailDeliveryHeader {
 }
 
 export interface GetDetailDeliveryItem {
-  delivery_order_item_id: string;
+  item_id: string;
+  items_id: string;
   item_name: string;
+  uom_id: string;
   uom_name: string;
   quantity: number;
   notes: string;
+}
+
+export interface UpdateDeliveryOrderItemData {
+  item_id?: string;
+  _delete?: boolean;
+  items_id?: string;
+  quantity?: number;
+  uom_id?: string;
+  notes?: string;
 }
 
 export interface GetDetailDeliveryHistory {
@@ -67,6 +83,7 @@ export interface UpdateDeliveryOrderData {
   issue_date?: string;
   delivery_date?: string;
   remarks?: string;
+  items?: UpdateDeliveryOrderItemData[];
 }
 
 export interface ProcessDeliveryOrderActionData {
@@ -149,7 +166,7 @@ export async function getSalesdeliveryOrder(page: number = 1, limit : number = 1
     };
 }
 
-export async function getDeliveryOrderBySalesOrderId(sales_order_id: string): Promise<GetSalesDeliveryItemData | null> {
+export async function getDeliveryOrderBySalesOrderId(sales_order_id: string): Promise<SalesDeliveryExistsCheck | null> {
     const baseUrl = process.env.NEXT_PUBLIC_API_URL;
     const token = localStorage.getItem("token");
 

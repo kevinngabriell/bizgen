@@ -230,6 +230,31 @@ export async function processSalesProfitAction(input: ProcessSalesProfitActionDa
     return json;
 }
 
+export interface SalesProfitExistsCheck {
+    exists: boolean;
+    total: number;
+}
+
+export async function getProfitBySalesOrderId(sales_order_id: string): Promise<SalesProfitExistsCheck | null> {
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL;
+    const token = localStorage.getItem("token");
+
+    const res = await fetch(`${baseUrl}sales/profit-summary.php?sales_order_id=${sales_order_id}`, {
+        method: 'GET',
+        headers: {
+            Authorization: `Bearer ${token}`,
+        },
+    });
+
+    const json = await res.json();
+
+    if (json.status_code !== 200 || !json.data) {
+        throw new Error(json.status_message || 'Failed to check profit summary');
+    }
+
+    return json.data;
+}
+
 export async function deleteSalesProfit(profit_id: string): Promise<any> {
     const baseUrl = process.env.NEXT_PUBLIC_API_URL;
     const token = localStorage.getItem("token");

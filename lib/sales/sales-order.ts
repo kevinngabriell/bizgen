@@ -28,6 +28,7 @@ export interface CreateSalesOrderItemData{
   ppn: string;
   total: string;
   notes: string;
+  uom_id: string;
 }
 
 export interface GetSalesOrderItemData {
@@ -41,6 +42,7 @@ export interface GetDetailSalesOrderHeader {
   sales_order_no: string;
   order_date: string;
   status: string;
+  customer_id: string;
   customer_name: string;
   ship_via_name: string;
   origin_port_name: string;
@@ -60,7 +62,9 @@ export interface GetDetailSalesOrderHeader {
 
 export interface GetDetailSalesOrderItem {
   sales_order_item_id: string;
+  item_id?: string;
   item_name: string;
+  uom_name: string;
   quantity: number;
   unit_price: number;
   dpp: number;

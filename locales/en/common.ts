@@ -136,6 +136,7 @@ export const en = {
     last_update_at: "Last updated at",
     submit: "Submit",
     export_pdf: "Export PDF",
+    export_excel: "Export Excel",
     reject: "Reject",
     approve: "Approve"
   },
@@ -146,6 +147,19 @@ export const en = {
     reason_placeholder: "Enter the reason for rejection...",
     cancel: "Cancel",
     confirm: "Reject",
+  },
+  data_change_confirm_dialog: {
+    title: "Data Change Confirmation",
+    description: "The following items differ from the original sales order data. Do you want to proceed with these changes?",
+    field_label: "Field",
+    original_label: "Original (Sales Order)",
+    your_changes_label: "Your Changes",
+    description_label: "Description",
+    quantity_label: "Quantity",
+    uom_label: "UOM",
+    cancel: "Cancel",
+    proceed: "Proceed",
+    no_changes: "No changes detected.",
   },
   customer: {
     title: "Customer Master Data",
