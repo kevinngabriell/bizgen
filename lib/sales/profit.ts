@@ -34,6 +34,7 @@ export interface GetDetailProfitHeader {
   status: string;
   customer_name: string;
   currency_code: string;
+  sales_order_id: string;
   sales_order_no: string;
   exchange_rate_to_idr: number;
   revenue_total_usd: number;

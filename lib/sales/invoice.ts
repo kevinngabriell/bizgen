@@ -53,7 +53,7 @@ export interface GetDetailInvoiceHeader {
 }
 
 export interface GetDetailInvoiceItem {
-  invoice_item_id: string;
+  item_id: string;
   item_name: string;
   uom_name: string;
   quantity: number;
@@ -76,6 +76,16 @@ export interface GetDetailInvoiceResponse {
   history: GetDetailInvoiceHistory[];
 }
 
+export interface UpdateSalesInvoiceItemData {
+  item_id?: string;
+  _delete?: boolean;
+  items_id?: string;
+  quantity?: number;
+  unit_price?: number;
+  tax?: number;
+  total?: number;
+}
+
 export interface UpdateSalesInvoiceData {
   invoice_id: string;
   invoice_date?: string;
@@ -83,14 +93,21 @@ export interface UpdateSalesInvoiceData {
   exchange_rate_to_idr?: string;
   subtotal_amount?: string;
   tax_amount?: string;
-  total_amount?: string;
+  grand_total?: string;
+  grand_total_idr?: string;
   notes?: string;
+  items?: UpdateSalesInvoiceItemData[];
 }
 
 export interface ProcessSalesInvoiceActionData {
   invoice_id: string;
   action: 'submit' | 'approve' | 'reject';
   notes?: string;
+}
+
+export interface SalesInvoiceExistsCheck {
+  exists: boolean;
+  total_invoice: number;
 }
 
 export async function generateSalesInvoiceNumber(): Promise<GetSalesInvoiceNumber> {
@@ -236,6 +253,30 @@ export async function processSalesInvoiceAction(input: ProcessSalesInvoiceAction
     }
 
     return json;
+}
+
+export async function getInvoiceBySalesOrderId(sales_order_id: string): Promise<SalesInvoiceExistsCheck | null> {
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL;
+    const token = localStorage.getItem("token");
+
+    const res = await fetch(`${baseUrl}sales/invoices.php?sales_order_id=${sales_order_id}`, {
+        method: 'GET',
+        headers: {
+            Authorization: `Bearer ${token}`,
+        },
+    });
+
+    const json = await res.json();
+
+    if (json.status_code !== 200 && json.status_code !== 404) {
+        throw new Error(json.status_message || 'Failed to fetch invoice by sales order id');
+    }
+
+    if (json.status_code === 404 || !json.data) {
+        return null;
+    }
+
+    return json.data;
 }
 
 export async function deleteSalesInvoice(invoice_id: string): Promise<any> {

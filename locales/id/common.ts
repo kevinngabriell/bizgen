@@ -148,6 +148,11 @@ export const id = {
     cancel: "Batal",
     confirm: "Tolak",
   },
+  coming_soon_dialog: {
+    title: "Segera Hadir",
+    description: "Fitur ini sedang dalam pengembangan dan akan segera tersedia.",
+    close: "Tutup",
+  },
   data_change_confirm_dialog: {
     title: "Konfirmasi Perubahan Data",
     description: "Item berikut berbeda dari data sales order asli. Apakah Anda ingin melanjutkan dengan perubahan ini?",

@@ -2,7 +2,6 @@
 
 import Loading from "@/components/loading";
 import CustomerLookup from "@/components/lookup/CustomerLookup";
-import DeliveryOrderLookup from "@/components/lookup/DeliveryOrderLookup";
 import SalesOrderLookup from "@/components/lookup/SalesOrderLookup";
 import SidebarWithHeader from "@/components/ui/SidebarWithHeader";
 import { AlertMessage } from "@/components/ui/alert";
@@ -19,9 +18,10 @@ import {
   updateSalesInvoice,
   processSalesInvoiceAction,
   GetDetailInvoiceHistory,
+  UpdateSalesInvoiceItemData,
 } from "@/lib/sales/invoice";
-import { GetSalesDeliveryItemData } from "@/lib/sales/delivery-order";
-import { GetSalesOrderItemData } from "@/lib/sales/sales-order";
+import { getDeliveryInfoBySalesOrderId } from "@/lib/sales/delivery-order";
+import { GetSalesOrderItemData, getDetailSalesOrder } from "@/lib/sales/sales-order";
 import {
   Badge, Box, Button, Card, Combobox, createListCollection, Field, Flex,
   Heading, IconButton, Input, Portal, Select, Separator, SimpleGrid, Text,
@@ -52,6 +52,7 @@ function InvoiceContent() {
 
   const searchParams = useSearchParams();
   const invoiceID = searchParams.get("invoice_id");
+  const salesOrderIDParam = searchParams.get("sales_order_id");
 
   const [invoiceStatus, setInvoiceStatus] = useState<string>();
   const [invoiceDetailId, setInvoiceDetailId] = useState<string>("");
@@ -66,6 +67,7 @@ function InvoiceContent() {
   const [rejectLoading, setRejectLoading] = useState(false);
 
   const [historyData, setHistoryData] = useState<GetDetailInvoiceHistory[]>([]);
+  const [deletedItemIds, setDeletedItemIds] = useState<string[]>([]);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -94,7 +96,6 @@ function InvoiceContent() {
 
   const [customerModalOpen, setCustomerModalOpen] = useState(false);
   const [salesOrderModalOpen, setSalesOrderModalOpen] = useState(false);
-  const [deliveryOrderModalOpen, setDeliveryOrderModalOpen] = useState(false);
 
   const [customer, setCustomer] = useState("");
   const [customerId, setCustomerId] = useState("");
@@ -183,7 +184,7 @@ function InvoiceContent() {
               const matched = itemData.find((i) => i.item_name === item.item_name);
               return {
                 id: crypto.randomUUID(),
-                invoiceItemId: item.invoice_item_id ?? "",
+                invoiceItemId: item.item_id ?? "",
                 itemId: matched?.item_id ?? "",
                 itemDisplayName: item.item_name,
                 quantity: item.quantity,
@@ -198,6 +199,10 @@ function InvoiceContent() {
         } else {
           const res = await generateSalesInvoiceNumber();
           setInvoiceNo(res.number);
+
+          if (salesOrderIDParam) {
+            await prefillFromSalesOrder(salesOrderIDParam, itemData);
+          }
         }
       } catch (err) {
         console.error(err);
@@ -207,7 +212,7 @@ function InvoiceContent() {
     };
 
     loadAll();
-  }, [invoiceID]);
+  }, [invoiceID, salesOrderIDParam]);
 
   const clearAmountErrors = () =>
     setErrors((prev) => { const e = { ...prev }; delete e.subtotal_amount; delete e.grand_total; delete e.items; return e; });
@@ -217,8 +222,16 @@ function InvoiceContent() {
     clearAmountErrors();
   };
 
-  const removeItem = (id: string) =>
-    setItems((prev) => (prev.length > 1 ? prev.filter((i) => i.id !== id) : prev));
+  const removeItem = (id: string) => {
+    setItems((prev) => {
+      if (prev.length <= 1) return prev;
+      const target = prev.find((i) => i.id === id);
+      if (target?.invoiceItemId) {
+        setDeletedItemIds((d) => [...d, target.invoiceItemId]);
+      }
+      return prev.filter((i) => i.id !== id);
+    });
+  };
 
   const updateItem = (id: string, key: string, value: string | number) => {
     setItems((prev) => prev.map((i) => (i.id === id ? { ...i, [key]: value } : i)));
@@ -250,18 +263,58 @@ function InvoiceContent() {
     setCustomerModalOpen(false);
   };
 
-  const handleChooseSalesOrder = (selectedSO: GetSalesOrderItemData) => {
-    setSalesOrderNo(selectedSO.sales_order_no);
-    setSalesOrderId(selectedSO.sales_order_id);
-    setErrors((prev) => { const e = { ...prev }; delete e.sales_order_id; return e; });
-    setSalesOrderModalOpen(false);
+  const prefillFromSalesOrder = async (soId: string, itemData?: GetItemData[]) => {
+    const resolvedItems = itemData ?? itemCollections;
+    const [soResult, doResult] = await Promise.allSettled([
+      getDetailSalesOrder(soId),
+      getDeliveryInfoBySalesOrderId(soId),
+    ]);
+
+    if (soResult.status === "fulfilled") {
+      const h = soResult.value.header;
+      setSalesOrderId(soId);
+      setSalesOrderNo(h.sales_order_no);
+      setCustomer(h.customer_name ?? "");
+      setCustomerId(h.customer_id ?? "");
+      setErrors((prev) => { const e = { ...prev }; delete e.sales_order_id; delete e.customer_id; return e; });
+
+      setItems(
+        soResult.value.items.map((item) => {
+          const matched = resolvedItems.find((i) => i.item_id === item.item_id || i.item_name === item.item_name);
+          return {
+            id: crypto.randomUUID(),
+            invoiceItemId: "",
+            itemId: matched?.item_id ?? item.item_id ?? "",
+            itemDisplayName: matched ? `${matched.item_code} - ${matched.item_name}` : item.item_name,
+            quantity: item.quantity,
+            unitPrice: item.unit_price,
+            unitPriceInput: item.unit_price > 0 ? item.unit_price.toLocaleString() : "",
+            taxPercent: 0,
+          };
+        })
+      );
+    }
+
+    if (doResult.status === "fulfilled") {
+      const firstDO = doResult.value?.data?.[0];
+      if (firstDO) {
+        setDeliveryOrderId(firstDO.delivery_order_id);
+        setDeliveryOrderNo(firstDO.do_number);
+        setErrors((prev) => { const e = { ...prev }; delete e.delivery_order_id; return e; });
+      }
+    }
   };
 
-  const handleChooseDeliveryOrder = (selectedDO: GetSalesDeliveryItemData) => {
-    setDeliveryOrderNo(selectedDO.do_number);
-    setDeliveryOrderId(selectedDO.delivery_order_id);
-    setErrors((prev) => { const e = { ...prev }; delete e.delivery_order_id; return e; });
-    setDeliveryOrderModalOpen(false);
+  const handleChooseSalesOrder = async (selectedSO: GetSalesOrderItemData) => {
+    setSalesOrderModalOpen(false);
+    try {
+      setLoading(true);
+      await prefillFromSalesOrder(selectedSO.sales_order_id);
+    } catch (err: any) {
+      showError(err.message || "Failed to load sales order data.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleSubmit = async () => {
@@ -272,6 +325,7 @@ function InvoiceContent() {
     if (!salesOrderId) newErrors.sales_order_id = "Required";
     if (!deliveryOrderId) newErrors.delivery_order_id = "Required";
     if (!invoiceDate) newErrors.invoice_date = "Required";
+    if (!dueDate) newErrors.due_date = "Required";
     if (subTotal <= 0) newErrors.subtotal_amount = "Subtotal must be greater than 0";
     if (grandTotal <= 0) newErrors.grand_total = "Grand total must be greater than 0";
     if (items.length === 0) newErrors.items = "At least one item is required";
@@ -330,6 +384,27 @@ function InvoiceContent() {
       if (!invoiceDetailId) throw new Error("Invoice ID not found");
       setLoading(true);
 
+      const itemPayload: UpdateSalesInvoiceItemData[] = [
+        // deleted existing items
+        ...deletedItemIds.map((itemId) => ({ item_id: itemId, _delete: true as const })),
+        // update existing items
+        ...items
+          .filter((i) => i.invoiceItemId)
+          .map((i) => {
+            const tax = i.quantity * i.unitPrice * (i.taxPercent / 100);
+            const total = i.quantity * i.unitPrice + tax;
+            return { item_id: i.invoiceItemId, quantity: i.quantity, unit_price: i.unitPrice, tax, total };
+          }),
+        // add new items
+        ...items
+          .filter((i) => !i.invoiceItemId && i.itemId)
+          .map((i) => {
+            const tax = i.quantity * i.unitPrice * (i.taxPercent / 100);
+            const total = i.quantity * i.unitPrice + tax;
+            return { items_id: i.itemId, quantity: i.quantity, unit_price: i.unitPrice, tax, total };
+          }),
+      ];
+
       await updateSalesInvoice({
         invoice_id: invoiceDetailId,
         invoice_date: invoiceDate,
@@ -337,10 +412,13 @@ function InvoiceContent() {
         exchange_rate_to_idr: String(exchangeRate),
         subtotal_amount: String(subTotal),
         tax_amount: String(taxAmount),
-        total_amount: String(grandTotal),
+        grand_total: String(grandTotal),
+        grand_total_idr: String(grandTotalIdr),
         notes: notes,
+        items: itemPayload,
       });
 
+      setDeletedItemIds([]);
       showSuccess(t.sales_invoice.success_update ?? "Invoice updated successfully.");
     } catch (err: any) {
       showError(err.message || "Failed to update invoice.");
@@ -410,7 +488,6 @@ function InvoiceContent() {
 
         <CustomerLookup isOpen={customerModalOpen} onClose={() => setCustomerModalOpen(false)} onChoose={handleChooseCustomer} />
         <SalesOrderLookup isOpen={salesOrderModalOpen} onClose={() => setSalesOrderModalOpen(false)} onChoose={handleChooseSalesOrder} />
-        <DeliveryOrderLookup isOpen={deliveryOrderModalOpen} onClose={() => setDeliveryOrderModalOpen(false)} onChoose={handleChooseDeliveryOrder} />
 
         {showAlert && <AlertMessage title={titlePopup} description={messagePopup} isSuccess={isSuccess} />}
 
@@ -465,14 +542,15 @@ function InvoiceContent() {
                 />
                 <Field.ErrorText>{errors.invoice_date}</Field.ErrorText>
               </Field.Root>
-              <Field.Root>
-                <Field.Label>{t.sales_invoice.due_date}</Field.Label>
+              <Field.Root required invalid={!!errors.due_date}>
+                <Field.Label>{t.sales_invoice.due_date}<Field.RequiredIndicator /></Field.Label>
                 <Input
                   type="date"
                   value={dueDate}
                   readOnly={isReadOnly}
-                  onChange={(e) => setDueDate(e.target.value)}
+                  onChange={(e) => { setDueDate(e.target.value); setErrors((prev) => { const e = { ...prev }; delete e.due_date; return e; }); }}
                 />
+                <Field.ErrorText>{errors.due_date}</Field.ErrorText>
               </Field.Root>
             </SimpleGrid>
 
@@ -505,8 +583,7 @@ function InvoiceContent() {
                   placeholder={t.sales_invoice.delivery_order_no_placeholder}
                   value={deliveryOrderNo}
                   readOnly
-                  cursor={mode === "view" ? "default" : "pointer"}
-                  onClick={() => mode !== "view" && setDeliveryOrderModalOpen(true)}
+                  cursor="default"
                 />
                 <Field.ErrorText>{errors.delivery_order_id}</Field.ErrorText>
               </Field.Root>

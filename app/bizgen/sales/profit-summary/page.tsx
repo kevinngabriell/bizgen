@@ -19,11 +19,13 @@ import {
 } from "@/lib/sales/profit";
 import { AlertMessage } from "@/components/ui/alert";
 import { GetSalesOrderItemData, getDetailSalesOrder } from "@/lib/sales/sales-order";
+import { getInvoiceBySalesOrderId } from "@/lib/sales/invoice";
 import RejectDialog from "@/components/dialog/RejectDialog";
 import {
   Badge, Box, Button, Card, Combobox, createListCollection, Field, Flex,
   Heading, Input, Portal, Select, Separator, SimpleGrid, Text, useFilter, useListCollection,
 } from "@chakra-ui/react";
+import { useRouter } from "next/navigation";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 
@@ -42,6 +44,7 @@ function ProfitSummaryContent() {
   const [loading, setLoading] = useState(false);
   const [lang, setLang] = useState<"en" | "id">("en");
   const t = getLang(lang);
+  const router = useRouter();
 
   const canApprove = SALES_APPROVAL_ROLES.has(auth?.app_role_id ?? "");
   const canCreate = SALES_CREATE_ROLES.has(auth?.app_role_id ?? "");
@@ -61,6 +64,7 @@ function ProfitSummaryContent() {
 
   const [isRejectDialogOpen, setIsRejectDialogOpen] = useState(false);
   const [rejectLoading, setRejectLoading] = useState(false);
+  const [invoiceExists, setInvoiceExists] = useState(false);
 
   const [showAlert, setShowAlert] = useState(false);
   const [titlePopup, setTitlePopup] = useState("");
@@ -154,10 +158,17 @@ function ProfitSummaryContent() {
           setProfitDetailId(h.profit_summary_id);
           setReferenceNo(h.sales_profit_no ?? "");
           setJobOrderNo(h.sales_order_no ?? "");
+          setSalesOrderId(h.sales_order_id ?? "");
           setCustomer(h.customer_name ?? "");
           setProfitSummaryStatus(h.status?.toLowerCase() ?? "");
           setLastUpdatedBy(h.updated_by ?? "");
           setLastUpdatedAt(h.updated_at ?? "");
+
+          // Check if invoice exists for this sales order
+          if (h.sales_order_id) {
+            const invoiceCheck = await getInvoiceBySalesOrderId(h.sales_order_id);
+            setInvoiceExists(invoiceCheck?.exists || false);
+          }
 
           const rate = Number(h.exchange_rate_to_idr) || 15000;
           setExchangeRate(rate);
@@ -464,10 +475,18 @@ function ProfitSummaryContent() {
     }
   };
 
+  const handleCreateInvoice = () => {
+    if (!salesOrderId) {
+      showError("Sales Order ID not found");
+      return;
+    }
+    router.push(`/bizgen/sales/invoice?sales_order_id=${salesOrderId}`);
+  };
+
   if (loading) return <Loading />;
 
   return (
-    <>
+<>
       <SidebarWithHeader username={auth?.username ?? "Unknown"} daysToExpire={auth?.days_remaining ?? 0}>
         <Heading size="lg" mb={4}>
           {mode === "create" ? t.sales_profit_summary.title_create : t.sales_profit_summary.title_view}
@@ -768,11 +787,21 @@ function ProfitSummaryContent() {
           </Flex>
         )}
 
-        {/* Confirmed: Export PDF + Export Excel */}
+        {/* Confirmed: Export PDF + Export Excel + Create Invoice */}
         {profitSummaryStatus === "confirmed" && (
-          <Flex gap={3} mt={5}>
-            <Button variant="outline" onClick={handleExportPDF}>{t.master.export_pdf}</Button>
-            <Button variant="outline" onClick={handleExportExcel}>{t.master.export_excel}</Button>
+          <Flex gap={3} justifyContent="space-between" mt={5}>
+            <Flex gap={3}>
+              <Button variant="outline" onClick={handleExportPDF}>{t.master.export_pdf}</Button>
+              <Button variant="outline" onClick={handleExportExcel}>{t.master.export_excel}</Button>
+            </Flex>
+            <Flex gap={3} alignItems="center">
+              {!invoiceExists && (
+                <Button bg="#E77A1F" color="white" onClick={handleCreateInvoice}>Create Invoice</Button>
+              )}
+              {invoiceExists && (
+                <Text color="gray.600" fontSize="sm">Invoice has been created</Text>
+              )}
+            </Flex>
           </Flex>
         )}
 

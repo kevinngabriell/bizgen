@@ -166,6 +166,46 @@ export async function getSalesdeliveryOrder(page: number = 1, limit : number = 1
     };
 }
 
+export interface SalesDeliveryItem {
+  delivery_order_id: string;
+  do_number: string;
+}
+
+export interface SalesDeliveryInfoBySalesOrder {
+  exists: boolean;
+  total_do: number;
+  data: SalesDeliveryItem[];
+}
+
+export async function getDeliveryInfoBySalesOrderId(sales_order_id: string): Promise<SalesDeliveryInfoBySalesOrder | null> {
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL;
+    const token = localStorage.getItem("token");
+
+    const res = await fetch(`${baseUrl}sales/delivery-orders.php?sales_order_id=${sales_order_id}`, {
+        method: 'GET',
+        headers: {
+            Authorization: `Bearer ${token}`,
+        },
+    });
+
+    const json = await res.json();
+
+    if (json.status_code !== 200 && json.status_code !== 404) {
+        throw new Error(json.status_message || 'Failed to fetch delivery info by sales order id');
+    }
+
+    if (json.status_code === 404 || !json.data) {
+        return null;
+    }
+
+    const d = json.data as any;
+    return {
+        exists: d.exists ?? false,
+        total_do: d.total_do ?? 0,
+        data: d.data ?? [],
+    };
+}
+
 export async function getDeliveryOrderBySalesOrderId(sales_order_id: string): Promise<SalesDeliveryExistsCheck | null> {
     const baseUrl = process.env.NEXT_PUBLIC_API_URL;
     const token = localStorage.getItem("token");

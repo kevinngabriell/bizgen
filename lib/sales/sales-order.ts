@@ -265,3 +265,29 @@ export async function deleteSalesOrder(so_id: string): Promise<any> {
 
     return json;
 }
+
+export async function exportSalesOrderPDF(so_id: string): Promise<Blob> {
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL;
+    const token = localStorage.getItem("token");
+
+    const res = await fetch(`${baseUrl}sales/sales-orders.php?action=export_pdf&so_id=${so_id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+    });
+
+    if (!res.ok) throw new Error('Failed to export PDF');
+
+    return res.blob();
+}
+
+export async function exportSalesOrderExcel(so_id: string): Promise<Blob> {
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL;
+    const token = localStorage.getItem("token");
+
+    const res = await fetch(`${baseUrl}sales/report/sales-order.php?sales_order_id=${so_id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+    });
+
+    if (!res.ok) throw new Error('Failed to export Excel');
+
+    return res.blob();
+}

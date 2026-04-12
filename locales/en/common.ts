@@ -148,6 +148,11 @@ export const en = {
     cancel: "Cancel",
     confirm: "Reject",
   },
+  coming_soon_dialog: {
+    title: "Coming Soon",
+    description: "This feature is currently under development and will be available soon.",
+    close: "Close",
+  },
   data_change_confirm_dialog: {
     title: "Data Change Confirmation",
     description: "The following items differ from the original sales order data. Do you want to proceed with these changes?",

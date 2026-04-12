@@ -70,40 +70,39 @@ export default function Sales (){
     const language = info?.language === "id" ? "id" : "en";
     setLang(language);
 
-    try {
-      const salesRfqRes = await getSalesRfq(1, 3, "");
-      setSalesRfqData(salesRfqRes.data);
+    const [
+      salesRfqRes,
+      salesQuotationRes,
+      salesJobOrderRes,
+      salesDocumentRes,
+      salesCostingRes,
+      salesOrderRes,
+      salesDeliveryRes,
+      salesProfitRes,
+      salesInvoiceRes,
+    ] = await Promise.allSettled([
+      getSalesRfq(1, 3, ""),
+      getSalesQuotations(1, 3, ""),
+      getSalesJobOrder(1, 3, ""),
+      getSalesDocument(1, 3, ""),
+      getSalesCosting(1, 3, ""),
+      getSalesOrder(1, 3, ""),
+      getSalesdeliveryOrder(1, 3, ""),
+      getSalesProfit(1, 3, ""),
+      getSalesInvoice(1, 3, ""),
+    ]);
 
-      const salesQuotationRes = await getSalesQuotations(1, 3, "");
-      setSalesQuotationData(salesQuotationRes.data);
+    if (salesRfqRes.status === "fulfilled") setSalesRfqData(salesRfqRes.value.data);
+    if (salesQuotationRes.status === "fulfilled") setSalesQuotationData(salesQuotationRes.value.data);
+    if (salesJobOrderRes.status === "fulfilled") setSalesJobOrderData(salesJobOrderRes.value.data);
+    if (salesDocumentRes.status === "fulfilled") setSalesShipmentData(salesDocumentRes.value.data);
+    if (salesCostingRes.status === "fulfilled") setSalesCostingData(salesCostingRes.value.data);
+    if (salesOrderRes.status === "fulfilled") setSalesOrderData(salesOrderRes.value.data);
+    if (salesDeliveryRes.status === "fulfilled") setSalesDeliveryData(salesDeliveryRes.value.data);
+    if (salesProfitRes.status === "fulfilled") setSalesProfitData(salesProfitRes.value.data);
+    if (salesInvoiceRes.status === "fulfilled") setSalesInvoiceData(salesInvoiceRes.value.data);
 
-      const salesJobOrderRes = await getSalesJobOrder(1, 3, "");
-      setSalesJobOrderData(salesJobOrderRes.data);
-
-      const salesDocumentRes = await getSalesDocument(1, 3, "");
-      setSalesShipmentData(salesDocumentRes.data);
-
-      const salesCostingRes = await getSalesCosting(1, 3, "");
-      setSalesCostingData(salesCostingRes.data);
-
-      const salesOrderRes = await getSalesOrder(1, 3, "");
-      setSalesOrderData(salesOrderRes.data);
-
-      const salesDeliveryRes = await getSalesdeliveryOrder(1, 3, "");
-      setSalesDeliveryData(salesDeliveryRes.data);
-
-      const salesProfitRes = await getSalesProfit(1, 3, "");
-      setSalesProfitData(salesProfitRes.data);
-
-      const salesInvoiceRes = await getSalesInvoice(1, 3, "");
-      setSalesInvoiceData(salesInvoiceRes.data);
-
-    } catch (error: any){
-      setSalesRfqData([]);
-      setSalesQuotationData([]);
-    } finally {
-      setLoading(false);
-    }
+    setLoading(false);
   }
     
   if (loading) return <Loading/>;

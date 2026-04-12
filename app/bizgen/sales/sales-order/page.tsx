@@ -13,7 +13,7 @@ import { getAllPort, GetPortData } from '@/lib/master/port';
 import { getAllTerm, GetTermData } from '@/lib/master/term';
 import { GetCustomerData, getDetailCustomer } from '@/lib/master/customer';
 import CustomerLookup from '@/components/lookup/CustomerLookup';
-import { createSalesOrder, generateSalesNumber, getDetailSalesOrder, updateSalesOrder, processSalesOrderAction, GetDetailSalesOrderHistory } from '@/lib/sales/sales-order';
+import { createSalesOrder, generateSalesNumber, getDetailSalesOrder, updateSalesOrder, processSalesOrderAction, GetDetailSalesOrderHistory, exportSalesOrderExcel } from '@/lib/sales/sales-order';
 import { getDeliveryOrderBySalesOrderId } from '@/lib/sales/delivery-order';
 import { AlertMessage } from '@/components/ui/alert';
 import { FaTrash } from 'react-icons/fa';
@@ -21,6 +21,7 @@ import { getAllTax, GetTaxData } from '@/lib/master/tax';
 import { getAllUOM, UOMData } from '@/lib/master/uom';
 import { getAllItem, GetItemData } from '@/lib/master/item';
 import RejectDialog from '@/components/dialog/RejectDialog';
+import ComingSoonDialog from '@/components/dialog/ComingSoonDialog';
 
 type SalesOrderMode = "create" | "view" | "edit";
 
@@ -58,6 +59,7 @@ function SalesOrderContent() {
 
   const [isRejectDialogOpen, setIsRejectDialogOpen] = useState(false);
   const [rejectLoading, setRejectLoading] = useState(false);
+  const [isComingSoonOpen, setIsComingSoonOpen] = useState(false);
 
   const [customerModalOpen, setCustomerModalOpen] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<GetCustomerData | null>(null);
@@ -464,35 +466,13 @@ function SalesOrderContent() {
     }
   };
 
-  const handleExportPDF = async () => {
-    try {
-      const baseUrl = process.env.NEXT_PUBLIC_API_URL;
-      const token = localStorage.getItem("token");
-      const res = await fetch(`${baseUrl}sales/sales-orders.php?action=export_pdf&so_id=${salesOrderDetailId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!res.ok) throw new Error("Failed to export PDF");
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `${salesOrderNumber}.pdf`;
-      a.click();
-      URL.revokeObjectURL(url);
-    } catch (err: any) {
-      showError(err.message || "Failed to export PDF.");
-    }
+  const handleExportPDF = () => {
+    setIsComingSoonOpen(true);
   };
 
   const handleExportExcel = async () => {
     try {
-      const baseUrl = process.env.NEXT_PUBLIC_API_URL;
-      const token = localStorage.getItem("token");
-      const res = await fetch(`${baseUrl}sales/sales-orders.php?action=export_excel&so_id=${salesOrderDetailId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!res.ok) throw new Error("Failed to export Excel");
-      const blob = await res.blob();
+      const blob = await exportSalesOrderExcel(salesOrderDetailId);
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
@@ -1030,6 +1010,12 @@ function SalesOrderContent() {
         onClose={() => setIsRejectDialogOpen(false)}
         onConfirm={handleReject}
         loading={rejectLoading}
+        lang={lang}
+      />
+
+      <ComingSoonDialog
+        isOpen={isComingSoonOpen}
+        onClose={() => setIsComingSoonOpen(false)}
         lang={lang}
       />
     </>
