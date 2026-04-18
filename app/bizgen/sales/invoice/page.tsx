@@ -67,7 +67,6 @@ function InvoiceContent() {
   const [rejectLoading, setRejectLoading] = useState(false);
 
   const [historyData, setHistoryData] = useState<GetDetailInvoiceHistory[]>([]);
-  const [deletedItemIds, setDeletedItemIds] = useState<string[]>([]);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -225,10 +224,6 @@ function InvoiceContent() {
   const removeItem = (id: string) => {
     setItems((prev) => {
       if (prev.length <= 1) return prev;
-      const target = prev.find((i) => i.id === id);
-      if (target?.invoiceItemId) {
-        setDeletedItemIds((d) => [...d, target.invoiceItemId]);
-      }
       return prev.filter((i) => i.id !== id);
     });
   };
@@ -384,26 +379,13 @@ function InvoiceContent() {
       if (!invoiceDetailId) throw new Error("Invoice ID not found");
       setLoading(true);
 
-      const itemPayload: UpdateSalesInvoiceItemData[] = [
-        // deleted existing items
-        ...deletedItemIds.map((itemId) => ({ item_id: itemId, _delete: true as const })),
-        // update existing items
-        ...items
-          .filter((i) => i.invoiceItemId)
-          .map((i) => {
-            const tax = i.quantity * i.unitPrice * (i.taxPercent / 100);
-            const total = i.quantity * i.unitPrice + tax;
-            return { item_id: i.invoiceItemId, quantity: i.quantity, unit_price: i.unitPrice, tax, total };
-          }),
-        // add new items
-        ...items
-          .filter((i) => !i.invoiceItemId && i.itemId)
-          .map((i) => {
-            const tax = i.quantity * i.unitPrice * (i.taxPercent / 100);
-            const total = i.quantity * i.unitPrice + tax;
-            return { items_id: i.itemId, quantity: i.quantity, unit_price: i.unitPrice, tax, total };
-          }),
-      ];
+      const itemPayload: UpdateSalesInvoiceItemData[] = items
+        .filter((i) => i.itemId)
+        .map((i) => {
+          const tax = i.quantity * i.unitPrice * (i.taxPercent / 100);
+          const total = i.quantity * i.unitPrice + tax;
+          return { items_id: i.itemId, quantity: i.quantity, unit_price: i.unitPrice, tax, total };
+        });
 
       await updateSalesInvoice({
         invoice_id: invoiceDetailId,
@@ -411,6 +393,7 @@ function InvoiceContent() {
         due_date: dueDate,
         exchange_rate_to_idr: String(exchangeRate),
         subtotal_amount: String(subTotal),
+        tax_percent: overallTaxPercent,
         tax_amount: String(taxAmount),
         grand_total: String(grandTotal),
         grand_total_idr: String(grandTotalIdr),
@@ -418,7 +401,6 @@ function InvoiceContent() {
         items: itemPayload,
       });
 
-      setDeletedItemIds([]);
       showSuccess(t.sales_invoice.success_update ?? "Invoice updated successfully.");
     } catch (err: any) {
       showError(err.message || "Failed to update invoice.");

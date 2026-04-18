@@ -77,13 +77,11 @@ export interface GetDetailInvoiceResponse {
 }
 
 export interface UpdateSalesInvoiceItemData {
-  item_id?: string;
-  _delete?: boolean;
-  items_id?: string;
-  quantity?: number;
-  unit_price?: number;
+  items_id: string;
+  quantity: number;
+  unit_price: number;
   tax?: number;
-  total?: number;
+  total: number;
 }
 
 export interface UpdateSalesInvoiceData {
@@ -92,6 +90,7 @@ export interface UpdateSalesInvoiceData {
   due_date?: string;
   exchange_rate_to_idr?: string;
   subtotal_amount?: string;
+  tax_percent?: string;
   tax_amount?: string;
   grand_total?: string;
   grand_total_idr?: string;

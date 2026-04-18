@@ -26,13 +26,16 @@ export interface GetPurchaseLocalHeaderDetailData {
   status: string;
   supplier_name: string;
   currency_code: string;
-  payment_method_name: string;
   payment_id: string | null;
   payment_name: string | null;
   tax_name: string | null;
   exchange_rate_idr: string | null;
   notes: string | null;
   delivery_address: string | null;
+  created_by?: string;
+  created_at?: string;
+  updated_by?: string;
+  updated_at?: string;
 }
 
 export interface GetPurchaseLocalItemDetailData {
@@ -71,6 +74,7 @@ export interface CreatePurchaseLocalData {
   tax_id?: string;
   exchange_rate_idr?: number;
   notes?: string;
+  delivery_address?: string;
   items: CreatePurchaseLocalItem[];
 }
 
@@ -84,6 +88,7 @@ export interface UpdatePurchaseLocalData {
   tax_id?: string;
   exchange_rate_idr?: number;
   notes?: string;
+  delivery_address?: string;
   items?: CreatePurchaseLocalItem[];
 }
 
@@ -154,7 +159,7 @@ export async function getPurchaseLocal(page: number = 1, limit: number = 10): Pr
 
   return {
     data: json.data?.data || [],
-    pagination: json.data?.pagination || {},
+    pagination: { page: json.data?.page, limit: json.data?.limit, total: json.data?.total },
   };
 }
 

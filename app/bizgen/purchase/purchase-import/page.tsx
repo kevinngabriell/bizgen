@@ -7,7 +7,7 @@ import SidebarWithHeader from '@/components/ui/SidebarWithHeader';
 import RejectDialog from '@/components/dialog/RejectDialog';
 import { SALES_APPROVAL_ROLES, checkAuthOrRedirect, DecodedAuthToken, getAuthInfo } from '@/lib/auth/auth';
 import { getLang } from '@/lib/i18n';
-import { getCompanyProfile, GetCompanyProfile } from '@/lib/account/company';
+import { getAllCompanySettings, GetCompanySettingsData } from '@/lib/settings/company-settings';
 import { getAllCurrency, GetCurrencyData } from '@/lib/master/currency';
 import { getAllItem, GetItemData } from '@/lib/master/item';
 import { getAllPort, GetPortData } from '@/lib/master/port';
@@ -106,8 +106,7 @@ function PurchaseImportContent() {
     setTimeout(() => setShowAlert(false), 6000);
   };
 
-  // Company profile
-  const [companyProfile, setCompanyProfile] = useState<GetCompanyProfile | null>(null);
+  const [companySettings, setCompanySettings] = useState<GetCompanySettingsData | null>(null);
 
   // Master data
   const [currencyOptions, setCurrencyOptions] = useState<GetCurrencyData[]>([]);
@@ -224,8 +223,12 @@ function PurchaseImportContent() {
         setItemCollection(itemData);
 
         try {
-          const profile = await getCompanyProfile();
-          setCompanyProfile(profile);
+          const settingsRes = await getAllCompanySettings(1, 1);
+          if (settingsRes.data.length > 0) {
+            const settings = settingsRes.data[0];
+            setCompanySettings(settings);
+            setForm((prev) => ({ ...prev, shipping_marks: settings.shipping_marks ?? '' }));
+          }
         } catch { /* silently ignore */ }
 
         if (purchaseImportId) {
@@ -379,7 +382,7 @@ function PurchaseImportContent() {
 
   const resetForm = async () => {
     const res = await generatePurchaseImportNumber();
-    setForm({ po_number: res.number, po_date: '', exchange_rate: '', notes: '', shipping_marks: '', consignee_remarks: '' });
+    setForm({ po_number: res.number, po_date: '', exchange_rate: '', notes: '', shipping_marks: companySettings?.shipping_marks ?? '', consignee_remarks: '' });
     setSelectedSupplier(null);
     setCurrencySelected(undefined);
     setOriginSelected(undefined);
@@ -913,7 +916,7 @@ function PurchaseImportContent() {
           </Card.Header>
           <Card.Body>
             <Box overflowX="auto">
-              <Flex minW="1260px" gap={3} mb={2} px={1}>
+              <Flex minW="1100px" gap={3} mb={2} px={1}>
                 {[
                   ['32px', '#'],
                   ['220px', tr.description],
@@ -922,8 +925,7 @@ function PurchaseImportContent() {
                   ['140px', tr.packaging_size],
                   ['140px', `${tr.unit_price}${selectedCurrencyCode ? ` (${selectedCurrencyCode})` : ''}`],
                   ['140px', tr.item_total],
-                  ['120px', tr.remarks],
-                  ['40px', ''],
+                  ['120px', tr.remarks]
                 ].map(([w, label], i) => (
                   <Box key={i} w={w} flexShrink={0}>
                     <Text fontSize="xs" fontWeight="semibold" color="gray.500" textTransform="uppercase">{label}</Text>
@@ -932,7 +934,7 @@ function PurchaseImportContent() {
               </Flex>
 
               {items.map((item, idx) => (
-                <Flex key={item.id} minW="1260px" gap={3} mb={3} align="center" px={1}>
+                <Flex key={item.id} minW="1100px" gap={3} mb={3} align="center" px={1}>
                   <Box w="32px" flexShrink={0}>
                     <Text fontSize="sm" color="gray.400">{idx + 1}</Text>
                   </Box>
@@ -1026,15 +1028,15 @@ function PurchaseImportContent() {
               ))}
 
               <Separator mt={2} mb={4} />
-              <Flex justify="flex-end" minW="1260px" pr={1}>
-                <Box w="300px">
-                  <Flex justify="space-between">
-                    <Text fontWeight="bold">
-                      {tr.total_grand}{selectedCurrencyCode ? ` (${selectedCurrencyCode})` : ''}
-                    </Text>
-                    <Text fontWeight="bold" color={BIZGEN_COLOR}>{fmt(totalGrand)}</Text>
-                  </Flex>
+              <Flex minW="1100px" gap={3} px={1} align="center">
+                <Box w="32px" flexShrink={0} /><Box w="220px" flexShrink={0} /><Box w="80px" flexShrink={0} /><Box w="120px" flexShrink={0} /><Box w="140px" flexShrink={0} />
+                <Box w="140px" flexShrink={0} textAlign="right">
+                  <Text fontWeight="bold">{tr.total_grand}{selectedCurrencyCode ? ` (${selectedCurrencyCode})` : ''}</Text>
                 </Box>
+                <Box w="140px" flexShrink={0} textAlign="right">
+                  <Text fontWeight="bold" color={BIZGEN_COLOR}>{fmt(totalGrand)}</Text>
+                </Box>
+                <Box w="120px" flexShrink={0} /><Box w="40px" flexShrink={0} />
               </Flex>
             </Box>
           </Card.Body>
@@ -1051,14 +1053,8 @@ function PurchaseImportContent() {
                 <Text fontSize="sm" fontWeight="semibold" color="gray.500" mb={2} textTransform="uppercase" letterSpacing="wide">
                   {tr.should_mention}
                 </Text>
-                {companyProfile ? (
-                  <Box lineHeight="tall">
-                    <Text fontWeight="bold" fontSize="sm">{companyProfile.company_name}</Text>
-                    <Text fontSize="sm" color="gray.600" whiteSpace="pre-line">{companyProfile.company_address}</Text>
-                    {companyProfile.company_phone && (
-                      <Text fontSize="sm" color="gray.600">{companyProfile.company_phone}</Text>
-                    )}
-                  </Box>
+                {companySettings?.should_mention_name ? (
+                  <Text fontSize="sm" color="gray.600" whiteSpace="pre-line">{companySettings.should_mention_name}</Text>
                 ) : (
                   <Text fontSize="sm" color="gray.400" fontStyle="italic">—</Text>
                 )}

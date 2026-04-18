@@ -7,6 +7,7 @@ export interface GetPurchaseImportData {
   po_number: string;
   po_date: string;
   status: string;
+  currency_id?: string;
   supplier_name: string;
   created_at: string;
 }
@@ -159,7 +160,7 @@ export async function getPurchaseImport(page: number = 1, limit: number = 10): P
 
   return {
     data: json.data?.data || [],
-    pagination: json.data?.pagination || {},
+    pagination: { page: json.data?.page, limit: json.data?.limit, total: json.data?.total },
   };
 }
 

@@ -7,13 +7,14 @@ import { AlertMessage } from '@/components/ui/alert';
 import SidebarWithHeader from '@/components/ui/SidebarWithHeader';
 import { SALES_APPROVAL_ROLES, checkAuthOrRedirect, DecodedAuthToken, getAuthInfo } from '@/lib/auth/auth';
 import { getLang } from '@/lib/i18n';
-import { getCompanyProfile, GetCompanyProfile } from '@/lib/account/company';
+import { getAllCompanySettings, GetCompanySettingsData } from '@/lib/settings/company-settings';
 import { getAllCurrency, GetCurrencyData } from '@/lib/master/currency';
 import { getAllItem, GetItemData } from '@/lib/master/item';
 import { getAllPaymentMethod, GetPaymentMethodData } from '@/lib/master/payment-method';
 import { getAllTax, GetTaxData } from '@/lib/master/tax';
 import { getAllUOM, UOMData } from '@/lib/master/uom';
 import { GetSupplierData } from '@/lib/master/supplier';
+import { getAllListMyWarehouse } from '@/lib/master/warehouse';
 import {
   createPurchaseLocal,
   generatePurchaseLocalNumber,
@@ -112,6 +113,8 @@ function PurchaseLocalContent() {
   const [mode, setMode] = useState<LocalMode>('create');
   const [localId, setLocalId] = useState('');
   const [localStatus, setLocalStatus] = useState('');
+  const [lastUpdatedBy, setLastUpdatedBy] = useState('');
+  const [lastUpdatedAt, setLastUpdatedAt] = useState('');
   const [historyData, setHistoryData] = useState<GetPurchaseLocalHistoryDetailData[]>([]);
 
   const [isRejectDialogOpen, setIsRejectDialogOpen] = useState(false);
@@ -133,7 +136,7 @@ function PurchaseLocalContent() {
     setTimeout(() => setShowAlert(false), 6000);
   };
 
-  const [companyProfile, setCompanyProfile] = useState<GetCompanyProfile | null>(null);
+  const [companySettings, setCompanySettings] = useState<GetCompanySettingsData | null>(null);
 
   const [currencyOptions, setCurrencyOptions] = useState<GetCurrencyData[]>([]);
   const [uomOptions, setUomOptions] = useState<UOMData[]>([]);
@@ -226,9 +229,12 @@ function PurchaseLocalContent() {
         setItemCollection(itemData);
 
         try {
-          const profile = await getCompanyProfile();
-          setCompanyProfile(profile);
+          const settingsRes = await getAllCompanySettings(1, 1);
+          if (settingsRes.data.length > 0) setCompanySettings(settingsRes.data[0]);
         } catch { /* silently ignore */ }
+
+        const warehouseRes = await getAllListMyWarehouse(1, 1000);
+        const defaultWarehouse = warehouseRes.data.find((w) => w.is_default === '1');
 
         if (purchaseId) {
           setMode('view');
@@ -238,6 +244,10 @@ function PurchaseLocalContent() {
           setLocalId(h.purchase_id);
           setLocalStatus(h.status);
           setHistoryData(detail.history);
+
+          const lastHistory = detail.history[detail.history.length - 1];
+          setLastUpdatedBy(h.updated_by ?? h.created_by ?? lastHistory?.created_by ?? '');
+          setLastUpdatedAt(h.updated_at ?? h.created_at ?? lastHistory?.created_at ?? '');
 
           setForm((prev) => ({
             ...prev,
@@ -258,10 +268,8 @@ function PurchaseLocalContent() {
           if (h.payment_id && h.payment_name) {
             setPaymentSelectedId(h.payment_id);
             setPaymentSelected(h.payment_name);
-          } else {
-            const payment = paymentData.find(
-              (p) => p.payment_name === (h.payment_name ?? h.payment_method_name)
-            );
+          } else if (h.payment_name) {
+            const payment = paymentData.find((p) => p.payment_name === h.payment_name);
             if (payment) {
               setPaymentSelectedId(payment.payment_id);
               setPaymentSelected(payment.payment_name);
@@ -294,7 +302,11 @@ function PurchaseLocalContent() {
           );
         } else {
           const numberRes = await generatePurchaseLocalNumber();
-          setForm((prev) => ({ ...prev, po_number: numberRes.number }));
+          setForm((prev) => ({
+            ...prev,
+            po_number: numberRes.number,
+            delivery_address: defaultWarehouse?.location ?? '',
+          }));
         }
       } catch (err) {
         console.error('Failed to initialize:', err);
@@ -405,6 +417,7 @@ function PurchaseLocalContent() {
         tax_id: taxSelected ?? '',
         exchange_rate_idr: Number(form.exchange_rate_idr) || undefined,
         notes: form.notes,
+        delivery_address: form.delivery_address,
         items: buildPayloadItems(),
       });
       showSuccess(tr.success_draft);
@@ -431,6 +444,7 @@ function PurchaseLocalContent() {
         tax_id: taxSelected ?? '',
         exchange_rate_idr: Number(form.exchange_rate_idr) || undefined,
         notes: form.notes,
+        delivery_address: form.delivery_address,
         items: buildPayloadItems(),
       });
       const newId = res?.data?.purchase_id ?? res?.purchase_id ?? '';
@@ -458,6 +472,7 @@ function PurchaseLocalContent() {
         currency_id: currencySelected,
         exchange_rate_idr: Number(form.exchange_rate_idr) || undefined,
         notes: form.notes,
+        delivery_address: form.delivery_address,
         items: buildPayloadItems(),
       });
       setLocalStatus('draft');
@@ -509,17 +524,6 @@ function PurchaseLocalContent() {
     }
   };
 
-  const statusBadge = (status: string) => {
-    const map: Record<string, { label: string; colorPalette: string }> = {
-      draft:     { label: 'Draft',     colorPalette: 'yellow' },
-      submitted: { label: 'Submitted', colorPalette: 'blue'   },
-      approved:  { label: 'Approved',  colorPalette: 'green'  },
-      cancelled: { label: 'Cancelled', colorPalette: 'red'    },
-    };
-    const s = map[status] ?? { label: status, colorPalette: 'gray' };
-    return <Badge colorPalette={s.colorPalette} variant="subtle" ml={3}>{s.label}</Badge>;
-  };
-
   const ActionButtons = () => {
     if (mode === 'create') {
       return (
@@ -568,7 +572,6 @@ function PurchaseLocalContent() {
         <Flex flexDir="column">
           <Flex align="center">
             <Heading size="lg">{tr.title}</Heading>
-            {mode === 'view' && statusBadge(localStatus)}
           </Flex>
           <Text color="gray.500" fontSize="sm">{tr.subtitle}</Text>
         </Flex>
@@ -576,6 +579,35 @@ function PurchaseLocalContent() {
       </Flex>
 
       {showAlert && <AlertMessage title={titlePopup} description={messagePopup} isSuccess={isSuccess} />}
+
+      {mode === 'view' && (
+        <Card.Root mt={3} mb={2}>
+          <Card.Body>
+            <Flex justifyContent="space-between" align="center">
+              <Badge
+                variant="solid"
+                colorPalette={
+                  localStatus === 'approved' ? 'green'
+                  : localStatus === 'cancelled' ? 'red'
+                  : localStatus === 'submitted' ? 'blue'
+                  : 'yellow'
+                }
+              >
+                {localStatus ? localStatus.charAt(0).toUpperCase() + localStatus.slice(1) : ''}
+              </Badge>
+              <Text fontSize="xs" color="gray.600">
+                {t.master.last_update_by} <b>{lastUpdatedBy || 'System'}</b> •{' '}
+                {lastUpdatedAt
+                  ? new Date(lastUpdatedAt).toLocaleDateString(
+                      lang === 'id' ? 'id-ID' : 'en-US',
+                      { day: '2-digit', month: 'short', year: 'numeric' }
+                    )
+                  : '-'}
+              </Text>
+            </Flex>
+          </Card.Body>
+        </Card.Root>
+      )}
 
       <SupplierLookup
         isOpen={supplierModalOpen}
@@ -644,44 +676,6 @@ function PurchaseLocalContent() {
                   <Text>{selectedSupplier?.currency_name ? `Currency: ${selectedSupplier.currency_name}` : '—'}</Text>
                   <Text>{selectedSupplier?.term_name ? `Term: ${selectedSupplier.term_name}` : '—'}</Text>
                 </Box>
-              </Field.Root>
-
-              <Field.Root>
-                <Field.Label fontSize="sm">{tr.currency}</Field.Label>
-                <Select.Root
-                  collection={currencyCollection}
-                  value={currencySelected ? [currencySelected] : []}
-                  onValueChange={(d) => setCurrencySelected(d.value[0])}
-                  disabled={isReadOnly}
-                >
-                  <Select.HiddenSelect />
-                  <Select.Control>
-                    <Select.Trigger>
-                      <Select.ValueText placeholder={tr.currency_placeholder} />
-                    </Select.Trigger>
-                    <Select.IndicatorGroup><Select.Indicator /></Select.IndicatorGroup>
-                  </Select.Control>
-                  <Portal>
-                    <Select.Positioner>
-                      <Select.Content>
-                        {currencyCollection.items.map((c) => (
-                          <Select.Item item={c} key={c.value}>{c.label}<Select.ItemIndicator /></Select.Item>
-                        ))}
-                      </Select.Content>
-                    </Select.Positioner>
-                  </Portal>
-                </Select.Root>
-              </Field.Root>
-
-              <Field.Root>
-                <Field.Label fontSize="sm">{tr.exchange_rate_idr}</Field.Label>
-                <Input
-                  type="number"
-                  value={form.exchange_rate_idr}
-                  onChange={(e) => setForm({ ...form, exchange_rate_idr: e.target.value })}
-                  placeholder="0"
-                  readOnly={isReadOnly}
-                />
               </Field.Root>
 
               <Field.Root required>
@@ -785,7 +779,7 @@ function PurchaseLocalContent() {
           </Card.Header>
           <Card.Body>
             <Box overflowX="auto">
-              <Flex minW="1420px" gap={3} mb={2} px={1}>
+              <Flex minW="1350px" gap={3} mb={2} px={1}>
                 {[
                   ['32px', '#'],
                   ['220px', tr.description],
@@ -807,7 +801,7 @@ function PurchaseLocalContent() {
               </Flex>
 
               {items.map((item, idx) => (
-                <Flex key={item.id} minW="1420px" gap={3} mb={3} align="center" px={1}>
+                <Flex key={item.id} minW="1350px" gap={3} mb={3} align="center" px={1}>
                   <Box w="32px" flexShrink={0}>
                     <Text fontSize="sm" color="gray.400">{idx + 1}</Text>
                   </Box>
@@ -913,27 +907,37 @@ function PurchaseLocalContent() {
                 </Flex>
               ))}
 
-              <Separator mt={2} mb={4} />
-              <Flex justify="flex-end" minW="1420px" pr={1}>
-                <Box w="420px">
-                  <Flex justify="space-between" mb={1}>
-                    <Text fontSize="sm" color="gray.600">
-                      {tr.subtotal}{selectedCurrencyCode ? ` (${selectedCurrencyCode})` : ''}
-                    </Text>
-                    <Text fontSize="sm" fontWeight="semibold">{fmt(totalSubtotal)}</Text>
-                  </Flex>
-                  <Flex justify="space-between" mb={1}>
-                    <Text fontSize="sm" color="gray.600">{tr.total_ppn}</Text>
-                    <Text fontSize="sm" fontWeight="semibold">{fmt(totalPpn)}</Text>
-                  </Flex>
-                  <Separator mb={2} />
-                  <Flex justify="space-between">
-                    <Text fontWeight="bold">
-                      {tr.total_grand}{selectedCurrencyCode ? ` (${selectedCurrencyCode})` : ''}
-                    </Text>
-                    <Text fontWeight="bold" color={BIZGEN_COLOR}>{fmt(totalGrand)}</Text>
-                  </Flex>
+              <Separator mt={2} mb={4}minW="1350px" />
+              <Flex minW="1350px" gap={3} mb={1} px={1} align="center">
+                <Box w="32px" flexShrink={0} /><Box w="220px" flexShrink={0} /><Box w="80px" flexShrink={0} /><Box w="130px" flexShrink={0} /><Box w="130px" flexShrink={0} />
+                <Box w="140px" flexShrink={0} textAlign="right">
+                  <Text fontSize="sm" color="gray.600">{tr.subtotal}{selectedCurrencyCode ? ` (${selectedCurrencyCode})` : ''}</Text>
                 </Box>
+                <Box w="140px" flexShrink={0} textAlign="right">
+                  <Text fontSize="sm" fontWeight="semibold">{fmt(totalSubtotal)}</Text>
+                </Box>
+                <Box w="130px" flexShrink={0} /><Box w="130px" flexShrink={0} /><Box w="140px" flexShrink={0} /><Box w="110px" flexShrink={0} /><Box w="40px" flexShrink={0} />
+              </Flex>
+              <Flex minW="1350px" gap={3} mb={1} px={1} align="center">
+                <Box w="32px" flexShrink={0} /><Box w="220px" flexShrink={0} /><Box w="80px" flexShrink={0} /><Box w="130px" flexShrink={0} /><Box w="130px" flexShrink={0} />
+                <Box w="140px" flexShrink={0} textAlign="right">
+                  <Text fontSize="sm" color="gray.600">{tr.total_ppn}</Text>
+                </Box>
+                <Box w="140px" flexShrink={0} textAlign="right">
+                  <Text fontSize="sm" fontWeight="semibold">{fmt(totalPpn)}</Text>
+                </Box>
+                <Box w="130px" flexShrink={0} /><Box w="130px" flexShrink={0} /><Box w="140px" flexShrink={0} /><Box w="110px" flexShrink={0} /><Box w="40px" flexShrink={0} />
+              </Flex>
+              <Separator mb={2} minW="1350px"/>
+              <Flex minW="1350px" gap={3} px={1} align="center">
+                <Box w="32px" flexShrink={0} /><Box w="220px" flexShrink={0} /><Box w="80px" flexShrink={0} /><Box w="130px" flexShrink={0} /><Box w="130px" flexShrink={0} />
+                <Box w="140px" flexShrink={0} textAlign="right">
+                  <Text fontWeight="bold">{tr.total_grand}{selectedCurrencyCode ? ` (${selectedCurrencyCode})` : ''}</Text>
+                </Box>
+                <Box w="140px" flexShrink={0} textAlign="right">
+                  <Text fontWeight="bold" color={BIZGEN_COLOR}>{fmt(totalGrand)}</Text>
+                </Box>
+                <Box w="130px" flexShrink={0} /><Box w="130px" flexShrink={0} /><Box w="140px" flexShrink={0} /><Box w="110px" flexShrink={0} /><Box w="40px" flexShrink={0} />
               </Flex>
             </Box>
           </Card.Body>
@@ -947,14 +951,8 @@ function PurchaseLocalContent() {
                 <Text fontSize="sm" fontWeight="semibold" color="gray.500" mb={2} textTransform="uppercase" letterSpacing="wide">
                   {tr.invoice_under}
                 </Text>
-                {companyProfile ? (
-                  <Box lineHeight="tall">
-                    {/* <Text fontWeight="bold" fontSize="sm">{companyProfile.company_name}</Text> */}
-                    <Text fontSize="sm" color="gray.600" whiteSpace="pre-line">{companyProfile.company_address}</Text>
-                    {/* {companyProfile.company_phone && (
-                      <Text fontSize="sm" color="gray.600">{companyProfile.company_phone}</Text>
-                    )} */}
-                  </Box>
+                {companySettings?.invoice_under ? (
+                  <Text fontSize="sm" color="gray.600" whiteSpace="pre-line">{companySettings.invoice_under}</Text>
                 ) : (
                   <Text fontSize="sm" color="gray.400" fontStyle="italic">—</Text>
                 )}

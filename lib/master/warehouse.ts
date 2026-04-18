@@ -2,6 +2,7 @@ export interface GetListMyWarehouseData{
     warehouse_id: string;
     warehouse_name: string;
     location: string;
+    is_default: string;
 }
 
 export async function getAllListMyWarehouse(page: number = 1, limit = 10, search: string = '') : Promise<{data: GetListMyWarehouseData[]; pagination: any}>{
