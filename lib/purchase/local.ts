@@ -24,6 +24,7 @@ export interface GetPurchaseLocalHeaderDetailData {
   po_date: string;
   delivery_date: string;
   status: string;
+  supplier_id?: string;
   supplier_name: string;
   currency_code: string;
   payment_id: string | null;

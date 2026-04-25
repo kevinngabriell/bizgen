@@ -12,6 +12,8 @@ import { getAllItem, GetItemData } from '@/lib/master/item';
 import { getAllShipVia, GetShipViaData } from '@/lib/master/ship-via';
 import { getAllUOM, UOMData } from '@/lib/master/uom';
 import { GetSupplierData } from '@/lib/master/supplier';
+import { getPurchaseLocalDetail } from '@/lib/purchase/local';
+import { getPurchaseImportDetail } from '@/lib/purchase/import';
 import {
   createGoodsReceipt,
   generatePurchaseGoodsReceiptNumber,
@@ -97,6 +99,7 @@ function ReceivingItemsContent() {
   const [historyData, setHistoryData] = useState<GetGoodsReceiptHistoryDetailData[]>([]);
   const [poLocalId, setPoLocalId] = useState('');
   const [poImportId, setPoImportId] = useState('');
+  const [poDisplayText, setPoDisplayText] = useState('');
 
   const [isRejectDialogOpen, setIsRejectDialogOpen] = useState(false);
   const [rejectLoading, setRejectLoading] = useState(false);
@@ -140,8 +143,8 @@ function ReceivingItemsContent() {
 
   const [poLookupOpen, setPoLookupOpen] = useState(false);
   const [selectedPO, setSelectedPO] = useState<PurchaseOrderEntry | null>(null);
-  const purchaseOrderLocalId = selectedPO?.purchase_type === 'local' ? (selectedPO as any).purchase_id : poLocalId;
-  const purchaseOrderImportId = selectedPO?.purchase_type === 'import' ? (selectedPO as any).purchase_import_id : poImportId;
+  const purchaseOrderLocalId = selectedPO?.purchase_type === 'local' ? selectedPO.purchase_id : poLocalId;
+  const purchaseOrderImportId = selectedPO?.purchase_type === 'import' ? selectedPO.purchase_id : poImportId;
 
   const [shipViaSelected, setShipViaSelected] = useState<string>();
 
@@ -155,8 +158,7 @@ function ReceivingItemsContent() {
 
   const [items, setItems] = useState<GRItem[]>([newItem()]);
 
-  // GR has no submit — posted = approved, cancelled = rejected
-  const isReadOnly = mode === 'view' && (grStatus === 'posted' || grStatus === 'cancelled');
+  const isReadOnly = mode === 'view' && (grStatus === 'posted' || grStatus === 'submitted');
 
   useEffect(() => {
     const loadAll = async () => {
@@ -195,6 +197,18 @@ function ReceivingItemsContent() {
           setHistoryData(detail.history);
           setPoLocalId(h.purchase_id_local ?? '');
           setPoImportId(h.purchase_id_import ?? '');
+
+          if (h.purchase_id_local) {
+            try {
+              const localPO = await getPurchaseLocalDetail(h.purchase_id_local);
+              setPoDisplayText(`[LOCAL] ${localPO.header.po_number}`);
+            } catch {}
+          } else if (h.purchase_id_import) {
+            try {
+              const importPO = await getPurchaseImportDetail(h.purchase_id_import);
+              setPoDisplayText(`[IMPORT] ${importPO.header.po_number}`);
+            } catch {}
+          }
 
           setForm((prev) => ({
             ...prev,
@@ -287,6 +301,64 @@ function ReceivingItemsContent() {
     setSupplierModalOpen(false);
   };
 
+  const handleChoosePO = async (entry: PurchaseOrderEntry) => {
+    setSelectedPO(entry);
+    setPoDisplayText(`[${entry.purchase_type.toUpperCase()}] ${entry.po_number}`);
+    setPoLookupOpen(false);
+    try {
+      setLoading(true);
+      if (entry.purchase_type === 'local') {
+        const detail = await getPurchaseLocalDetail(entry.purchase_id);
+        const h = detail.header;
+        if (h.supplier_id) {
+          setSelectedSupplier({ supplier_id: h.supplier_id, supplier_name: h.supplier_name } as GetSupplierData);
+        }
+        setItems(
+          detail.items.map((pi) => {
+            const uom = uomOptions.find((u) => u.uom_name === pi.uom_name);
+            return calcItem({
+              id: crypto.randomUUID(),
+              itemId: pi.item_id,
+              description: pi.item_name,
+              qty: pi.qty,
+              uomId: uom?.uom_id ?? '',
+              packageSize: '',
+              unitPrice: pi.unit_price,
+              total: '0', vatPercent: '0', vatAmount: '0', grandTotal: '0',
+              remarks: pi.remarks ?? '',
+            });
+          })
+        );
+      } else {
+        const detail = await getPurchaseImportDetail(entry.purchase_id);
+        const h = detail.header;
+        if (h.supplier_id) {
+          setSelectedSupplier({ supplier_id: h.supplier_id, supplier_name: h.supplier_name } as GetSupplierData);
+        }
+        setItems(
+          detail.items.map((pi) => {
+            const uom = uomOptions.find((u) => u.uom_name === pi.uom_name);
+            return calcItem({
+              id: crypto.randomUUID(),
+              itemId: pi.item_id,
+              description: pi.item_name,
+              qty: pi.qty,
+              uomId: uom?.uom_id ?? '',
+              packageSize: pi.packaging_size ?? '',
+              unitPrice: pi.unit_price,
+              total: '0', vatPercent: '0', vatAmount: '0', grandTotal: '0',
+              remarks: pi.description ?? '',
+            });
+          })
+        );
+      }
+    } catch (err: any) {
+      showError(err.message || 'Failed to load PO details');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const buildPayloadItems = () =>
     items.map(({ id: _id, ...rest }) => ({
       item_id: rest.itemId,
@@ -302,6 +374,7 @@ function ReceivingItemsContent() {
     if (!form.gr_number) throw new Error(tr.error_gr_number);
     if (!selectedSupplier?.supplier_id) throw new Error(tr.error_supplier);
     if (!form.receiving_date) throw new Error(tr.error_receiving_date);
+    if (!selectedPO && !poLocalId && !poImportId) throw new Error(tr.error_po);
     if (items.length === 0) throw new Error(tr.error_items);
     if (items.some((i) => !i.itemId)) throw new Error(tr.error_item_id);
     if (items.some((i) => Number(i.qty) <= 0)) throw new Error(tr.error_item_qty);
@@ -313,6 +386,7 @@ function ReceivingItemsContent() {
     setForm({ gr_number: res.number, receiving_date: '', address: '', ship_date: '', notes: '' });
     setSelectedSupplier(null);
     setSelectedPO(null);
+    setPoDisplayText('');
     setShipViaSelected(undefined);
     setItems([newItem()]);
   };
@@ -342,7 +416,7 @@ function ReceivingItemsContent() {
     }
   };
 
-  const handleCreateAndApprove = async () => {
+  const handlePostGR = async () => {
     try {
       validateForm();
       setLoading(true);
@@ -360,10 +434,30 @@ function ReceivingItemsContent() {
       });
       const newId = res?.data?.receipt_id ?? res?.receipt_id ?? '';
       if (newId) {
-        await processGoodsReceiptAction({ receipt_id: newId, action: 'approve' });
+        await processGoodsReceiptAction({ receipt_id: newId, action: 'submit' });
       }
       showSuccess(tr.success_create);
       await resetForm();
+    } catch (err: any) {
+      showError(err.message || t.master.error_msg);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const refreshHistory = async () => {
+    if (!grId) return;
+    const detail = await getGoodsReceiptDetail(grId);
+    setHistoryData(detail.history);
+  };
+
+  const handleSubmitGR = async () => {
+    try {
+      setLoading(true);
+      await processGoodsReceiptAction({ receipt_id: grId, action: 'submit' });
+      setGrStatus('submitted');
+      await refreshHistory();
+      showSuccess('Goods Receipt submitted for approval.');
     } catch (err: any) {
       showError(err.message || t.master.error_msg);
     } finally {
@@ -400,6 +494,7 @@ function ReceivingItemsContent() {
       setLoading(true);
       await processGoodsReceiptAction({ receipt_id: grId, action: 'approve' });
       setGrStatus('posted');
+      await refreshHistory();
       showSuccess('Goods Receipt approved and posted.');
     } catch (err: any) {
       showError(err.message || t.master.error_msg);
@@ -414,6 +509,7 @@ function ReceivingItemsContent() {
       await processGoodsReceiptAction({ receipt_id: grId, action: 'reject', notes: reason });
       setGrStatus('cancelled');
       setIsRejectDialogOpen(false);
+      await refreshHistory();
       showSuccess('Goods Receipt rejected.');
     } catch (err: any) {
       showError(err.message || t.master.error_msg);
@@ -425,6 +521,7 @@ function ReceivingItemsContent() {
   const statusBadge = (status: string) => {
     const map: Record<string, { label: string; colorPalette: string }> = {
       draft:     { label: 'Draft',     colorPalette: 'yellow' },
+      submitted: { label: 'Submitted', colorPalette: 'blue'   },
       posted:    { label: 'Posted',    colorPalette: 'green'  },
       cancelled: { label: 'Cancelled', colorPalette: 'red'    },
     };
@@ -439,7 +536,7 @@ function ReceivingItemsContent() {
           <Button variant="outline" color={BIZGEN_COLOR} borderColor={BIZGEN_COLOR} onClick={handleSaveDraft} loading={loading}>
             {tr.save_draft}
           </Button>
-          <Button bg={BIZGEN_COLOR} color="white" onClick={handleCreateAndApprove} loading={loading}>
+          <Button bg={BIZGEN_COLOR} color="white" onClick={handlePostGR} loading={loading}>
             {tr.post_gr}
           </Button>
         </Flex>
@@ -449,11 +546,27 @@ function ReceivingItemsContent() {
       return (
         <Flex gap={3}>
           <Button variant="outline" color={BIZGEN_COLOR} borderColor={BIZGEN_COLOR} onClick={handleUpdate} loading={loading}>
-            Update
+            {t.master.save}
           </Button>
-          <Button bg={BIZGEN_COLOR} color="white" onClick={handleApprove} loading={loading}>
-            {tr.post_gr}
+          <Button bg={BIZGEN_COLOR} color="white" onClick={handleSubmitGR} loading={loading}>
+            {t.master.submit}
           </Button>
+        </Flex>
+      );
+    }
+    if (grStatus === 'submitted') {
+      return (
+        <Flex gap={3}>
+          {canApprove && (
+            <Button variant="outline" colorPalette="red" onClick={() => setIsRejectDialogOpen(true)}>
+              {t.master.reject}
+            </Button>
+          )}
+          {canApprove && (
+            <Button backgroundColor="green" color="white" onClick={handleApprove} loading={loading}>
+              {t.master.approve}
+            </Button>
+          )}
         </Flex>
       );
     }
@@ -461,18 +574,8 @@ function ReceivingItemsContent() {
       return (
         <Flex gap={3}>
           <Button variant="outline" color={BIZGEN_COLOR} borderColor={BIZGEN_COLOR} onClick={handleUpdate} loading={loading}>
-            Update
+            {t.master.save}
           </Button>
-          {canApprove && (
-            <>
-              <Button variant="outline" colorPalette="red" onClick={() => setIsRejectDialogOpen(true)}>
-                Reject
-              </Button>
-              <Button bg={BIZGEN_COLOR} color="white" onClick={handleApprove} loading={loading}>
-                Approve
-              </Button>
-            </>
-          )}
         </Flex>
       );
     }
@@ -505,7 +608,7 @@ function ReceivingItemsContent() {
       <PurchaseOrderLookup
         isOpen={poLookupOpen}
         onClose={() => setPoLookupOpen(false)}
-        onChoose={(entry) => { setSelectedPO(entry); setPoLookupOpen(false); }}
+        onChoose={handleChoosePO}
       />
 
       <RejectDialog
@@ -553,11 +656,10 @@ function ReceivingItemsContent() {
                 </Box>
               </Field.Root>
 
-              <Field.Root>
-                <Field.Label fontSize="sm">{tr.po_number}</Field.Label>
+              <Field.Root required>
+                <Field.Label fontSize="sm">{tr.po_number}<Field.RequiredIndicator /></Field.Label>
                 <Input
-                  value={selectedPO ? `[${selectedPO.purchase_type.toUpperCase()}] ${selectedPO.po_number}` :
-                    (poLocalId ? `[LOCAL] ${poLocalId}` : poImportId ? `[IMPORT] ${poImportId}` : '')}
+                  value={poDisplayText}
                   readOnly
                   cursor={isReadOnly ? 'default' : 'pointer'}
                   placeholder={tr.po_number_placeholder}

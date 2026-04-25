@@ -101,7 +101,7 @@ export interface UpdateGoodsReceiptData {
 
 export interface ProcessGoodsReceiptActionData {
   receipt_id: string;
-  action: 'approve' | 'reject';
+  action: 'submit' | 'approve' | 'reject';
   notes?: string;
 }
 

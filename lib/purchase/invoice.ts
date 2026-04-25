@@ -29,6 +29,7 @@ export interface GetPurchaseInvoiceHeaderDetailData {
   tax_amount: string;
   total_amount: string;
   exchange_rate_to_idr: string;
+  supplier_id?: string;
   supplier_name: string;
   currency_code: string;
   term_name: string;
@@ -100,7 +101,7 @@ export interface UpdatePurchaseInvoiceData {
 
 export interface ProcessPurchaseInvoiceActionData {
   purchase_invoice_id: string;
-  action: 'approve' | 'reject';
+  action: 'submit' | 'approve' | 'reject';
   notes?: string;
 }
 

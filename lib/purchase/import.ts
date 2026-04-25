@@ -23,6 +23,7 @@ export interface GetPurchaseImportHeaderDetailData {
   po_number: string;
   po_date: string;
   status: string;
+  supplier_id?: string;
   supplier_name: string;
   currency_code: string;
   shipment_period_name: string;
