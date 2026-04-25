@@ -1,7 +1,7 @@
 "use client";
 import { getAuthInfo } from "@/lib/auth/auth";
 import { getLang } from "@/lib/i18n";
-import { Dialog, Portal, Field, Input, Button, SimpleGrid, CloseButton, Textarea } from "@chakra-ui/react";
+import { Dialog, Portal, Field, Input, Button, SimpleGrid, CloseButton, Textarea, NativeSelect } from "@chakra-ui/react";
 import { useEffect, useState } from "react";
 
 interface ProductDialogProps {
@@ -13,12 +13,14 @@ interface ProductDialogProps {
         item_code?: string;
         item_name?: string;
         item_description?: string;
+        item_type?: string;
     };
     onSubmit?: (data: {
-        item_id?: string; 
-        item_code: string; 
-        item_name: string; 
+        item_id?: string;
+        item_code: string;
+        item_name: string;
         item_description: string;
+        item_type: string;
     }) => void;
 }
 
@@ -32,6 +34,7 @@ export default function ProductDialog({
     const [productName, setProductName] = useState("");
     const [productDesc, setProductDesc] = useState("");
     const [productID, setProductID] = useState("");
+    const [itemType, setItemType] = useState("product");
     
     //language state 
     const [lang, setLang] = useState<"en" | "id">("en");
@@ -55,6 +58,7 @@ export default function ProductDialog({
         setProductCode(placeholders?.item_code ?? "");
         setProductName(placeholders?.item_name ?? "");
         setProductDesc(placeholders?.item_description ?? "");
+        setItemType(placeholders?.item_type ?? "product");
 
     }, [placeholders, isOpen]);
 
@@ -82,10 +86,21 @@ export default function ProductDialog({
                                     <Input required placeholder={t.products.product_name_placeholder} value={productName} onChange={(e) => setProductName(e.target.value)} />
                                 </Field.Root>
 
+                                <Field.Root required>
+                                    <Field.Label>{t.products.item_type} <Field.RequiredIndicator /></Field.Label>
+                                    <NativeSelect.Root>
+                                        <NativeSelect.Field value={itemType} onChange={(e) => setItemType(e.target.value)}>
+                                            <option value="product">{t.products.item_type_product}</option>
+                                            <option value="service">{t.products.item_type_service}</option>
+                                        </NativeSelect.Field>
+                                        <NativeSelect.Indicator />
+                                    </NativeSelect.Root>
+                                </Field.Root>
+
                                 <Field.Root>
                                     <Field.Label>{t.products.product_description}</Field.Label>
                                     <Textarea maxLines={5}  placeholder={t.products.product_description_placeholder} value={productDesc} onChange={(e) => setProductDesc(e.target.value)} />
-                                </Field.Root>                                
+                                </Field.Root>
                             </SimpleGrid>
                         </Dialog.Body>
 
@@ -98,7 +113,8 @@ export default function ProductDialog({
                                     item_id: productID,
                                     item_code: productCode,
                                     item_name: productName,
-                                    item_description: productDesc
+                                    item_description: productDesc,
+                                    item_type: itemType,
                                 })
                             }>{t.master.save}</Button>
                         </Dialog.Footer>

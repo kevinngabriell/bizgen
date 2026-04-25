@@ -76,10 +76,11 @@ export default function SettingItem(){
         item_code: string;
         item_name: string;
         item_description: string;
+        item_type: string;
     }) => {
         try {
             setLoading(true);
-            await createItem(data);
+            await createItem({ ...data });
             setShowAlert(true);
             setIsSuccess(true);
             setTitlePopup(t.master.success);
@@ -103,6 +104,7 @@ export default function SettingItem(){
         item_code: string;
         item_name: string;
         item_description: string;
+        item_type: string;
     }) => {
         try {
             setLoading(true);
@@ -185,7 +187,7 @@ export default function SettingItem(){
                     if (!open) setEditingItem(null);
                 }}
                 title={editingItem ? t.products.update_button : t.products.create_button}
-                placeholders={editingItem ? { item_id: editingItem.item_id, item_code: editingItem.item_code, item_name: editingItem.item_name, item_description: editingItem.item_description } : undefined}
+                placeholders={editingItem ? { item_id: editingItem.item_id, item_code: editingItem.item_code, item_name: editingItem.item_name, item_description: editingItem.item_description, item_type: editingItem.item_type } : undefined}
                 onSubmit={(data) => {
                     if (editingItem) {
                         handleUpdateItem({
@@ -193,12 +195,14 @@ export default function SettingItem(){
                             item_code: data.item_code,
                             item_name: data.item_name,
                             item_description: data.item_description,
+                            item_type: data.item_type,
                         });
                     } else {
                         handleCreateItem({
                             item_code: data.item_code,
                             item_name: data.item_name,
                             item_description: data.item_description,
+                            item_type: data.item_type,
                         });
                     }
                 }}
