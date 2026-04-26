@@ -182,6 +182,27 @@ export async function getSalesOrder(page: number = 1, limit : number = 10, searc
     };
 }
 
+export async function getSalesOrderByCustomer(customer_id: string): Promise<{data: GetSalesOrderItemData[]; pagination: any}> {
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL;
+    const token = localStorage.getItem("token");
+
+    const res = await fetch(`${baseUrl}sales/sales-orders.php?customer_id=${customer_id}&status=approved&page=1&limit=1000`, {
+        method: 'GET',
+        headers: { Authorization: `Bearer ${token}` },
+    });
+
+    const json = await res.json();
+
+    if (json.status_code !== 200) {
+        throw new Error(json.status_message || 'Failed to fetch sales orders by customer');
+    }
+
+    return {
+        data: json.data?.data || [],
+        pagination: json.data?.pagination || {},
+    };
+}
+
 export async function getDetailSalesOrder(so_id: string): Promise<GetDetailSalesOrderResponse> {
     const baseUrl = process.env.NEXT_PUBLIC_API_URL;
     const token = localStorage.getItem("token");

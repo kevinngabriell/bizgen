@@ -142,6 +142,27 @@ export async function createPurchaseImport(input: CreatePurchaseImportData): Pro
   return json;
 }
 
+export async function getPurchaseImportBySupplier(supplier_id: string): Promise<{ data: GetPurchaseImportData[]; pagination: any }> {
+  const baseUrl = process.env.NEXT_PUBLIC_API_URL;
+  const token = localStorage.getItem('token');
+
+  const res = await fetch(`${baseUrl}purchase/purchase-orders.php?type=import&supplier_id=${supplier_id}&status=approved&page=1&limit=1000`, {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+  const json = await res.json();
+
+  if (json.status_code !== 200) {
+    throw new Error(json.status_message || 'Failed to fetch import purchase orders by supplier');
+  }
+
+  return {
+    data: json.data?.data || [],
+    pagination: { page: json.data?.page, limit: json.data?.limit, total: json.data?.total },
+  };
+}
+
 export async function getPurchaseImport(page: number = 1, limit: number = 10): Promise<{ data: GetPurchaseImportData[]; pagination: any }> {
   const baseUrl = process.env.NEXT_PUBLIC_API_URL;
   const token = localStorage.getItem('token');
