@@ -1,7 +1,7 @@
 'use client'
 
 import { Box, BoxProps, CloseButton, Drawer, Flex, FlexProps, HStack, Icon, IconButton, Image, Text, useDisclosure, VStack, MenuRoot, MenuTrigger, MenuContent, MenuItem, MenuSeparator } from "@chakra-ui/react"
-import { ReactNode } from "react"
+import { ReactNode, useState } from "react"
 import { FiSettings, FiGrid, FiMenu, FiBell, FiLogOut } from 'react-icons/fi'
 import { FaChartBar, FaCoins, FaDollarSign, FaFileAlt, FaShoppingBag, FaTruck, FaUserFriends } from 'react-icons/fa'
 import { IconType } from "react-icons/lib"
@@ -128,8 +128,10 @@ const NavItem = ({ icon, children, href, ...rest }: NavItemProps) => {
 }
 
 const MobileNav = ({ onOpen, username, daysToExpire, ...rest }: MobileProps) => {
+    const [showNotifications, setShowNotifications] = useState(false);
+    const [showProfileMenu, setShowProfileMenu] = useState(false);
     const router = useRouter();
-    const { open, onOpen: onOpenNotif, onClose: onCloseNotif } = useDisclosure()
+    
     const handleProfile = () => {
         router.push('/bizgen/profile');
     }
@@ -153,63 +155,89 @@ const MobileNav = ({ onOpen, username, daysToExpire, ...rest }: MobileProps) => 
                     <FiMenu/>
             </IconButton>
             <Text display={{ base: 'flex', md: 'none' }} fontSize="1xl" fontWeight="bold">
-                Nama Company
+                {t.header.company_name}
             </Text>
 
-            <HStack textSpacingTrim={{ base: '0', md: '6' }}>
-              {/* Notification menu — open on hover */}
-              <Box position="relative"
-                zIndex="dropdown"
-                onMouseEnter={onOpenNotif}
-                onMouseLeave={onCloseNotif}
-              >
-                <MenuRoot open={open}>
-                  <MenuTrigger asChild>
-                    <IconButton
-                      size="lg"
-                      variant="ghost"
-                      aria-label="notifications"
-                    >
-                      <FiBell />
-                    </IconButton>
-                  </MenuTrigger>
-
-                  {/* Unread badge */}
-                  <Box position="absolute" top={0} right={0} bg={"red.500"} color={"white"} borderRadius="full" px="2" fontSize="xs" fontWeight="bold">3</Box>
-
-                  <MenuContent minW="280px" zIndex="popover" boxShadow="lg" mt={0} top={0}>
-                    <MenuItem value="" fontWeight="semibold">Notifications</MenuItem>
-                    <MenuSeparator />
-                    <MenuItem value="">🔔 Unread notification 1</MenuItem>
-                    <MenuItem value="">🔔 Unread notification 2</MenuItem>
-                    <MenuItem value="">🔔 Unread notification 3</MenuItem>
-                    <MenuItem value="">✓ Read notification 4</MenuItem>
-                    <MenuItem value="">✓ Read notification 5</MenuItem>
-                    <MenuSeparator />
-                    <MenuItem value="" color="orange.500" fontWeight="medium">
-                      See all notifications
-                    </MenuItem>
-                  </MenuContent>
-                </MenuRoot>
-              </Box>
-                <Flex alignItems="center">
-                  <HStack>
-                    <VStack
-                      display={{ base: 'none', md: 'flex' }}
-                      alignItems="flex-start"
-                      ml="2"
-                    >
-                      <Text fontSize="sm" onClick={handleProfile} mb={0}>{username}</Text>
-                      {typeof daysToExpire === "number" && (
-                        <Box p={2} borderRadius="md" bg={daysToExpire <= 2 ? "red.500" : daysToExpire <= 7 ? "orange.400" : "gray.500"} color="white" fontSize="9px" fontWeight="semibold">
-                          {daysToExpire > 0
-                            ? `Subscription expires in ${daysToExpire} day${daysToExpire === 1 ? "" : "s"}`
-                            : "Subscription expired"}
+           <HStack columns={{ base: 1, md: 4 }} position="relative" gap={5}>
+                {/* Notification bell with hover dropdown */}
+                <Box position="relative">
+                    <Box onMouseEnter={() => setShowNotifications(true)}>
+                        <IconButton size="lg" variant="ghost" aria-label="notifications">
+                            <FiBell />
+                        </IconButton>
+                    </Box>
+                    {showNotifications && (
+                        <Box
+                            position="absolute"
+                            right={0}
+                            mt={2}
+                            w="260px"
+                            bg={useColorModeValue('white', 'gray.800')}
+                            boxShadow="md"
+                            borderRadius="md"
+                            p={3}
+                            zIndex={20}
+                            onMouseLeave={() => setShowNotifications(false)}
+                        >
+                            <Text fontWeight="semibold" mb={2} fontSize="sm">
+                                {t.header.notifications}
+                            </Text>
+                            <VStack align="flex-start" gap={1}>
+                                <Text fontSize="xs" color="gray.500">
+                                    {t.header.no_notifications}
+                                </Text>
+                            </VStack>
                         </Box>
-                      )}
-                    </VStack>
-                  </HStack>
-                </Flex>
+                    )}
+                </Box>
+
+                {/* Profile / user menu with hover dropdown */}
+                <Box position="relative">
+                    <Flex alignItems="center" cursor="pointer" onMouseEnter={() => setShowProfileMenu(true)}>
+                        {/* Avatar inisial */}
+                        <Box
+                            display={{ base: 'none', md: 'flex' }}
+                            w="8"
+                            h="8"
+                            borderRadius="full"
+                            bg={useColorModeValue('gray.200', 'gray.700')}
+                            alignItems="center"
+                            justifyContent="center"
+                            mr={2}
+                        >
+                            <Text fontSize="xs" fontWeight="bold">
+                                {username ? username.charAt(0).toUpperCase() : '?'}
+                            </Text>
+                        </Box>
+                        <VStack display={{ base: 'none', md: 'flex' }} alignItems="flex-start" gap={0} ml="1" >
+                            <Text fontSize="sm">{username}</Text>
+                        </VStack>
+                    </Flex>
+                    {showProfileMenu && (
+                        <Box
+                            position="absolute"
+                            right={0}
+                            mt={2}
+                            w="180px"
+                            bg={useColorModeValue('white', 'gray.800')}
+                            boxShadow="md"
+                            borderRadius="md"
+                            py={2}
+                            zIndex={20}
+                            onMouseLeave={() => setShowProfileMenu(false)}
+                        >
+                            <Box px={4} py={2} _hover={{ bg: useColorModeValue('gray.100', 'gray.700') }} cursor="pointer">
+                                <Text fontSize="sm" onClick={handleProfile}>{t.header.account}</Text>
+                            </Box>
+                            <Box px={4} py={2} _hover={{ bg: useColorModeValue('gray.100', 'gray.700') }} cursor="pointer">
+                                <Text fontSize="sm">{t.header.settings}</Text>
+                            </Box>
+                            <Box px={4} py={2} _hover={{ bg: useColorModeValue('gray.100', 'gray.700') }} cursor="pointer" >
+                                <Text fontSize="sm">{t.header.logout}</Text>
+                            </Box>
+                        </Box>
+                    )}
+                </Box>
             </HStack>
         </Flex>
     )

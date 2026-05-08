@@ -12,15 +12,22 @@ import { getAllPort, GetPortData } from '@/lib/master/port';
 import { getAllTerm, GetTermData } from '@/lib/master/term';
 import { GetSupplierData } from '@/lib/master/supplier';
 import {
-  getPurchaseLocalBySupplier,
-  getPurchaseLocalDetail,
-  GetPurchaseLocalData,
-} from '@/lib/purchase/local';
-import {
-  getPurchaseImportBySupplier,
-  getPurchaseImportDetail,
-  GetPurchaseImportData,
-} from '@/lib/purchase/import';
+  generateVendorBillNumber,
+  createVendorBill,
+  updateVendorBill,
+  submitVendorBill,
+  approveVendorBill,
+  rejectVendorBill,
+  markVendorBillInstallmentPaid,
+  getVendorBillDetail,
+  getLocalPOsBySupplier,
+  getImportPOsBySupplier,
+  getLocalPODetail,
+  getImportPODetail,
+  PurchaseOrderListItem,
+  CreateVendorBillData,
+  UpdateVendorBillData,
+} from '@/lib/finance/vendor-bill';
 import {
   Badge, Box, Button, Card, Checkbox, createListCollection,
   Field, Flex, Heading, Icon, IconButton, Input, Portal,
@@ -163,6 +170,7 @@ function CreateVendorBillContent() {
   // Payment type
   const [paymentType, setPaymentType] = useState<'full' | 'installment'>('full');
   const [installments, setInstallments] = useState<PaymentInstallment[]>([]);
+  const [focusedInstallmentId, setFocusedInstallmentId] = useState<string | null>(null);
 
   // Document upload
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -195,18 +203,64 @@ function CreateVendorBillContent() {
         setPortOptions(portRes?.data ?? []);
 
         if (!billId) {
-          const today = new Date();
-          const year = today.getFullYear();
-          const month = String(today.getMonth() + 1).padStart(2, '0');
-          const todayStr = today.toISOString().split('T')[0];
+          const todayStr = new Date().toISOString().split('T')[0];
+          const numberRes = await generateVendorBillNumber();
           setForm((prev) => ({
             ...prev,
-            bill_number: `BILL/${year}/${month}/`,
+            bill_number: numberRes.number,
             bill_date: todayStr,
           }));
         } else {
           setMode('view');
-          // TODO: load vendor bill detail from API
+          const detail = await getVendorBillDetail(billId);
+          const h = detail.header;
+          setBillStatus(h.bill_status);
+          setForm({
+            bill_number: h.bill_no,
+            bill_date: h.bill_date,
+            due_date: h.due_date ?? '',
+            exchange_rate: h.exchange_rate && h.exchange_rate !== 1 ? h.exchange_rate.toString() : '',
+            notes: h.notes ?? '',
+            vessel_flight: h.vessel_flight ?? '',
+            bl_awb_number: h.bl_awb_number ?? '',
+            etd: h.etd ?? '',
+            eta: h.eta ?? '',
+          });
+          setCurrencySelected(h.currency_id);
+          setTermSelected(h.term_id);
+          setOriginSelected(h.origin_port_id);
+          setDestinationSelected(h.destination_port_id);
+          setPaymentType(h.payment_type);
+          setSelectedSupplier({ supplier_id: h.vendor_id, supplier_name: h.supplier_name, origin_name: '', currency_name: '', term_name: '' } as any);
+          setLinkedPO({ purchase_id: h.purchase_id, po_number: h.purchase_id, po_date: '', purchase_type: h.purchase_type });
+          setItems(detail.items.map((di) => ({
+            id: di.bill_item_id,
+            itemId: di.item_ref_id,
+            description: di.description,
+            qty: di.qty.toString(),
+            uomName: di.uom_name,
+            unitPrice: di.unit_price.toString(),
+            total: di.line_subtotal.toString(),
+            vatPercent: di.tax_percent.toString(),
+            vatAmount: di.tax_amount.toString(),
+            grandTotal: di.line_total.toString(),
+          })));
+          if (h.payment_type === 'installment') {
+            setInstallments(detail.installments.map((inst) => ({
+              id: inst.installment_id,
+              dueDate: inst.due_date,
+              amount: inst.amount.toString(),
+              isPaid: Number(inst.is_paid) === 1,
+              paidDate: inst.paid_date ?? '',
+              notes: inst.notes ?? '',
+            })));
+          }
+          setHistoryData(detail.history.map((entry) => ({
+            action: entry.action,
+            note: entry.description,
+            created_by: entry.created_by,
+            created_at: entry.created_at,
+          })));
         }
       } catch (err) {
         console.error('Failed to initialize:', err);
@@ -233,18 +287,18 @@ function CreateVendorBillContent() {
     setPOLoading(true);
     try {
       const [localRes, importRes] = await Promise.all([
-        getPurchaseLocalBySupplier(supplierId),
-        getPurchaseImportBySupplier(supplierId),
+        getLocalPOsBySupplier(supplierId),
+        getImportPOsBySupplier(supplierId),
       ]);
 
-      const localPOs: UnpaidPO[] = (localRes.data ?? []).map((d: GetPurchaseLocalData) => ({
+      const localPOs: UnpaidPO[] = (localRes.data ?? []).map((d: PurchaseOrderListItem) => ({
         purchase_id: d.purchase_id,
         po_number: d.po_number,
         po_date: d.po_date,
         purchase_type: 'local' as const,
       }));
 
-      const importPOs: UnpaidPO[] = (importRes.data ?? []).map((d: GetPurchaseImportData) => ({
+      const importPOs: UnpaidPO[] = (importRes.data ?? []).map((d: PurchaseOrderListItem) => ({
         purchase_id: d.purchase_id,
         po_number: d.po_number,
         po_date: d.po_date,
@@ -266,7 +320,7 @@ function CreateVendorBillContent() {
       let mappedItems: BillItem[] = [];
 
       if (po.purchase_type === 'local') {
-        const detail = await getPurchaseLocalDetail(po.purchase_id);
+        const detail = await getLocalPODetail(po.purchase_id);
         mappedItems = detail.items.map((item) => ({
           id: crypto.randomUUID(),
           itemId: item.item_id,
@@ -280,7 +334,7 @@ function CreateVendorBillContent() {
           grandTotal: item.line_total,
         }));
       } else {
-        const detail = await getPurchaseImportDetail(po.purchase_id);
+        const detail = await getImportPODetail(po.purchase_id);
         mappedItems = detail.items.map((item) => ({
           id: crypto.randomUUID(),
           itemId: item.item_id,
@@ -361,7 +415,78 @@ function CreateVendorBillContent() {
       if (Math.abs(totalScheduled - totalGrand) > 0.01) {
         throw new Error(`Payment schedule total (${fmt(totalScheduled)}) must match bill grand total (${fmt(totalGrand)})`);
       }
+      for (const inst of installments) {
+        if (inst.isPaid && !inst.paidDate) {
+          throw new Error('Paid date is required for all installments marked as paid');
+        }
+      }
     }
+  };
+
+  // ─── Payload builder ───────────────────────────────────────────────────────
+
+  const buildPayload = (): CreateVendorBillData => {
+    const exchangeRate = isIDR ? 1 : parseFloat(form.exchange_rate) || 1;
+    return {
+      bill_no: form.bill_number,
+      bill_date: form.bill_date,
+      due_date: form.due_date,
+      vendor_id: selectedSupplier!.supplier_id,
+      purchase_id: linkedPO!.purchase_id,
+      purchase_type: linkedPO!.purchase_type,
+      currency_id: currencySelected!,
+      exchange_rate: exchangeRate,
+      term_id: termSelected,
+      payment_type: paymentType,
+      origin_port_id: originSelected ?? null,
+      destination_port_id: destinationSelected ?? null,
+      vessel_flight: form.vessel_flight || null,
+      bl_awb_number: form.bl_awb_number || null,
+      etd: form.etd || null,
+      eta: form.eta || null,
+      subtotal_amount: totalSubtotal,
+      tax_amount: totalVat,
+      total_amount: totalGrand,
+      total_amount_idr: totalGrand * exchangeRate,
+      notes: form.notes || null,
+      items: items.map((item, idx) => ({
+        item_ref_id: item.itemId,
+        description: item.description,
+        qty: parseFloat(item.qty) || 0,
+        uom_name: item.uomName,
+        unit_price: parseFloat(item.unitPrice) || 0,
+        line_subtotal: parseFloat(item.total) || 0,
+        tax_percent: parseFloat(item.vatPercent) || 0,
+        tax_amount: parseFloat(item.vatAmount) || 0,
+        line_total: parseFloat(item.grandTotal) || 0,
+        sort_order: idx + 1,
+      })),
+      installments: paymentType === 'installment'
+        ? installments.map((inst, idx) => ({
+            installment_number: idx + 1,
+            due_date: inst.dueDate,
+            amount: parseFloat(inst.amount) || 0,
+            notes: inst.notes || undefined,
+          }))
+        : undefined,
+    };
+  };
+
+  const resetForm = async () => {
+    const todayStr = new Date().toISOString().split('T')[0];
+    const numberRes = await generateVendorBillNumber();
+    setForm({ bill_number: numberRes.number, bill_date: todayStr, due_date: '', exchange_rate: '', notes: '', vessel_flight: '', bl_awb_number: '', etd: '', eta: '' });
+    setSelectedSupplier(null);
+    setUnpaidPOList([]);
+    setLinkedPO(null);
+    setItems([]);
+    setInstallments([]);
+    setPaymentType('full');
+    setCurrencySelected(undefined);
+    setTermSelected(undefined);
+    setOriginSelected(undefined);
+    setDestinationSelected(undefined);
+    setUploadedFiles([]);
   };
 
   // ─── Actions ───────────────────────────────────────────────────────────────
@@ -370,6 +495,9 @@ function CreateVendorBillContent() {
     try {
       validateForm();
       setLoading(true);
+      const payload = buildPayload();
+      await createVendorBill(payload);
+      await resetForm();
       showSuccess('Vendor bill saved as draft.');
     } catch (err: any) {
       showError(err.message || t.master.error_msg);
@@ -382,7 +510,11 @@ function CreateVendorBillContent() {
     try {
       validateForm();
       setLoading(true);
-      showSuccess('Vendor bill posted successfully.');
+      const payload = buildPayload();
+      const res = await createVendorBill(payload);
+      await submitVendorBill(res.data.vendor_bill_id);
+      await resetForm();
+      showSuccess('Vendor bill submitted for approval.');
     } catch (err: any) {
       showError(err.message || t.master.error_msg);
     } finally {
@@ -394,6 +526,49 @@ function CreateVendorBillContent() {
     try {
       validateForm();
       setLoading(true);
+      const exchangeRate = isIDR ? 1 : parseFloat(form.exchange_rate) || 1;
+      const updatePayload: UpdateVendorBillData = {
+        vendor_bill_id: billId!,
+        bill_date: form.bill_date,
+        due_date: form.due_date,
+        term_id: termSelected,
+        payment_type: paymentType,
+        exchange_rate: exchangeRate,
+        origin_port_id: originSelected ?? null,
+        destination_port_id: destinationSelected ?? null,
+        vessel_flight: form.vessel_flight || null,
+        bl_awb_number: form.bl_awb_number || null,
+        etd: form.etd || null,
+        eta: form.eta || null,
+        subtotal_amount: totalSubtotal,
+        tax_amount: totalVat,
+        total_amount: totalGrand,
+        total_amount_idr: totalGrand * exchangeRate,
+        notes: form.notes || null,
+        items: items.map((item, idx) => ({
+          item_ref_id: item.itemId,
+          description: item.description,
+          qty: parseFloat(item.qty) || 0,
+          uom_name: item.uomName,
+          unit_price: parseFloat(item.unitPrice) || 0,
+          line_subtotal: parseFloat(item.total) || 0,
+          tax_percent: parseFloat(item.vatPercent) || 0,
+          tax_amount: parseFloat(item.vatAmount) || 0,
+          line_total: parseFloat(item.grandTotal) || 0,
+          sort_order: idx + 1,
+        })),
+        installments: paymentType === 'installment'
+          ? installments.map((inst, idx) => ({
+              installment_number: idx + 1,
+              due_date: inst.dueDate,
+              amount: parseFloat(inst.amount) || 0,
+              is_paid: inst.isPaid,
+              paid_date: inst.paidDate || null,
+              notes: inst.notes || undefined,
+            }))
+          : undefined,
+      };
+      await updateVendorBill(updatePayload);
       setBillStatus('draft');
       showSuccess('Vendor bill updated successfully.');
     } catch (err: any) {
@@ -406,6 +581,7 @@ function CreateVendorBillContent() {
   const handleSubmitAction = async () => {
     try {
       setLoading(true);
+      await submitVendorBill(billId!);
       setBillStatus('submitted');
       showSuccess('Vendor bill submitted for approval.');
     } catch (err: any) {
@@ -418,6 +594,7 @@ function CreateVendorBillContent() {
   const handleApprove = async () => {
     try {
       setLoading(true);
+      await approveVendorBill(billId!);
       setBillStatus('posted');
       showSuccess('Vendor bill approved and posted.');
     } catch (err: any) {
@@ -430,6 +607,7 @@ function CreateVendorBillContent() {
   const handleReject = async (reason: string) => {
     try {
       setRejectLoading(true);
+      await rejectVendorBill(billId!, reason);
       setBillStatus('cancelled');
       setIsRejectDialogOpen(false);
       showSuccess('Vendor bill rejected.');
@@ -440,14 +618,39 @@ function CreateVendorBillContent() {
     }
   };
 
+  const handleSavePayments = async () => {
+    try {
+      for (const inst of installments) {
+        if (inst.isPaid && !inst.paidDate) {
+          throw new Error('Paid date is required for all installments marked as paid');
+        }
+      }
+      setLoading(true);
+      await Promise.all(
+        installments.map((inst) =>
+          markVendorBillInstallmentPaid({
+            installment_id: inst.id,
+            is_paid: inst.isPaid,
+            paid_date: inst.paidDate || '',
+          })
+        )
+      );
+      showSuccess('Payment status saved successfully.');
+    } catch (err: any) {
+      showError(err.message || t.master.error_msg);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // ─── Status badge ──────────────────────────────────────────────────────────
 
   const statusBadge = (status: string) => {
     const map: Record<string, { label: string; colorPalette: string }> = {
-      draft:     { label: 'Draft',     colorPalette: 'yellow' },
-      submitted: { label: 'Submitted', colorPalette: 'blue'   },
-      posted:    { label: 'Posted',    colorPalette: 'green'  },
-      cancelled: { label: 'Cancelled', colorPalette: 'red'    },
+      draft:     { label: t.finance_vendor_bill.status_draft,     colorPalette: 'yellow' },
+      submitted: { label: t.finance_vendor_bill.status_submitted, colorPalette: 'blue'   },
+      posted:    { label: t.finance_vendor_bill.status_posted,    colorPalette: 'green'  },
+      cancelled: { label: t.finance_vendor_bill.status_cancelled, colorPalette: 'red'    },
     };
     const s = map[status] ?? { label: status, colorPalette: 'gray' };
     return <Badge colorPalette={s.colorPalette} variant="subtle" ml={3}>{s.label}</Badge>;
@@ -460,10 +663,10 @@ function CreateVendorBillContent() {
       return (
         <Flex gap={3}>
           <Button variant="outline" color={BIZGEN_COLOR} borderColor={BIZGEN_COLOR} onClick={handleSaveDraft} loading={loading}>
-            Save as Draft
+            {t.finance_vendor_bill.save_draft}
           </Button>
           <Button bg={BIZGEN_COLOR} color="white" onClick={handlePostBill} loading={loading}>
-            Post Vendor Bill
+            {t.finance_vendor_bill.post_bill}
           </Button>
         </Flex>
       );
@@ -472,10 +675,19 @@ function CreateVendorBillContent() {
       return (
         <Flex gap={3}>
           <Button variant="outline" color={BIZGEN_COLOR} borderColor={BIZGEN_COLOR} onClick={handleUpdate} loading={loading}>
-            Save
+            {t.finance_vendor_bill.save}
           </Button>
           <Button bg={BIZGEN_COLOR} color="white" onClick={handleSubmitAction} loading={loading}>
-            Submit
+            {t.finance_vendor_bill.submit}
+          </Button>
+        </Flex>
+      );
+    }
+    if (billStatus === 'posted' && paymentType === 'installment' && installments.length > 0) {
+      return (
+        <Flex gap={3}>
+          <Button bg={BIZGEN_COLOR} color="white" onClick={handleSavePayments} loading={loading}>
+            {t.finance_vendor_bill.save_payments}
           </Button>
         </Flex>
       );
@@ -484,10 +696,10 @@ function CreateVendorBillContent() {
       return (
         <Flex gap={3}>
           <Button variant="outline" colorPalette="red" onClick={() => setIsRejectDialogOpen(true)}>
-            Reject
+            {t.finance_vendor_bill.reject}
           </Button>
           <Button bg="green.500" color="white" onClick={handleApprove} loading={loading}>
-            Approve
+            {t.finance_vendor_bill.approve}
           </Button>
         </Flex>
       );
@@ -505,12 +717,12 @@ function CreateVendorBillContent() {
         <Flex flexDir="column">
           <Flex align="center">
             <Heading size="lg">
-              {mode === 'create' ? 'Create Vendor Bill' : 'Vendor Bill'}
+              {mode === 'create' ? t.finance_vendor_bill.title_create : t.finance_vendor_bill.title_view}
             </Heading>
             {mode === 'view' && statusBadge(billStatus)}
           </Flex>
           <Text color="gray.500" fontSize="sm">
-            Select a supplier to view their unpaid purchase orders, then choose a payment method
+            {t.finance_vendor_bill.subtitle}
           </Text>
         </Flex>
         <ActionButtons />
@@ -536,13 +748,13 @@ function CreateVendorBillContent() {
         {/* ── Bill Details ─────────────────────────────────────────────────── */}
         <Card.Root>
           <Card.Header>
-            <Heading size="md">Bill Details</Heading>
+            <Heading size="md">{t.finance_vendor_bill.bill_details}</Heading>
           </Card.Header>
           <Card.Body>
             <SimpleGrid columns={{ base: 1, md: 3 }} gap={4}>
 
               <Field.Root required>
-                <Field.Label fontSize="sm">Bill No.<Field.RequiredIndicator /></Field.Label>
+                <Field.Label fontSize="sm">{t.finance_vendor_bill.bill_no}<Field.RequiredIndicator /></Field.Label>
                 <Input
                   value={form.bill_number}
                   onChange={(e) => setForm({ ...form, bill_number: e.target.value })}
@@ -552,7 +764,7 @@ function CreateVendorBillContent() {
               </Field.Root>
 
               <Field.Root required>
-                <Field.Label fontSize="sm">Bill Date<Field.RequiredIndicator /></Field.Label>
+                <Field.Label fontSize="sm">{t.finance_vendor_bill.bill_date}<Field.RequiredIndicator /></Field.Label>
                 <Input
                   type="date"
                   value={form.bill_date}
@@ -562,7 +774,7 @@ function CreateVendorBillContent() {
               </Field.Root>
 
               <Field.Root>
-                <Field.Label fontSize="sm">Due Date</Field.Label>
+                <Field.Label fontSize="sm">{t.finance_vendor_bill.due_date}</Field.Label>
                 <Input
                   type="date"
                   value={form.due_date}
@@ -572,7 +784,7 @@ function CreateVendorBillContent() {
               </Field.Root>
 
               <Field.Root required>
-                <Field.Label fontSize="sm">Supplier / Vendor<Field.RequiredIndicator /></Field.Label>
+                <Field.Label fontSize="sm">{t.finance_vendor_bill.supplier_vendor}<Field.RequiredIndicator /></Field.Label>
                 <Input
                   value={selectedSupplier?.supplier_name ?? ''}
                   readOnly
@@ -584,7 +796,7 @@ function CreateVendorBillContent() {
               </Field.Root>
 
               <Field.Root>
-                <Field.Label fontSize="sm">Supplier Info</Field.Label>
+                <Field.Label fontSize="sm">{t.finance_vendor_bill.supplier_info}</Field.Label>
                 <Box fontSize="xs" color="gray.500" lineHeight="short" pt={1}>
                   {selectedSupplier ? (
                     <>
@@ -593,13 +805,13 @@ function CreateVendorBillContent() {
                       <Text>{selectedSupplier.term_name ? `Term: ${selectedSupplier.term_name}` : '—'}</Text>
                     </>
                   ) : (
-                    <Text color="gray.400" fontStyle="italic">No supplier selected</Text>
+                    <Text color="gray.400" fontStyle="italic">{t.finance_vendor_bill.no_supplier_selected}</Text>
                   )}
                 </Box>
               </Field.Root>
 
               <Field.Root required>
-                <Field.Label fontSize="sm">Currency<Field.RequiredIndicator /></Field.Label>
+                <Field.Label fontSize="sm">{t.finance_vendor_bill.currency}<Field.RequiredIndicator /></Field.Label>
                 <Select.Root
                   collection={currencyCollection}
                   value={currencySelected ? [currencySelected] : []}
@@ -627,7 +839,7 @@ function CreateVendorBillContent() {
 
               {!isIDR && (
                 <Field.Root required>
-                  <Field.Label fontSize="sm">Exchange Rate (to IDR)<Field.RequiredIndicator /></Field.Label>
+                  <Field.Label fontSize="sm">{t.finance_vendor_bill.exchange_rate}<Field.RequiredIndicator /></Field.Label>
                   <Input
                     type="number"
                     value={form.exchange_rate}
@@ -639,7 +851,7 @@ function CreateVendorBillContent() {
               )}
 
               <Field.Root required>
-                <Field.Label fontSize="sm">Payment Term / Incoterm<Field.RequiredIndicator /></Field.Label>
+                <Field.Label fontSize="sm">{t.finance_vendor_bill.payment_term}<Field.RequiredIndicator /></Field.Label>
                 <Select.Root
                   collection={termCollection}
                   value={termSelected ? [termSelected] : []}
@@ -668,7 +880,7 @@ function CreateVendorBillContent() {
             </SimpleGrid>
 
             <Field.Root mt={4}>
-              <Field.Label fontSize="sm">Notes / Remarks</Field.Label>
+              <Field.Label fontSize="sm">{t.finance_vendor_bill.notes_remarks}</Field.Label>
               <Textarea
                 rows={3}
                 value={form.notes}
@@ -684,11 +896,11 @@ function CreateVendorBillContent() {
         <Card.Root>
           <Card.Header>
             <Flex flexDir="column">
-              <Heading size="md">Purchase Orders</Heading>
+              <Heading size="md">{t.finance_vendor_bill.purchase_orders}</Heading>
               <Text fontSize="xs" color="gray.500" mt={1}>
                 {selectedSupplier
-                  ? `Unpaid purchase orders for ${selectedSupplier.supplier_name} (local & import)`
-                  : 'Select a supplier above to see their unpaid purchase orders'}
+                  ? `${t.finance_vendor_bill.unpaid_po_for} ${selectedSupplier.supplier_name} ${t.finance_vendor_bill.unpaid_po_for_suffix}`
+                  : t.finance_vendor_bill.select_supplier_first}
               </Text>
             </Flex>
           </Card.Header>
@@ -699,13 +911,13 @@ function CreateVendorBillContent() {
                 borderRadius="lg" border="1px dashed" borderColor="gray.200"
                 textAlign="center" color="gray.400"
               >
-                <Text fontSize="sm">No supplier selected</Text>
-                <Text fontSize="xs">Select a supplier first to load their unpaid purchase orders.</Text>
+                <Text fontSize="sm">{t.finance_vendor_bill.no_supplier_selected}</Text>
+                <Text fontSize="xs">{t.finance_vendor_bill.no_supplier_selected_desc}</Text>
               </Flex>
             ) : poLoading ? (
               <Flex align="center" justify="center" py={8} gap={3}>
                 <Spinner size="sm" color={BIZGEN_COLOR} />
-                <Text fontSize="sm" color="gray.500">Loading unpaid purchase orders…</Text>
+                <Text fontSize="sm" color="gray.500">{t.finance_vendor_bill.loading_po}</Text>
               </Flex>
             ) : unpaidPOList.length === 0 ? (
               <Flex
@@ -713,8 +925,8 @@ function CreateVendorBillContent() {
                 borderRadius="lg" border="1px dashed" borderColor="gray.200"
                 textAlign="center" color="gray.400"
               >
-                <Text fontSize="sm">No unpaid purchase orders found</Text>
-                <Text fontSize="xs">All purchase orders for this supplier have been billed.</Text>
+                <Text fontSize="sm">{t.finance_vendor_bill.no_po_found}</Text>
+                <Text fontSize="xs">{t.finance_vendor_bill.no_po_found_desc}</Text>
               </Flex>
             ) : (
               <Box>
@@ -726,7 +938,7 @@ function CreateVendorBillContent() {
                       Selected: {linkedPO.po_number}
                     </Text>
                     <Badge colorPalette={linkedPO.purchase_type === 'local' ? 'blue' : 'orange'} variant="subtle" ml={1}>
-                      {linkedPO.purchase_type === 'local' ? 'Local' : 'Import'}
+                      {linkedPO.purchase_type === 'local' ? t.finance_vendor_bill.type_local : t.finance_vendor_bill.type_import}
                     </Badge>
                     {!isReadOnly && (
                       <IconButton
@@ -745,10 +957,10 @@ function CreateVendorBillContent() {
                 <Table.Root>
                   <Table.Header>
                     <Table.Row bg="bg.panel">
-                      <Table.ColumnHeader>PO Number</Table.ColumnHeader>
-                      <Table.ColumnHeader>PO Date</Table.ColumnHeader>
-                      <Table.ColumnHeader>Type</Table.ColumnHeader>
-                      <Table.ColumnHeader textAlign="center">Action</Table.ColumnHeader>
+                      <Table.ColumnHeader>{t.finance_vendor_bill.po_number}</Table.ColumnHeader>
+                      <Table.ColumnHeader>{t.finance_vendor_bill.po_date}</Table.ColumnHeader>
+                      <Table.ColumnHeader>{t.finance_vendor_bill.po_type}</Table.ColumnHeader>
+                      <Table.ColumnHeader textAlign="center">{t.finance_vendor_bill.po_action}</Table.ColumnHeader>
                     </Table.Row>
                   </Table.Header>
                   <Table.Body>
@@ -770,12 +982,12 @@ function CreateVendorBillContent() {
                           </Table.Cell>
                           <Table.Cell>
                             <Badge colorPalette={po.purchase_type === 'local' ? 'blue' : 'orange'} variant="subtle">
-                              {po.purchase_type === 'local' ? 'Local' : 'Import'}
+                              {po.purchase_type === 'local' ? t.finance_vendor_bill.type_local : t.finance_vendor_bill.type_import}
                             </Badge>
                           </Table.Cell>
                           <Table.Cell textAlign="center">
                             {isSelected ? (
-                              <Badge colorPalette="orange" variant="subtle">Selected</Badge>
+                              <Badge colorPalette="orange" variant="subtle">{t.finance_vendor_bill.po_selected}</Badge>
                             ) : (
                               !isReadOnly && (
                                 <Button
@@ -785,7 +997,7 @@ function CreateVendorBillContent() {
                                   borderColor={BIZGEN_COLOR}
                                   onClick={() => handleSelectPO(po)}
                                 >
-                                  Select
+                                  {t.finance_vendor_bill.select_po}
                                 </Button>
                               )
                             )}
@@ -804,9 +1016,9 @@ function CreateVendorBillContent() {
         <Card.Root>
           <Card.Header>
             <Flex flexDir="column">
-              <Heading size="md">Bill Items</Heading>
+              <Heading size="md">{t.finance_vendor_bill.bill_items}</Heading>
               <Text fontSize="xs" color="gray.500" mt={1}>
-                Items are loaded from the selected purchase order
+                {t.finance_vendor_bill.items_from_po}
               </Text>
             </Flex>
           </Card.Header>
@@ -817,19 +1029,19 @@ function CreateVendorBillContent() {
                 borderRadius="lg" border="1px dashed" borderColor="gray.200"
                 textAlign="center" color="gray.400"
               >
-                <Text fontSize="sm">No items loaded</Text>
-                <Text fontSize="xs">Select a purchase order above to load its items.</Text>
+                <Text fontSize="sm">{t.finance_vendor_bill.no_items_loaded}</Text>
+                <Text fontSize="xs">{t.finance_vendor_bill.select_po_first}</Text>
               </Flex>
             ) : (
               <Box overflowX="auto">
                 <Flex minW="1000px" gap={3} mb={2} px={1}>
                   {([
                     ['32px',  '#'],
-                    ['240px', 'Item / Description'],
-                    ['80px',  'Qty'],
-                    ['100px', 'UOM'],
-                    ['150px', `Unit Price${selectedCurrencyCode ? ` (${selectedCurrencyCode})` : ''}`],
-                    ['150px', 'Line Total'],
+                    ['240px', t.finance_vendor_bill.item_description],
+                    ['80px',  t.finance_vendor_bill.qty],
+                    ['100px', t.finance_vendor_bill.uom],
+                    ['150px', `${t.finance_vendor_bill.unit_price}${selectedCurrencyCode ? ` (${selectedCurrencyCode})` : ''}`],
+                    ['150px', t.finance_vendor_bill.line_total],
                   ] as [string, string][]).map(([w, label], i) => (
                     <Box key={i} w={w} flexShrink={0}>
                       <Text fontSize="xs" fontWeight="semibold" color="gray.500" textTransform="uppercase">{label}</Text>
@@ -865,20 +1077,20 @@ function CreateVendorBillContent() {
                   <Box w="340px">
                     <Flex justify="space-between" mb={1}>
                       <Text fontSize="sm" color="gray.600">
-                        Subtotal{selectedCurrencyCode ? ` (${selectedCurrencyCode})` : ''}
+                        {t.finance_vendor_bill.subtotal}{selectedCurrencyCode ? ` (${selectedCurrencyCode})` : ''}
                       </Text>
                       <Text fontSize="sm" fontWeight="semibold">{fmt(totalSubtotal)}</Text>
                     </Flex>
                     <Separator mb={2} />
                     <Flex justify="space-between">
                       <Text fontWeight="bold">
-                        Grand Total{selectedCurrencyCode ? ` (${selectedCurrencyCode})` : ''}
+                        {t.finance_vendor_bill.grand_total}{selectedCurrencyCode ? ` (${selectedCurrencyCode})` : ''}
                       </Text>
                       <Text fontWeight="bold" color={BIZGEN_COLOR}>{fmt(totalGrand)}</Text>
                     </Flex>
                     {!isIDR && form.exchange_rate && (
                       <Flex justify="space-between" mt={1}>
-                        <Text fontSize="xs" color="gray.500">Grand Total (IDR)</Text>
+                        <Text fontSize="xs" color="gray.500">{t.finance_vendor_bill.grand_total_idr}</Text>
                         <Text fontSize="xs" color="gray.500">
                           {fmt(totalGrand * (parseFloat(form.exchange_rate) || 1))}
                         </Text>
@@ -896,9 +1108,9 @@ function CreateVendorBillContent() {
           <Card.Header>
             <Flex justify="space-between" align="center">
               <Flex flexDir="column">
-                <Heading size="md">Payment Method</Heading>
+                <Heading size="md">{t.finance_vendor_bill.payment_method}</Heading>
                 <Text fontSize="xs" color="gray.500" mt={1}>
-                  Choose whether this bill is paid in full or in installments (cicilan)
+                  {t.finance_vendor_bill.payment_method_desc}
                 </Text>
               </Flex>
               {!isReadOnly && (
@@ -911,7 +1123,7 @@ function CreateVendorBillContent() {
                     borderColor={BIZGEN_COLOR}
                     onClick={() => handlePaymentTypeChange('full')}
                   >
-                    Full Payment
+                    {t.finance_vendor_bill.full_payment}
                   </Button>
                   <Button
                     size="sm"
@@ -921,7 +1133,7 @@ function CreateVendorBillContent() {
                     borderColor={BIZGEN_COLOR}
                     onClick={() => handlePaymentTypeChange('installment')}
                   >
-                    Installment
+                    {t.finance_vendor_bill.installment}
                   </Button>
                 </Flex>
               )}
@@ -935,18 +1147,18 @@ function CreateVendorBillContent() {
                 borderRadius="lg" bg="orange.50" border="1px solid" borderColor="orange.200"
               >
                 <Box>
-                  <Text fontWeight="semibold" color={BIZGEN_COLOR}>Full Payment</Text>
+                  <Text fontWeight="semibold" color={BIZGEN_COLOR}>{t.finance_vendor_bill.full_payment}</Text>
                   <Text fontSize="sm" color="gray.500" mt={1}>
-                    Bill is paid to the supplier in a single payment.
+                    {t.finance_vendor_bill.full_payment_desc}
                   </Text>
                   {form.due_date && (
                     <Text fontSize="sm" color="gray.600" mt={1}>
-                      Due date: <strong>{new Date(form.due_date).toLocaleDateString(lang === 'id' ? 'id-ID' : 'en-US', { day: '2-digit', month: 'short', year: 'numeric' })}</strong>
+                      {t.finance_vendor_bill.due_date_label} <strong>{new Date(form.due_date).toLocaleDateString(lang === 'id' ? 'id-ID' : 'en-US', { day: '2-digit', month: 'short', year: 'numeric' })}</strong>
                     </Text>
                   )}
                 </Box>
                 <Box textAlign="right">
-                  <Text fontSize="xs" color="gray.500">Total Amount</Text>
+                  <Text fontSize="xs" color="gray.500">{t.finance_vendor_bill.total_amount}</Text>
                   <Text fontSize="xl" fontWeight="bold" color={BIZGEN_COLOR}>
                     {selectedCurrencyCode && `${selectedCurrencyCode} `}{fmt(totalGrand)}
                   </Text>
@@ -957,14 +1169,14 @@ function CreateVendorBillContent() {
                 <Flex justify="flex-end" mb={4}>
                   {!isReadOnly && (
                     <Button size="sm" variant="outline" color={BIZGEN_COLOR} borderColor={BIZGEN_COLOR} onClick={addInstallment}>
-                      Add Installment
+                      {t.finance_vendor_bill.add_installment}
                     </Button>
                   )}
                 </Flex>
 
                 {installments.length === 0 ? (
                   <Text fontSize="sm" color="gray.400" fontStyle="italic">
-                    No installments yet. Click "Add Installment" to set up the payment schedule.
+                    {t.finance_vendor_bill.no_installments}
                   </Text>
                 ) : (
                   <>
@@ -972,12 +1184,12 @@ function CreateVendorBillContent() {
                       <Flex minW="1020px" gap={3} mb={2} px={1}>
                         {([
                           ['32px',  '#'],
-                          ['100px', 'Status'],
-                          ['160px', 'Due Date'],
-                          ['180px', `Amount (${selectedCurrencyCode || 'CCY'})`],
-                          ['80px',  'Mark Paid'],
-                          ['160px', 'Paid Date'],
-                          ['200px', 'Notes / Term Description'],
+                          ['100px', t.finance_vendor_bill.installment_status],
+                          ['160px', t.finance_vendor_bill.due_date],
+                          ['180px', `${t.finance_vendor_bill.total_amount} (${selectedCurrencyCode || 'CCY'})`],
+                          ['80px',  t.finance_vendor_bill.mark_paid],
+                          ['160px', t.finance_vendor_bill.paid_date],
+                          ['200px', t.finance_vendor_bill.term_description],
                           ['40px',  ''],
                         ] as [string, string][]).map(([w, label], i) => (
                           <Box key={i} w={w} flexShrink={0}>
@@ -1001,7 +1213,7 @@ function CreateVendorBillContent() {
                           </Box>
                           <Box w="100px" flexShrink={0}>
                             <Badge colorPalette={inst.isPaid ? 'green' : 'gray'} variant="subtle">
-                              {inst.isPaid ? 'Paid' : 'Scheduled'}
+                              {inst.isPaid ? t.finance_vendor_bill.paid : t.finance_vendor_bill.scheduled}
                             </Badge>
                           </Box>
                           <Box w="160px" flexShrink={0}>
@@ -1015,9 +1227,11 @@ function CreateVendorBillContent() {
                           </Box>
                           <Box w="180px" flexShrink={0}>
                             <Input
-                              type="number"
+                              type="text"
                               placeholder="0.00"
-                              value={inst.amount}
+                              value={focusedInstallmentId === inst.id ? inst.amount : fmt(parseFloat(inst.amount) || 0)}
+                              onFocus={() => setFocusedInstallmentId(inst.id)}
+                              onBlur={() => setFocusedInstallmentId(null)}
                               onChange={(e) => updateInstallment(inst.id, 'amount', e.target.value)}
                               readOnly={isReadOnly}
                               bg="white"
@@ -1072,11 +1286,11 @@ function CreateVendorBillContent() {
                     <Flex justify="flex-end">
                       <Box w="360px">
                         <Flex justify="space-between" mb={1}>
-                          <Text fontSize="sm" color="gray.600">Bill Grand Total</Text>
+                          <Text fontSize="sm" color="gray.600">{t.finance_vendor_bill.bill_grand_total}</Text>
                           <Text fontSize="sm" fontWeight="semibold">{fmt(totalGrand)}</Text>
                         </Flex>
                         <Flex justify="space-between" mb={1}>
-                          <Text fontSize="sm" color="gray.600">Total Scheduled</Text>
+                          <Text fontSize="sm" color="gray.600">{t.finance_vendor_bill.total_scheduled}</Text>
                           <Text
                             fontSize="sm"
                             fontWeight="semibold"
@@ -1084,18 +1298,18 @@ function CreateVendorBillContent() {
                           >
                             {fmt(totalScheduled)}
                             {Math.abs(totalScheduled - totalGrand) > 0.01 && (
-                              <Text as="span" fontSize="xs" ml={1}>(must match grand total)</Text>
+                              <Text as="span" fontSize="xs" ml={1}>({t.finance_vendor_bill.must_match_bill_total})</Text>
                             )}
                           </Text>
                         </Flex>
                         <Flex justify="space-between" mb={1}>
-                          <Text fontSize="sm" color="green.600">Total Paid</Text>
+                          <Text fontSize="sm" color="green.600">{t.finance_vendor_bill.total_paid}</Text>
                           <Text fontSize="sm" fontWeight="semibold" color="green.600">{fmt(totalPaid)}</Text>
                         </Flex>
                         <Separator mb={2} />
                         <Flex justify="space-between">
                           <Text fontWeight="bold" color={outstanding > 0 ? BIZGEN_COLOR : 'green.600'}>
-                            Outstanding Balance
+                            {t.finance_vendor_bill.outstanding_balance}
                           </Text>
                           <Text fontWeight="bold" color={outstanding > 0 ? BIZGEN_COLOR : 'green.600'}>
                             {fmt(outstanding)}
@@ -1114,9 +1328,9 @@ function CreateVendorBillContent() {
         <Card.Root>
           <Card.Header>
             <Flex flexDir="column">
-              <Heading size="md">Shipping & Logistics</Heading>
+              <Heading size="md">{t.finance_vendor_bill.shipping_logistics}</Heading>
               <Text fontSize="xs" color="gray.500" mt={1}>
-                Port details, vessel/flight info and shipment timeline
+                {t.finance_vendor_bill.shipping_logistics_desc}
               </Text>
             </Flex>
           </Card.Header>
@@ -1124,7 +1338,7 @@ function CreateVendorBillContent() {
             <SimpleGrid columns={{ base: 1, md: 3 }} gap={4}>
 
               <Field.Root>
-                <Field.Label fontSize="sm">Port of Loading (Origin)</Field.Label>
+                <Field.Label fontSize="sm">{t.finance_vendor_bill.port_loading}</Field.Label>
                 <Select.Root
                   collection={portCollection}
                   value={originSelected ? [originSelected] : []}
@@ -1151,7 +1365,7 @@ function CreateVendorBillContent() {
               </Field.Root>
 
               <Field.Root>
-                <Field.Label fontSize="sm">Port of Discharge (Destination)</Field.Label>
+                <Field.Label fontSize="sm">{t.finance_vendor_bill.port_discharge}</Field.Label>
                 <Select.Root
                   collection={portCollection}
                   value={destinationSelected ? [destinationSelected] : []}
@@ -1178,7 +1392,7 @@ function CreateVendorBillContent() {
               </Field.Root>
 
               <Field.Root>
-                <Field.Label fontSize="sm">Vessel / Flight No.</Field.Label>
+                <Field.Label fontSize="sm">{t.finance_vendor_bill.vessel_flight_no}</Field.Label>
                 <Input
                   value={form.vessel_flight}
                   onChange={(e) => setForm({ ...form, vessel_flight: e.target.value })}
@@ -1188,7 +1402,7 @@ function CreateVendorBillContent() {
               </Field.Root>
 
               <Field.Root>
-                <Field.Label fontSize="sm">B/L or AWB Number</Field.Label>
+                <Field.Label fontSize="sm">{t.finance_vendor_bill.bl_awb_number}</Field.Label>
                 <Input
                   value={form.bl_awb_number}
                   onChange={(e) => setForm({ ...form, bl_awb_number: e.target.value })}
@@ -1198,7 +1412,7 @@ function CreateVendorBillContent() {
               </Field.Root>
 
               <Field.Root>
-                <Field.Label fontSize="sm">ETD (Est. Departure)</Field.Label>
+                <Field.Label fontSize="sm">{t.finance_vendor_bill.etd}</Field.Label>
                 <Input
                   type="date"
                   value={form.etd}
@@ -1208,7 +1422,7 @@ function CreateVendorBillContent() {
               </Field.Root>
 
               <Field.Root>
-                <Field.Label fontSize="sm">ETA (Est. Arrival)</Field.Label>
+                <Field.Label fontSize="sm">{t.finance_vendor_bill.eta}</Field.Label>
                 <Input
                   type="date"
                   value={form.eta}
@@ -1226,9 +1440,9 @@ function CreateVendorBillContent() {
           <Card.Root>
             <Card.Header>
               <Flex flexDir="column">
-                <Heading size="md">Supporting Documents</Heading>
+                <Heading size="md">{t.finance_vendor_bill.supporting_documents}</Heading>
                 <Text fontSize="xs" color="gray.500" mt={1}>
-                  Attach Commercial Invoice, Packing List, B/L, Certificate of Origin, etc.
+                  {t.finance_vendor_bill.supporting_documents_desc}
                 </Text>
               </Flex>
             </Card.Header>
@@ -1241,9 +1455,9 @@ function CreateVendorBillContent() {
                 onClick={() => fileInputRef.current?.click()}
               >
                 <Icon as={FiUpload} boxSize={7} color="gray.400" />
-                <Text fontSize="sm" color="gray.500">Drag & drop or click to upload documents</Text>
+                <Text fontSize="sm" color="gray.500">{t.finance_vendor_bill.drag_drop_upload}</Text>
                 <Button size="sm" variant="outline" color={BIZGEN_COLOR} borderColor={BIZGEN_COLOR} pointerEvents="none">
-                  Choose Files
+                  {t.finance_vendor_bill.choose_files}
                 </Button>
               </Flex>
               <input ref={fileInputRef} type="file" multiple hidden onChange={handleFileChange} />
@@ -1272,7 +1486,7 @@ function CreateVendorBillContent() {
         {mode === 'view' && historyData.length > 0 && (
           <Card.Root>
             <Card.Header>
-              <Heading size="md">History</Heading>
+              <Heading size="md">{t.finance_vendor_bill.history}</Heading>
             </Card.Header>
             <Card.Body>
               <Stack gap={3}>

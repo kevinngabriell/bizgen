@@ -12,7 +12,7 @@ import { getAllTerm, GetTermData } from '@/lib/master/term';
 import { getAllPort, GetPortData } from '@/lib/master/port';
 import { getAllBankAccount, GetBankAccountData } from '@/lib/master/bank-account';
 import { getAllPaymentMethod, GetPaymentMethodData } from '@/lib/master/payment-method';
-import { GetCustomerData } from '@/lib/master/customer';
+import { GetCustomerData, getDetailCustomer } from '@/lib/master/customer';
 import {
   GetSalesOrderItemData,
   GetDetailSalesOrderResponse,
@@ -20,12 +20,23 @@ import {
   getDetailSalesOrder,
 } from '@/lib/sales/sales-order';
 import {
+  generateInvoiceNumber,
+  createInvoice,
+  updateInvoice,
+  submitInvoice,
+  approveInvoice,
+  rejectInvoice,
+  getInvoiceDetail,
+  CreateInvoiceData,
+  UpdateInvoiceData,
+} from '@/lib/finance/invoice';
+import {
   Badge, Box, Button, Card, Checkbox, createListCollection,
   Field, Flex, Heading, Icon, IconButton, Input, Portal,
   Select, Separator, SimpleGrid, Stack, Spinner, Table, Text, Textarea,
 } from '@chakra-ui/react';
 import { Suspense, useEffect, useRef, useState } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { FaTrash } from 'react-icons/fa';
 import { FiFileText, FiUpload, FiX } from 'react-icons/fi';
 
@@ -76,6 +87,7 @@ export default function CreateInvoicePage() {
 
 function CreateInvoiceContent() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const invoiceId = searchParams.get('invoice_id');
 
   const [auth, setAuth] = useState<DecodedAuthToken | null>(null);
@@ -171,6 +183,7 @@ function CreateInvoiceContent() {
   // Payment type
   const [paymentType, setPaymentType] = useState<'full' | 'installment'>('full');
   const [installments, setInstallments] = useState<PaymentInstallment[]>([]);
+  const [focusedInstallmentId, setFocusedInstallmentId] = useState<string | null>(null);
 
   // Document upload
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -207,19 +220,79 @@ function CreateInvoiceContent() {
         setPaymentMethodOptions(paymentRes?.data ?? []);
 
         if (!invoiceId) {
-          const today = new Date();
-          const year = today.getFullYear();
-          const month = String(today.getMonth() + 1).padStart(2, '0');
-          const todayStr = today.toISOString().split('T')[0];
+          const todayStr = new Date().toISOString().split('T')[0];
+          const numberRes = await generateInvoiceNumber();
           setForm((prev) => ({
             ...prev,
-            invoice_number: `SI/${year}/${month}/`,
+            invoice_number: numberRes.number,
             invoice_date: todayStr,
             cheque_date: todayStr,
           }));
         } else {
           setMode('view');
-          // TODO: load sales invoice detail from API
+          const detail = await getInvoiceDetail(invoiceId);
+          const h = detail.header;
+          setInvStatus(h.status);
+          setForm({
+            invoice_number: h.invoice_no,
+            invoice_date: h.invoice_date,
+            due_date: h.due_date ?? '',
+            exchange_rate: h.exchange_rate && h.exchange_rate !== 1 ? h.exchange_rate.toString() : '',
+            notes: h.notes ?? '',
+            vessel_flight: h.vessel_flight ?? '',
+            bl_awb_number: h.bl_awb_number ?? '',
+            etd: h.etd ?? '',
+            eta: h.eta ?? '',
+            cheque_number: h.cheque_number ?? '',
+            cheque_date: h.cheque_date ?? '',
+            cheque_amount: h.cheque_amount?.toString() ?? '',
+            form_number: h.form_number ?? '',
+          });
+          setCurrencySelected(h.currency_id);
+          setTermSelected(h.term_id);
+          setOriginSelected(h.origin_port_id);
+          setDestinationSelected(h.destination_port_id);
+          setBankAccountSelected(h.bank_account_id);
+          setPaymentMethodSelected(h.payment_method_id);
+          setPaymentType(h.payment_type);
+          const customerRes = await getDetailCustomer(h.customer_id);
+          setSelectedCustomer(customerRes.data[0] ?? {
+            customer_id: h.customer_id,
+            customer_name: h.customer_name,
+          } as any);
+          setLinkedSO({
+            sales_order_id: h.sales_order_id,
+            sales_order_no: h.sales_order_no,
+            created_at: '',
+          });
+          setItems(detail.items.map((di) => ({
+            id: di.invoice_item_id,
+            itemId: di.item_ref_id,
+            description: di.description,
+            qty: di.quantity.toString(),
+            uomName: di.uom_name,
+            unitPrice: di.unit_price.toString(),
+            total: di.line_subtotal.toString(),
+            vatPercent: di.tax_percent.toString(),
+            vatAmount: di.tax_amount.toString(),
+            grandTotal: di.line_total.toString(),
+          })));
+          if (h.payment_type === 'installment') {
+            setInstallments(detail.installments.map((inst) => ({
+              id: inst.installment_id,
+              dueDate: inst.due_date,
+              amount: inst.amount.toString(),
+              isPaid: Number(inst.is_paid) === 1,
+              paidDate: inst.paid_date ?? '',
+              notes: inst.notes ?? '',
+            })));
+          }
+          setHistoryData(detail.history.map((entry) => ({
+            action: entry.action,
+            note: entry.description,
+            created_by: entry.created_by,
+            created_at: entry.created_at,
+          })));
         }
       } catch (err) {
         console.error('Failed to initialize:', err);
@@ -354,10 +427,98 @@ function CreateInvoiceContent() {
 
   // ─── Actions ───────────────────────────────────────────────────────────────
 
+  const buildPayload = (): CreateInvoiceData => {
+    const exchangeRate = isIDR ? 1 : parseFloat(form.exchange_rate) || 1;
+    return {
+      invoice_no: form.invoice_number,
+      form_number: form.form_number || undefined,
+      invoice_date: form.invoice_date,
+      due_date: form.due_date,
+      customer_id: selectedCustomer!.customer_id,
+      sales_order_id: linkedSO!.sales_order_id,
+      currency_id: currencySelected!,
+      exchange_rate: exchangeRate,
+      term_id: termSelected,
+      payment_type: paymentType,
+      bank_account_id: bankAccountSelected,
+      payment_method_id: paymentMethodSelected,
+      cheque_number: form.cheque_number || undefined,
+      cheque_date: form.cheque_date || undefined,
+      cheque_amount: form.cheque_amount ? parseFloat(form.cheque_amount) : undefined,
+      origin_port_id: originSelected,
+      destination_port_id: destinationSelected,
+      vessel_flight: form.vessel_flight || undefined,
+      bl_awb_number: form.bl_awb_number || undefined,
+      etd: form.etd || undefined,
+      eta: form.eta || undefined,
+      subtotal_amount: totalSubtotal,
+      tax_amount: totalVat,
+      total_amount: totalGrand,
+      total_amount_idr: totalGrand * exchangeRate,
+      notes: form.notes || undefined,
+      items: items.map((item, idx) => ({
+        item_ref_id: item.itemId,
+        description: item.description,
+        quantity: parseFloat(item.qty) || 0,
+        uom_name: item.uomName,
+        unit_price: parseFloat(item.unitPrice) || 0,
+        line_subtotal: parseFloat(item.total) || 0,
+        tax_percent: parseFloat(item.vatPercent) || 0,
+        tax_amount: parseFloat(item.vatAmount) || 0,
+        line_total: parseFloat(item.grandTotal) || 0,
+        sort_order: idx + 1,
+      })),
+      installments: paymentType === 'installment'
+        ? installments.map((inst, idx) => ({
+            installment_number: idx + 1,
+            due_date: inst.dueDate,
+            amount: parseFloat(inst.amount) || 0,
+            notes: inst.notes || undefined,
+          }))
+        : undefined,
+    };
+  };
+
+  const resetForm = async () => {
+    const todayStr = new Date().toISOString().split('T')[0];
+    const numberRes = await generateInvoiceNumber();
+    setForm({
+      invoice_number: numberRes.number,
+      invoice_date: todayStr,
+      due_date: '',
+      exchange_rate: '',
+      notes: '',
+      vessel_flight: '',
+      bl_awb_number: '',
+      etd: '',
+      eta: '',
+      cheque_number: '',
+      cheque_date: todayStr,
+      cheque_amount: '',
+      form_number: '',
+    });
+    setSelectedCustomer(null);
+    setUnpaidSOList([]);
+    setLinkedSO(null);
+    setItems([]);
+    setInstallments([]);
+    setPaymentType('full');
+    setCurrencySelected(undefined);
+    setTermSelected(undefined);
+    setOriginSelected(undefined);
+    setDestinationSelected(undefined);
+    setBankAccountSelected(undefined);
+    setPaymentMethodSelected(undefined);
+    setUploadedFiles([]);
+  };
+
   const handleSaveDraft = async () => {
     try {
       validateForm();
       setLoading(true);
+      const payload = buildPayload();
+      await createInvoice(payload);
+      await resetForm();
       showSuccess('Sales invoice saved as draft.');
     } catch (err: any) {
       showError(err.message || t.master.error_msg);
@@ -370,7 +531,11 @@ function CreateInvoiceContent() {
     try {
       validateForm();
       setLoading(true);
-      showSuccess('Sales invoice posted successfully.');
+      const payload = buildPayload();
+      const res = await createInvoice(payload);
+      await submitInvoice(res.data.invoice_id);
+      await resetForm();
+      showSuccess('Sales invoice submitted for approval.');
     } catch (err: any) {
       showError(err.message || t.master.error_msg);
     } finally {
@@ -382,6 +547,52 @@ function CreateInvoiceContent() {
     try {
       validateForm();
       setLoading(true);
+      const exchangeRate = isIDR ? 1 : parseFloat(form.exchange_rate) || 1;
+      const updatePayload: UpdateInvoiceData = {
+        invoice_id: invoiceId!,
+        invoice_date: form.invoice_date,
+        due_date: form.due_date,
+        form_number: form.form_number || undefined,
+        term_id: termSelected,
+        payment_type: paymentType,
+        bank_account_id: bankAccountSelected,
+        payment_method_id: paymentMethodSelected,
+        cheque_number: form.cheque_number || undefined,
+        cheque_date: form.cheque_date || undefined,
+        cheque_amount: form.cheque_amount ? parseFloat(form.cheque_amount) : undefined,
+        origin_port_id: originSelected,
+        destination_port_id: destinationSelected,
+        vessel_flight: form.vessel_flight || undefined,
+        bl_awb_number: form.bl_awb_number || undefined,
+        etd: form.etd || undefined,
+        eta: form.eta || undefined,
+        subtotal_amount: totalSubtotal,
+        tax_amount: totalVat,
+        total_amount: totalGrand,
+        total_amount_idr: totalGrand * exchangeRate,
+        notes: form.notes || undefined,
+        items: items.map((item, idx) => ({
+          item_ref_id: item.itemId,
+          description: item.description,
+          quantity: parseFloat(item.qty) || 0,
+          uom_name: item.uomName,
+          unit_price: parseFloat(item.unitPrice) || 0,
+          line_subtotal: parseFloat(item.total) || 0,
+          tax_percent: parseFloat(item.vatPercent) || 0,
+          tax_amount: parseFloat(item.vatAmount) || 0,
+          line_total: parseFloat(item.grandTotal) || 0,
+          sort_order: idx + 1,
+        })),
+        installments: paymentType === 'installment'
+          ? installments.map((inst, idx) => ({
+              installment_number: idx + 1,
+              due_date: inst.dueDate,
+              amount: parseFloat(inst.amount) || 0,
+              notes: inst.notes || undefined,
+            }))
+          : undefined,
+      };
+      await updateInvoice(updatePayload);
       setInvStatus('draft');
       showSuccess('Sales invoice updated successfully.');
     } catch (err: any) {
@@ -394,6 +605,7 @@ function CreateInvoiceContent() {
   const handleSubmitAction = async () => {
     try {
       setLoading(true);
+      await submitInvoice(invoiceId!);
       setInvStatus('submitted');
       showSuccess('Sales invoice submitted for approval.');
     } catch (err: any) {
@@ -406,6 +618,7 @@ function CreateInvoiceContent() {
   const handleApprove = async () => {
     try {
       setLoading(true);
+      await approveInvoice(invoiceId!);
       setInvStatus('posted');
       showSuccess('Sales invoice approved and posted.');
     } catch (err: any) {
@@ -418,6 +631,7 @@ function CreateInvoiceContent() {
   const handleReject = async (reason: string) => {
     try {
       setRejectLoading(true);
+      await rejectInvoice(invoiceId!, reason);
       setInvStatus('cancelled');
       setIsRejectDialogOpen(false);
       showSuccess('Sales invoice rejected.');
@@ -432,10 +646,10 @@ function CreateInvoiceContent() {
 
   const statusBadge = (status: string) => {
     const map: Record<string, { label: string; colorPalette: string }> = {
-      draft:     { label: 'Draft',     colorPalette: 'yellow' },
-      submitted: { label: 'Submitted', colorPalette: 'blue'   },
-      posted:    { label: 'Posted',    colorPalette: 'green'  },
-      cancelled: { label: 'Cancelled', colorPalette: 'red'    },
+      draft:     { label: t.finance_invoice.status_draft,     colorPalette: 'yellow' },
+      submitted: { label: t.finance_invoice.status_submitted, colorPalette: 'blue'   },
+      posted:    { label: t.finance_invoice.status_posted,    colorPalette: 'green'  },
+      cancelled: { label: t.finance_invoice.status_cancelled, colorPalette: 'red'    },
     };
     const s = map[status] ?? { label: status, colorPalette: 'gray' };
     return <Badge colorPalette={s.colorPalette} variant="subtle" ml={3}>{s.label}</Badge>;
@@ -448,10 +662,10 @@ function CreateInvoiceContent() {
       return (
         <Flex gap={3}>
           <Button variant="outline" color={BIZGEN_COLOR} borderColor={BIZGEN_COLOR} onClick={handleSaveDraft} loading={loading}>
-            Save as Draft
+            {t.finance_invoice.save_draft}
           </Button>
           <Button bg={BIZGEN_COLOR} color="white" onClick={handlePostInvoice} loading={loading}>
-            Post Invoice
+            {t.finance_invoice.post_invoice}
           </Button>
         </Flex>
       );
@@ -460,10 +674,10 @@ function CreateInvoiceContent() {
       return (
         <Flex gap={3}>
           <Button variant="outline" color={BIZGEN_COLOR} borderColor={BIZGEN_COLOR} onClick={handleUpdate} loading={loading}>
-            Save
+            {t.finance_invoice.save}
           </Button>
           <Button bg={BIZGEN_COLOR} color="white" onClick={handleSubmitAction} loading={loading}>
-            Submit
+            {t.finance_invoice.submit}
           </Button>
         </Flex>
       );
@@ -472,10 +686,10 @@ function CreateInvoiceContent() {
       return (
         <Flex gap={3}>
           <Button variant="outline" colorPalette="red" onClick={() => setIsRejectDialogOpen(true)}>
-            Reject
+            {t.finance_invoice.reject}
           </Button>
           <Button bg="green.500" color="white" onClick={handleApprove} loading={loading}>
-            Approve
+            {t.finance_invoice.approve}
           </Button>
         </Flex>
       );
@@ -493,12 +707,12 @@ function CreateInvoiceContent() {
         <Flex flexDir="column">
           <Flex align="center">
             <Heading size="lg">
-              {mode === 'create' ? 'Create Sales Invoice' : 'Sales Invoice'}
+              {mode === 'create' ? t.finance_invoice.title_create : t.finance_invoice.title_view}
             </Heading>
             {mode === 'view' && statusBadge(invStatus)}
           </Flex>
           <Text color="gray.500" fontSize="sm">
-            Select a customer to view their unpaid sales orders, then choose a payment method
+            {t.finance_invoice.subtitle}
           </Text>
         </Flex>
         <ActionButtons />
@@ -524,13 +738,13 @@ function CreateInvoiceContent() {
         {/* ── Invoice Details ──────────────────────────────────────────────── */}
         <Card.Root>
           <Card.Header>
-            <Heading size="md">Invoice Details</Heading>
+            <Heading size="md">{t.finance_invoice.invoice_details}</Heading>
           </Card.Header>
           <Card.Body>
             <SimpleGrid columns={{ base: 1, md: 3 }} gap={4}>
 
               <Field.Root required>
-                <Field.Label fontSize="sm">Invoice No.<Field.RequiredIndicator /></Field.Label>
+                <Field.Label fontSize="sm">{t.finance_invoice.invoice_no}<Field.RequiredIndicator /></Field.Label>
                 <Input
                   value={form.invoice_number}
                   onChange={(e) => setForm({ ...form, invoice_number: e.target.value })}
@@ -540,7 +754,7 @@ function CreateInvoiceContent() {
               </Field.Root>
 
               <Field.Root required>
-                <Field.Label fontSize="sm">Invoice Date<Field.RequiredIndicator /></Field.Label>
+                <Field.Label fontSize="sm">{t.finance_invoice.invoice_date}<Field.RequiredIndicator /></Field.Label>
                 <Input
                   type="date"
                   value={form.invoice_date}
@@ -550,7 +764,7 @@ function CreateInvoiceContent() {
               </Field.Root>
 
               <Field.Root>
-                <Field.Label fontSize="sm">Form No.</Field.Label>
+                <Field.Label fontSize="sm">{t.finance_invoice.form_no}</Field.Label>
                 <Input
                   value={form.form_number}
                   onChange={(e) => setForm({ ...form, form_number: e.target.value })}
@@ -560,7 +774,7 @@ function CreateInvoiceContent() {
               </Field.Root>
 
               <Field.Root required>
-                <Field.Label fontSize="sm">Bill To (Customer)<Field.RequiredIndicator /></Field.Label>
+                <Field.Label fontSize="sm">{t.finance_invoice.bill_to}<Field.RequiredIndicator /></Field.Label>
                 <Input
                   value={selectedCustomer?.customer_name ?? ''}
                   readOnly
@@ -572,7 +786,7 @@ function CreateInvoiceContent() {
               </Field.Root>
 
               <Field.Root>
-                <Field.Label fontSize="sm">Customer Info</Field.Label>
+                <Field.Label fontSize="sm">{t.finance_invoice.customer_info}</Field.Label>
                 <Box fontSize="xs" color="gray.500" lineHeight="short" pt={1}>
                   {selectedCustomer ? (
                     <>
@@ -584,13 +798,13 @@ function CreateInvoiceContent() {
                       )}
                     </>
                   ) : (
-                    <Text color="gray.400" fontStyle="italic">No customer selected</Text>
+                    <Text color="gray.400" fontStyle="italic">{t.finance_invoice.no_customer_selected}</Text>
                   )}
                 </Box>
               </Field.Root>
 
               <Field.Root required>
-                <Field.Label fontSize="sm">Currency<Field.RequiredIndicator /></Field.Label>
+                <Field.Label fontSize="sm">{t.finance_invoice.currency}<Field.RequiredIndicator /></Field.Label>
                 <Select.Root
                   collection={currencyCollection}
                   value={currencySelected ? [currencySelected] : []}
@@ -618,7 +832,7 @@ function CreateInvoiceContent() {
 
               {!isIDR && (
                 <Field.Root required>
-                  <Field.Label fontSize="sm">Exchange Rate (to IDR)<Field.RequiredIndicator /></Field.Label>
+                  <Field.Label fontSize="sm">{t.finance_invoice.exchange_rate}<Field.RequiredIndicator /></Field.Label>
                   <Input
                     type="number"
                     value={form.exchange_rate}
@@ -630,7 +844,7 @@ function CreateInvoiceContent() {
               )}
 
               <Field.Root required>
-                <Field.Label fontSize="sm">Payment Term / Incoterm<Field.RequiredIndicator /></Field.Label>
+                <Field.Label fontSize="sm">{t.finance_invoice.payment_term}<Field.RequiredIndicator /></Field.Label>
                 <Select.Root
                   collection={termCollection}
                   value={termSelected ? [termSelected] : []}
@@ -657,7 +871,7 @@ function CreateInvoiceContent() {
               </Field.Root>
 
               <Field.Root>
-                <Field.Label fontSize="sm">Due Date</Field.Label>
+                <Field.Label fontSize="sm">{t.finance_invoice.due_date}</Field.Label>
                 <Input
                   type="date"
                   value={form.due_date}
@@ -669,7 +883,7 @@ function CreateInvoiceContent() {
             </SimpleGrid>
 
             <Field.Root mt={4}>
-              <Field.Label fontSize="sm">Notes / Remarks</Field.Label>
+              <Field.Label fontSize="sm">{t.finance_invoice.notes_remarks}</Field.Label>
               <Textarea
                 rows={3}
                 value={form.notes}
@@ -685,11 +899,11 @@ function CreateInvoiceContent() {
         <Card.Root>
           <Card.Header>
             <Flex flexDir="column">
-              <Heading size="md">Sales Orders</Heading>
+              <Heading size="md">{t.finance_invoice.sales_orders}</Heading>
               <Text fontSize="xs" color="gray.500" mt={1}>
                 {selectedCustomer
-                  ? `Unpaid sales orders for ${selectedCustomer.customer_name}`
-                  : 'Select a customer above to see their unpaid sales orders'}
+                  ? `${t.finance_invoice.unpaid_sales_orders_for} ${selectedCustomer.customer_name}`
+                  : t.finance_invoice.select_customer_first}
               </Text>
             </Flex>
           </Card.Header>
@@ -700,13 +914,13 @@ function CreateInvoiceContent() {
                 borderRadius="lg" border="1px dashed" borderColor="gray.200"
                 textAlign="center" color="gray.400"
               >
-                <Text fontSize="sm">No customer selected</Text>
-                <Text fontSize="xs">Select a customer first to load their unpaid sales orders.</Text>
+                <Text fontSize="sm">{t.finance_invoice.no_customer_selected}</Text>
+                <Text fontSize="xs">{t.finance_invoice.select_customer_first}</Text>
               </Flex>
             ) : soLoading ? (
               <Flex align="center" justify="center" py={8} gap={3}>
                 <Spinner size="sm" color={BIZGEN_COLOR} />
-                <Text fontSize="sm" color="gray.500">Loading unpaid sales orders…</Text>
+                <Text fontSize="sm" color="gray.500">{t.finance_invoice.loading_so}</Text>
               </Flex>
             ) : unpaidSOList.length === 0 ? (
               <Flex
@@ -714,8 +928,8 @@ function CreateInvoiceContent() {
                 borderRadius="lg" border="1px dashed" borderColor="gray.200"
                 textAlign="center" color="gray.400"
               >
-                <Text fontSize="sm">No unpaid sales orders found</Text>
-                <Text fontSize="xs">All sales orders for this customer have been paid.</Text>
+                <Text fontSize="sm">{t.finance_invoice.no_so_found}</Text>
+                <Text fontSize="xs">{t.finance_invoice.no_so_found_desc}</Text>
               </Flex>
             ) : (
               <Box>
@@ -743,9 +957,9 @@ function CreateInvoiceContent() {
                 <Table.Root>
                   <Table.Header>
                     <Table.Row bg="bg.panel">
-                      <Table.ColumnHeader>Sales Order No.</Table.ColumnHeader>
-                      <Table.ColumnHeader>Order Date</Table.ColumnHeader>
-                      <Table.ColumnHeader textAlign="center">Action</Table.ColumnHeader>
+                      <Table.ColumnHeader>{t.finance_invoice.so_number}</Table.ColumnHeader>
+                      <Table.ColumnHeader>{t.finance_invoice.so_date}</Table.ColumnHeader>
+                      <Table.ColumnHeader textAlign="center">{t.finance_invoice.so_action}</Table.ColumnHeader>
                     </Table.Row>
                   </Table.Header>
                   <Table.Body>
@@ -767,7 +981,7 @@ function CreateInvoiceContent() {
                           </Table.Cell>
                           <Table.Cell textAlign="center">
                             {isSelected ? (
-                              <Badge colorPalette="orange" variant="subtle">Selected</Badge>
+                              <Badge colorPalette="orange" variant="subtle">{t.finance_invoice.so_selected}</Badge>
                             ) : (
                               !isReadOnly && (
                                 <Button
@@ -777,7 +991,7 @@ function CreateInvoiceContent() {
                                   borderColor={BIZGEN_COLOR}
                                   onClick={() => handleSelectSO(so)}
                                 >
-                                  Select
+                                  {t.finance_invoice.select_so}
                                 </Button>
                               )
                             )}
@@ -796,9 +1010,9 @@ function CreateInvoiceContent() {
         <Card.Root>
           <Card.Header>
             <Flex flexDir="column">
-              <Heading size="md">Invoice Items</Heading>
+              <Heading size="md">{t.finance_invoice.invoice_items}</Heading>
               <Text fontSize="xs" color="gray.500" mt={1}>
-                Items are loaded from the selected sales order
+                {t.finance_invoice.items_from_so}
               </Text>
             </Flex>
           </Card.Header>
@@ -809,22 +1023,22 @@ function CreateInvoiceContent() {
                 borderRadius="lg" border="1px dashed" borderColor="gray.200"
                 textAlign="center" color="gray.400"
               >
-                <Text fontSize="sm">No items loaded</Text>
-                <Text fontSize="xs">Select a sales order above to load its items.</Text>
+                <Text fontSize="sm">{t.finance_invoice.no_items_loaded}</Text>
+                <Text fontSize="xs">{t.finance_invoice.select_so_first}</Text>
               </Flex>
             ) : (
               <Box overflowX="auto">
                 <Flex minW="1100px" gap={3} mb={2} px={1}>
                   {([
                     ['32px',  '#'],
-                    ['240px', 'Item / Description'],
-                    ['80px',  'Qty'],
-                    ['100px', 'UOM'],
-                    ['140px', `Unit Price${selectedCurrencyCode ? ` (${selectedCurrencyCode})` : ''}`],
-                    ['120px', 'Subtotal'],
-                    ['70px',  'VAT %'],
-                    ['110px', 'VAT Amt'],
-                    ['130px', 'Grand Total'],
+                    ['240px', t.finance_invoice.item_description],
+                    ['80px',  t.finance_invoice.qty],
+                    ['100px', t.finance_invoice.uom],
+                    ['140px', `${t.finance_invoice.unit_price}${selectedCurrencyCode ? ` (${selectedCurrencyCode})` : ''}`],
+                    ['120px', t.finance_invoice.subtotal],
+                    ['70px',  t.finance_invoice.vat_percent],
+                    ['110px', t.finance_invoice.vat_amt],
+                    ['130px', t.finance_invoice.grand_total],
                   ] as [string, string][]).map(([w, label], i) => (
                     <Box key={i} w={w} flexShrink={0}>
                       <Text fontSize="xs" fontWeight="semibold" color="gray.500" textTransform="uppercase">{label}</Text>
@@ -869,24 +1083,24 @@ function CreateInvoiceContent() {
                   <Box w="380px">
                     <Flex justify="space-between" mb={1}>
                       <Text fontSize="sm" color="gray.600">
-                        Subtotal{selectedCurrencyCode ? ` (${selectedCurrencyCode})` : ''}
+                        {t.finance_invoice.subtotal}{selectedCurrencyCode ? ` (${selectedCurrencyCode})` : ''}
                       </Text>
                       <Text fontSize="sm" fontWeight="semibold">{fmt(totalSubtotal)}</Text>
                     </Flex>
                     <Flex justify="space-between" mb={1}>
-                      <Text fontSize="sm" color="gray.600">Total VAT</Text>
+                      <Text fontSize="sm" color="gray.600">{t.finance_invoice.total_vat}</Text>
                       <Text fontSize="sm" fontWeight="semibold">{fmt(totalVat)}</Text>
                     </Flex>
                     <Separator mb={2} />
                     <Flex justify="space-between">
                       <Text fontWeight="bold">
-                        Grand Total{selectedCurrencyCode ? ` (${selectedCurrencyCode})` : ''}
+                        {t.finance_invoice.grand_total}{selectedCurrencyCode ? ` (${selectedCurrencyCode})` : ''}
                       </Text>
                       <Text fontWeight="bold" color={BIZGEN_COLOR}>{fmt(totalGrand)}</Text>
                     </Flex>
                     {!isIDR && form.exchange_rate && (
                       <Flex justify="space-between" mt={1}>
-                        <Text fontSize="xs" color="gray.500">Grand Total (IDR)</Text>
+                        <Text fontSize="xs" color="gray.500">{t.finance_invoice.grand_total_idr}</Text>
                         <Text fontSize="xs" color="gray.500">
                           {fmt(totalGrand * (parseFloat(form.exchange_rate) || 1))}
                         </Text>
@@ -904,9 +1118,9 @@ function CreateInvoiceContent() {
           <Card.Header>
             <Flex justify="space-between" align="center">
               <Flex flexDir="column">
-                <Heading size="md">Payment Method</Heading>
+                <Heading size="md">{t.finance_invoice.payment_method}</Heading>
                 <Text fontSize="xs" color="gray.500" mt={1}>
-                  Choose whether this invoice is paid in full or in installments (cicilan)
+                  {t.finance_invoice.payment_method_desc}
                 </Text>
               </Flex>
               {!isReadOnly && (
@@ -919,7 +1133,7 @@ function CreateInvoiceContent() {
                     borderColor={BIZGEN_COLOR}
                     onClick={() => handlePaymentTypeChange('full')}
                   >
-                    Full Payment
+                    {t.finance_invoice.full_payment}
                   </Button>
                   <Button
                     size="sm"
@@ -929,7 +1143,7 @@ function CreateInvoiceContent() {
                     borderColor={BIZGEN_COLOR}
                     onClick={() => handlePaymentTypeChange('installment')}
                   >
-                    Installment
+                    {t.finance_invoice.installment}
                   </Button>
                 </Flex>
               )}
@@ -943,18 +1157,18 @@ function CreateInvoiceContent() {
                 borderRadius="lg" bg="orange.50" border="1px solid" borderColor="orange.200"
               >
                 <Box>
-                  <Text fontWeight="semibold" color={BIZGEN_COLOR}>Full Payment</Text>
+                  <Text fontWeight="semibold" color={BIZGEN_COLOR}>{t.finance_invoice.full_payment}</Text>
                   <Text fontSize="sm" color="gray.500" mt={1}>
-                    Customer pays the entire invoice amount at once.
+                    {t.finance_invoice.full_payment_desc}
                   </Text>
                   {form.due_date && (
                     <Text fontSize="sm" color="gray.600" mt={1}>
-                      Due date: <strong>{new Date(form.due_date).toLocaleDateString(lang === 'id' ? 'id-ID' : 'en-US', { day: '2-digit', month: 'short', year: 'numeric' })}</strong>
+                      {t.finance_invoice.due_date_label} <strong>{new Date(form.due_date).toLocaleDateString(lang === 'id' ? 'id-ID' : 'en-US', { day: '2-digit', month: 'short', year: 'numeric' })}</strong>
                     </Text>
                   )}
                 </Box>
                 <Box textAlign="right">
-                  <Text fontSize="xs" color="gray.500">Total Amount</Text>
+                  <Text fontSize="xs" color="gray.500">{t.finance_invoice.total_amount}</Text>
                   <Text fontSize="xl" fontWeight="bold" color={BIZGEN_COLOR}>
                     {selectedCurrencyCode && `${selectedCurrencyCode} `}{fmt(totalGrand)}
                   </Text>
@@ -965,14 +1179,14 @@ function CreateInvoiceContent() {
                 <Flex justify="flex-end" mb={4}>
                   {!isReadOnly && (
                     <Button size="sm" variant="outline" color={BIZGEN_COLOR} borderColor={BIZGEN_COLOR} onClick={addInstallment}>
-                      Add Installment
+                      {t.finance_invoice.add_installment}
                     </Button>
                   )}
                 </Flex>
 
                 {installments.length === 0 ? (
                   <Text fontSize="sm" color="gray.400" fontStyle="italic">
-                    No installments yet. Click "Add Installment" to set up the payment schedule.
+                    {t.finance_invoice.no_installments}
                   </Text>
                 ) : (
                   <>
@@ -980,12 +1194,12 @@ function CreateInvoiceContent() {
                       <Flex minW="1080px" gap={3} mb={2} px={1}>
                         {([
                           ['32px',  '#'],
-                          ['100px', 'Status'],
-                          ['160px', 'Due Date'],
-                          ['180px', `Amount (${selectedCurrencyCode || 'CCY'})`],
-                          ['80px',  'Mark Paid'],
-                          ['160px', 'Paid Date'],
-                          ['220px', 'Notes / Term Description'],
+                          ['100px', t.finance_invoice.installment_status],
+                          ['160px', t.finance_invoice.installment_due_date],
+                          ['180px', `${t.finance_invoice.installment_amount} (${selectedCurrencyCode || 'CCY'})`],
+                          ['80px',  t.finance_invoice.mark_paid],
+                          ['160px', t.finance_invoice.paid_date],
+                          ['220px', t.finance_invoice.term_description],
                           ['40px',  ''],
                         ] as [string, string][]).map(([w, label], i) => (
                           <Box key={i} w={w} flexShrink={0}>
@@ -1009,7 +1223,7 @@ function CreateInvoiceContent() {
                           </Box>
                           <Box w="100px" flexShrink={0}>
                             <Badge colorPalette={inst.isPaid ? 'green' : 'gray'} variant="subtle">
-                              {inst.isPaid ? 'Paid' : 'Scheduled'}
+                              {inst.isPaid ? t.finance_invoice.paid : t.finance_invoice.scheduled}
                             </Badge>
                           </Box>
                           <Box w="160px" flexShrink={0}>
@@ -1023,9 +1237,11 @@ function CreateInvoiceContent() {
                           </Box>
                           <Box w="180px" flexShrink={0}>
                             <Input
-                              type="number"
+                              type="text"
                               placeholder="0.00"
-                              value={inst.amount}
+                              value={focusedInstallmentId === inst.id ? inst.amount : fmt(parseFloat(inst.amount) || 0)}
+                              onFocus={() => setFocusedInstallmentId(inst.id)}
+                              onBlur={() => setFocusedInstallmentId(null)}
                               onChange={(e) => updateInstallment(inst.id, 'amount', e.target.value)}
                               readOnly={isReadOnly}
                               bg="white"
@@ -1080,11 +1296,11 @@ function CreateInvoiceContent() {
                     <Flex justify="flex-end">
                       <Box w="380px">
                         <Flex justify="space-between" mb={1}>
-                          <Text fontSize="sm" color="gray.600">Invoice Grand Total</Text>
+                          <Text fontSize="sm" color="gray.600">{t.finance_invoice.invoice_grand_total}</Text>
                           <Text fontSize="sm" fontWeight="semibold">{fmt(totalGrand)}</Text>
                         </Flex>
                         <Flex justify="space-between" mb={1}>
-                          <Text fontSize="sm" color="gray.600">Total Scheduled</Text>
+                          <Text fontSize="sm" color="gray.600">{t.finance_invoice.total_scheduled}</Text>
                           <Text
                             fontSize="sm"
                             fontWeight="semibold"
@@ -1092,18 +1308,18 @@ function CreateInvoiceContent() {
                           >
                             {fmt(totalScheduled)}
                             {Math.abs(totalScheduled - totalGrand) > 0.01 && (
-                              <Text as="span" fontSize="xs" ml={1}>(must match grand total)</Text>
+                              <Text as="span" fontSize="xs" ml={1}>({t.finance_invoice.must_match_grand_total})</Text>
                             )}
                           </Text>
                         </Flex>
                         <Flex justify="space-between" mb={1}>
-                          <Text fontSize="sm" color="green.600">Total Received</Text>
+                          <Text fontSize="sm" color="green.600">{t.finance_invoice.total_received}</Text>
                           <Text fontSize="sm" fontWeight="semibold" color="green.600">{fmt(totalPaid)}</Text>
                         </Flex>
                         <Separator mb={2} />
                         <Flex justify="space-between">
                           <Text fontWeight="bold" color={outstanding > 0 ? BIZGEN_COLOR : 'green.600'}>
-                            Outstanding Balance
+                            {t.finance_invoice.outstanding_balance}
                           </Text>
                           <Text fontWeight="bold" color={outstanding > 0 ? BIZGEN_COLOR : 'green.600'}>
                             {fmt(outstanding)}
@@ -1122,9 +1338,9 @@ function CreateInvoiceContent() {
         <Card.Root>
           <Card.Header>
             <Flex flexDir="column">
-              <Heading size="md">Payment Information</Heading>
+              <Heading size="md">{t.finance_invoice.payment_information}</Heading>
               <Text fontSize="xs" color="gray.500" mt={1}>
-                Bank account, payment method and cheque details
+                {t.finance_invoice.payment_info_desc}
               </Text>
             </Flex>
           </Card.Header>
@@ -1132,7 +1348,7 @@ function CreateInvoiceContent() {
             <SimpleGrid columns={{ base: 1, md: 3 }} gap={4}>
 
               <Field.Root>
-                <Field.Label fontSize="sm">Receiving Bank Account</Field.Label>
+                <Field.Label fontSize="sm">{t.finance_invoice.receiving_bank}</Field.Label>
                 <Select.Root
                   collection={bankAccountCollection}
                   value={bankAccountSelected ? [bankAccountSelected] : []}
@@ -1159,7 +1375,7 @@ function CreateInvoiceContent() {
               </Field.Root>
 
               <Field.Root>
-                <Field.Label fontSize="sm">Payment Method</Field.Label>
+                <Field.Label fontSize="sm">{t.finance_invoice.payment_method}</Field.Label>
                 <Select.Root
                   collection={paymentMethodCollection}
                   value={paymentMethodSelected ? [paymentMethodSelected] : []}
@@ -1186,7 +1402,7 @@ function CreateInvoiceContent() {
               </Field.Root>
 
               <Field.Root>
-                <Field.Label fontSize="sm">Cheque No.</Field.Label>
+                <Field.Label fontSize="sm">{t.finance_invoice.cheque_no}</Field.Label>
                 <Input
                   value={form.cheque_number}
                   onChange={(e) => setForm({ ...form, cheque_number: e.target.value })}
@@ -1196,7 +1412,7 @@ function CreateInvoiceContent() {
               </Field.Root>
 
               <Field.Root>
-                <Field.Label fontSize="sm">Cheque Date</Field.Label>
+                <Field.Label fontSize="sm">{t.finance_invoice.cheque_date}</Field.Label>
                 <Input
                   type="date"
                   value={form.cheque_date}
@@ -1206,7 +1422,7 @@ function CreateInvoiceContent() {
               </Field.Root>
 
               <Field.Root>
-                <Field.Label fontSize="sm">Cheque Amount</Field.Label>
+                <Field.Label fontSize="sm">{t.finance_invoice.cheque_amount}</Field.Label>
                 <Input
                   type="number"
                   value={form.cheque_amount}
@@ -1224,9 +1440,9 @@ function CreateInvoiceContent() {
         <Card.Root>
           <Card.Header>
             <Flex flexDir="column">
-              <Heading size="md">Shipping & Logistics</Heading>
+              <Heading size="md">{t.finance_invoice.shipping_logistics}</Heading>
               <Text fontSize="xs" color="gray.500" mt={1}>
-                Port details, vessel/flight info and shipment timeline for B2B export/import
+                {t.finance_invoice.shipping_logistics_desc}
               </Text>
             </Flex>
           </Card.Header>
@@ -1234,7 +1450,7 @@ function CreateInvoiceContent() {
             <SimpleGrid columns={{ base: 1, md: 3 }} gap={4}>
 
               <Field.Root>
-                <Field.Label fontSize="sm">Port of Loading (Origin)</Field.Label>
+                <Field.Label fontSize="sm">{t.finance_invoice.port_loading}</Field.Label>
                 <Select.Root
                   collection={portCollection}
                   value={originSelected ? [originSelected] : []}
@@ -1261,7 +1477,7 @@ function CreateInvoiceContent() {
               </Field.Root>
 
               <Field.Root>
-                <Field.Label fontSize="sm">Port of Discharge (Destination)</Field.Label>
+                <Field.Label fontSize="sm">{t.finance_invoice.port_discharge}</Field.Label>
                 <Select.Root
                   collection={portCollection}
                   value={destinationSelected ? [destinationSelected] : []}
@@ -1288,7 +1504,7 @@ function CreateInvoiceContent() {
               </Field.Root>
 
               <Field.Root>
-                <Field.Label fontSize="sm">Vessel / Flight No.</Field.Label>
+                <Field.Label fontSize="sm">{t.finance_invoice.vessel_flight_no}</Field.Label>
                 <Input
                   value={form.vessel_flight}
                   onChange={(e) => setForm({ ...form, vessel_flight: e.target.value })}
@@ -1298,7 +1514,7 @@ function CreateInvoiceContent() {
               </Field.Root>
 
               <Field.Root>
-                <Field.Label fontSize="sm">B/L or AWB Number</Field.Label>
+                <Field.Label fontSize="sm">{t.finance_invoice.bl_awb_number}</Field.Label>
                 <Input
                   value={form.bl_awb_number}
                   onChange={(e) => setForm({ ...form, bl_awb_number: e.target.value })}
@@ -1308,7 +1524,7 @@ function CreateInvoiceContent() {
               </Field.Root>
 
               <Field.Root>
-                <Field.Label fontSize="sm">ETD (Est. Departure)</Field.Label>
+                <Field.Label fontSize="sm">{t.finance_invoice.etd}</Field.Label>
                 <Input
                   type="date"
                   value={form.etd}
@@ -1318,7 +1534,7 @@ function CreateInvoiceContent() {
               </Field.Root>
 
               <Field.Root>
-                <Field.Label fontSize="sm">ETA (Est. Arrival)</Field.Label>
+                <Field.Label fontSize="sm">{t.finance_invoice.eta}</Field.Label>
                 <Input
                   type="date"
                   value={form.eta}
@@ -1336,9 +1552,9 @@ function CreateInvoiceContent() {
           <Card.Root>
             <Card.Header>
               <Flex flexDir="column">
-                <Heading size="md">Supporting Documents</Heading>
+                <Heading size="md">{t.finance_invoice.supporting_documents}</Heading>
                 <Text fontSize="xs" color="gray.500" mt={1}>
-                  Attach Commercial Invoice, Packing List, B/L, Certificate of Origin, etc.
+                  {t.finance_invoice.supporting_documents_desc}
                 </Text>
               </Flex>
             </Card.Header>
@@ -1351,9 +1567,9 @@ function CreateInvoiceContent() {
                 onClick={() => fileInputRef.current?.click()}
               >
                 <Icon as={FiUpload} boxSize={7} color="gray.400" />
-                <Text fontSize="sm" color="gray.500">Drag & drop or click to upload documents</Text>
+                <Text fontSize="sm" color="gray.500">{t.finance_invoice.drag_drop_upload}</Text>
                 <Button size="sm" variant="outline" color={BIZGEN_COLOR} borderColor={BIZGEN_COLOR} pointerEvents="none">
-                  Choose Files
+                  {t.finance_invoice.choose_files}
                 </Button>
               </Flex>
               <input ref={fileInputRef} type="file" multiple hidden onChange={handleFileChange} />
@@ -1382,7 +1598,7 @@ function CreateInvoiceContent() {
         {mode === 'view' && historyData.length > 0 && (
           <Card.Root>
             <Card.Header>
-              <Heading size="md">History</Heading>
+              <Heading size="md">{t.finance_invoice.history}</Heading>
             </Card.Header>
             <Card.Body>
               <Stack gap={3}>
