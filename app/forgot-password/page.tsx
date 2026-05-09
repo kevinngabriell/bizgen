@@ -52,33 +52,73 @@ export default function ForgotPassword() {
   };
 
   const handleVerifyOtp = async () => {
-    console.log(otp);
-    // try {
+    const otpString = otp.join('');
+    if (otpString.length < 6) {
+      setShowAlert(true);
+      setIsSuccess(false);
+      setTitlePopup('Invalid OTP');
+      setMessagePopup('Please enter the complete 6-digit OTP code.');
+      setTimeout(() => setShowAlert(false), 6000);
+      return;
+    }
 
-    //   setStep("password");
-    // } catch (e) {
-    //   setMessagePopup("OTP tidak valid.");
-    // } finally {
-    //   setIsLoading(false);
-    // }
+    try {
+      setIsLoading(true);
+      // TODO: integrate backend OTP verification endpoint when available
+      // await verifyOTPForgotPassword({ phone_number: phone, otp: otpString });
+      setStep("password");
+    } catch (err: any) {
+      setShowAlert(true);
+      setIsSuccess(false);
+      setTitlePopup("Failed");
+      setMessagePopup(err.message || "Invalid OTP. Please try again.");
+      setTimeout(() => setShowAlert(false), 6000);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleResetPassword = async () => {
-    if (!password || !confirmPassword)
-      return setMessagePopup("Password & konfirmasi wajib diisi.");
-    if (password !== confirmPassword)
-      return setMessagePopup("Konfirmasi password tidak sama.");
+    if (!password || !confirmPassword) {
+      setShowAlert(true);
+      setIsSuccess(false);
+      setTitlePopup('Validation Error');
+      setMessagePopup('Password & confirmation are required.');
+      setTimeout(() => setShowAlert(false), 6000);
+      return;
+    }
+    if (password !== confirmPassword) {
+      setShowAlert(true);
+      setIsSuccess(false);
+      setTitlePopup('Validation Error');
+      setMessagePopup('Passwords do not match. Please re-enter.');
+      setTimeout(() => setShowAlert(false), 6000);
+      return;
+    }
+    if (password.length < 8) {
+      setShowAlert(true);
+      setIsSuccess(false);
+      setTitlePopup('Validation Error');
+      setMessagePopup('Password must be at least 8 characters long.');
+      setTimeout(() => setShowAlert(false), 6000);
+      return;
+    }
 
     setIsLoading(true);
 
     try {
-      // TODO: Reset password via backend
-      // await api.auth.resetPassword({ phone, otp, password })
-
-      // Optionally redirect to login page after success
-      // router.push("/login")
-    } catch (e) {
-      setMessagePopup("Gagal reset password. Coba lagi.");
+      // TODO: integrate backend reset password endpoint when available
+      // await resetPasswordForgotPassword({ phone_number: phone, otp: otp.join(''), password });
+      setShowAlert(true);
+      setIsSuccess(true);
+      setTitlePopup('Success');
+      setMessagePopup('Password reset successfully. Please login with your new password.');
+    } catch (err: any) {
+      setShowAlert(true);
+      setIsSuccess(false);
+      setTitlePopup('Failed');
+      setMessagePopup(err.message || 'Failed to reset password. Please try again.');
+      setTimeout(() => setShowAlert(false), 6000);
     } finally {
       setIsLoading(false);
     }

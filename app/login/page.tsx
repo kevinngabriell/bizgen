@@ -14,12 +14,14 @@ import { getLang } from "@/lib/i18n";
 export default function Login() {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
+    const [usernameError, setUsernameError] = useState('');
+    const [passwordError, setPasswordError] = useState('');
     const [showAlert, setShowAlert] = useState(false);
     const [titlePopup, setTitlePopup] = useState('');
     const [messagePopup, setMessagePopup] = useState('');
     const [isSuccess, setIsSuccess] = useState(false);
     const [loading, setLoading] = useState(false);
-    const t = getLang("en"); 
+    const t = getLang("en");
     const router = useRouter();
 
     async function RegisterOnClick(){
@@ -31,14 +33,19 @@ export default function Login() {
     }
 
     async function LoginOnClick(){
-        if(username === "" || password === ""){
-            setShowAlert(true);
-            setIsSuccess(false);
-            setTitlePopup('Error');
-            setMessagePopup('Username dan password wajib diisi !!');
-            setTimeout(() => setShowAlert(false), 8000);
-            return;
+        setUsernameError('');
+        setPasswordError('');
+
+        let hasError = false;
+        if (username === '') {
+            setUsernameError('Username wajib diisi');
+            hasError = true;
         }
+        if (password === '') {
+            setPasswordError('Password wajib diisi');
+            hasError = true;
+        }
+        if (hasError) return;
 
         setLoading(true);
 
@@ -95,17 +102,19 @@ export default function Login() {
                         {showAlert && <AlertMessage title={titlePopup} description={messagePopup} isSuccess={isSuccess} />}
                         
                         {/* Username Input */}
-                        <Field.Root mb={6}>
+                        <Field.Root mb={6} invalid={!!usernameError}>
                             <Field.Label color="gray.700" fontWeight="600">{t.login.username}</Field.Label>
-                            <Input placeholder={t.login.username_placeholder} size="md" rounded="lg" bg="gray.50" color={"black"} _focus={{ bg: "white", borderColor: "#E77A1F" }} value={username} onChange={(e) => setUsername(e.target.value)}/>
+                            <Input placeholder={t.login.username_placeholder} size="md" rounded="lg" bg="gray.50" color={"black"} _focus={{ bg: "white", borderColor: "#E77A1F" }} value={username} onChange={(e) => { setUsername(e.target.value); if (usernameError) setUsernameError(''); }}/>
+                            {usernameError && <Field.ErrorText>{usernameError}</Field.ErrorText>}
                         </Field.Root>
 
                         {/* Password Input */}
-                        <Field.Root mb={6}>
+                        <Field.Root mb={6} invalid={!!passwordError}>
                             <Field.Label color="gray.700" fontWeight="600">{t.login.password}</Field.Label>
                             <InputGroup>
-                                <PasswordInput placeholder={t.login.password_placeholder} size="md" rounded="lg" bg="gray.50" color={"black"} _focus={{ bg: "white", borderColor: "#E77A1F"}} value={password} onChange={(e) => setPassword(e.target.value)}/>
+                                <PasswordInput placeholder={t.login.password_placeholder} size="md" rounded="lg" bg="gray.50" color={"black"} _focus={{ bg: "white", borderColor: "#E77A1F"}} value={password} onChange={(e) => { setPassword(e.target.value); if (passwordError) setPasswordError(''); }}/>
                             </InputGroup>
+                            {passwordError && <Field.ErrorText>{passwordError}</Field.ErrorText>}
                         </Field.Root>
 
                         {/* Login Button */}

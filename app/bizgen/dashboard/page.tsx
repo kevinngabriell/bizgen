@@ -51,7 +51,7 @@ function isOverdue(dueDate: string, status: string) {
 
 export default function Dashboard() {
   const [auth, setAuth] = useState<DecodedAuthToken | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const router = useRouter();
   const [lang, setLang] = useState<"en" | "id">("en");
   const t = getLang(lang);

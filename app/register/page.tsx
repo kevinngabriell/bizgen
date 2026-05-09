@@ -15,6 +15,7 @@ export default function Register() {
   const router = useRouter();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [whatsappNumber, setWhatsappNumber] = useState('');
   const [activeStep, setActiveStep] = useState(0);
   const [isOwner, setIsOwner] = useState<boolean | null>(null);
@@ -70,12 +71,28 @@ export default function Register() {
 
   const onNext = () => {
     if (!canGoNext()) {
-      if (activeStep === 1 && password && !isStrongPassword(password)) {
-        setShowAlert(true);
-        setIsSuccess(false);
-        setTitlePopup("Password tidak valid !!");
-        setMessagePopup("Password harus mengandung 8 karakter, huruf besar, huruf kecil, dan angka.");
-        setTimeout(() => setShowAlert(false), 6000);
+      if (activeStep === 1) {
+        if (!username.trim()) {
+          setShowAlert(true); setIsSuccess(false);
+          setTitlePopup("Field wajib diisi");
+          setMessagePopup("Username wajib diisi.");
+          setTimeout(() => setShowAlert(false), 5000);
+        } else if (!whatsappNumber.trim()) {
+          setShowAlert(true); setIsSuccess(false);
+          setTitlePopup("Field wajib diisi");
+          setMessagePopup("Nomor WhatsApp wajib diisi.");
+          setTimeout(() => setShowAlert(false), 5000);
+        } else if (password && !isStrongPassword(password)) {
+          setShowAlert(true); setIsSuccess(false);
+          setTitlePopup("Password tidak valid !!");
+          setMessagePopup("Password harus mengandung minimal 8 karakter, huruf besar, huruf kecil, dan angka.");
+          setTimeout(() => setShowAlert(false), 6000);
+        } else if (confirmPassword && password !== confirmPassword) {
+          setShowAlert(true); setIsSuccess(false);
+          setTitlePopup("Password tidak cocok");
+          setMessagePopup("Konfirmasi password tidak sama dengan password yang dimasukkan.");
+          setTimeout(() => setShowAlert(false), 6000);
+        }
       }
       return;
     }
@@ -105,12 +122,12 @@ export default function Register() {
     }
 
     if (activeStep === 1) {
-      // base account always required
-      if (!username.trim() || !password.trim()) return false;
+      if (!username.trim() || !password.trim() || !whatsappNumber.trim()) return false;
       if (!isStrongPassword(password)) return false;
+      if (!confirmPassword.trim() || password !== confirmPassword) return false;
 
       if (isOwner === true) {
-          return !!businessName.trim() && !!businessCategory.trim() && !!businessAddress.trim();
+        return !!businessName.trim() && !!businessCategory.trim() && !!businessAddress.trim();
       }
 
       // non-owner
@@ -140,6 +157,15 @@ export default function Register() {
       setIsSuccess(false);
       setTitlePopup("Password tidak valid");
       setMessagePopup("Password harus minimal 8 karakter dan mengandung huruf besar, huruf kecil, serta angka.");
+      setTimeout(() => setShowAlert(false), 4000);
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setShowAlert(true);
+      setIsSuccess(false);
+      setTitlePopup("Password tidak cocok");
+      setMessagePopup("Konfirmasi password tidak sama dengan password yang dimasukkan.");
       setTimeout(() => setShowAlert(false), 4000);
       return;
     }
@@ -269,13 +295,22 @@ export default function Register() {
               <InputGroup startElement={<LuLock />}>
                 <PasswordInput placeholder={t.login.password_placeholder} value={password} onChange={(e) => setPassword(e.target.value)}/>
               </InputGroup>
-
-              {/* Password Hint */}
               {passwordHint() && (
                 <Field.ErrorText>{passwordHint()}</Field.ErrorText>
               )}
             </Field.Root>
-            
+
+            {/* Confirm Password Field */}
+            <Field.Root mb={7} invalid={!!confirmPassword && password !== confirmPassword}>
+              <Field.Label>Konfirmasi Password</Field.Label>
+              <InputGroup startElement={<LuLock />}>
+                <PasswordInput placeholder="Ulangi password Anda" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)}/>
+              </InputGroup>
+              {confirmPassword && password !== confirmPassword && (
+                <Field.ErrorText>Konfirmasi password tidak cocok</Field.ErrorText>
+              )}
+            </Field.Root>
+
             {/* Whatsapp number field */}
             <Field.Root mb={7}>
               <Field.Label>{t.register.step_two_wa}</Field.Label>
