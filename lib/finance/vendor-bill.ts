@@ -75,6 +75,7 @@ export interface VendorBillListItem {
   payment_type: 'full' | 'installment';
   purchase_type: 'local' | 'import';
   currency_code: string;
+  created_at?: string;
 }
 
 export interface VendorBillHeaderDetail {

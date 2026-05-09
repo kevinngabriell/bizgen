@@ -52,7 +52,7 @@ function getColumns(type: ModuleType, t: ReturnType<typeof getLang>): ColumnDef[
     { label: t.finance_see_all.due_date,     render: (r: InvoiceListItem) => <Text fontSize="xs" color="gray.600">{fmtDate(r.due_date)}</Text> },
     { label: t.finance_see_all.total_amount, render: (r: InvoiceListItem) => <Text fontSize="sm" fontWeight="medium">{fmtAmount(r.total_amount)}</Text> },
     { label: t.finance_see_all.status,       render: (r: InvoiceListItem) => <StatusBadge status={r.status} /> },
-    { label: t.finance_see_all.created,      render: (r: InvoiceListItem) => <Text fontSize="xs" color="gray.500">{fmtDate(r.created_at)}</Text> },
+    { label: t.finance_see_all.created,      render: (r: InvoiceListItem) => <Text fontSize="xs" color="gray.500">{fmtDate(r.created_at ?? '')}</Text> },
   ];
   if (type === "payables") return [
     { label: t.finance_see_all.bill_no,      render: (r: VendorBillListItem) => <Text fontWeight="medium" fontSize="sm">{r.bill_no}</Text> },
@@ -61,7 +61,7 @@ function getColumns(type: ModuleType, t: ReturnType<typeof getLang>): ColumnDef[
     { label: t.finance_see_all.due_date,     render: (r: VendorBillListItem) => <Text fontSize="xs" color="gray.600">{fmtDate(r.due_date)}</Text> },
     { label: t.finance_see_all.total_amount, render: (r: VendorBillListItem) => <Text fontSize="sm" fontWeight="medium">{fmtAmount(r.total_amount)}</Text> },
     { label: t.finance_see_all.status,       render: (r: VendorBillListItem) => <StatusBadge status={r.bill_status} /> },
-    { label: t.finance_see_all.created,      render: (r: VendorBillListItem) => <Text fontSize="xs" color="gray.500">{fmtDate(r.created_at)}</Text> },
+    { label: t.finance_see_all.created,      render: (r: VendorBillListItem) => <Text fontSize="xs" color="gray.500">{fmtDate(r.created_at ?? '')}</Text> },
   ];
   return [];
 }

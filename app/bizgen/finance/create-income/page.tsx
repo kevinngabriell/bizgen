@@ -217,12 +217,12 @@ export default function CreateIncomePage() {
       const payload = {
         category: "income",
         bank_account: bankAccountSelected,
-        amount: form.amount,
+        amount: parseFloat(form.amount),
         date: form.incomeDate,
         memo: form.description,
         details: lines.map((line) => ({
           account_code: line.accountCodeId,
-          account_amount: line.amount,
+          account_amount: parseFloat(line.amount),
           account_memo: line.memo
         }))
       }

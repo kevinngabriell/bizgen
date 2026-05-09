@@ -13,6 +13,7 @@ export interface InvoiceListItem {
   total_amount_idr: number;
   payment_type: 'full' | 'installment';
   currency_code: string;
+  created_at?: string;
 }
 
 export interface InvoiceHeaderDetail {
