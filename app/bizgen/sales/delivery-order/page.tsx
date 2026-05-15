@@ -18,6 +18,7 @@ import {
   processDeliveryOrderAction,
   GetDetailDeliveryHistory,
   UpdateDeliveryOrderItemData,
+  exportDeliveryOrderExcel,
 } from '@/lib/sales/delivery-order';
 import { GetSalesOrderItemData, getDetailSalesOrder } from '@/lib/sales/sales-order';
 import { getProfitBySalesOrderId } from '@/lib/sales/profit';
@@ -386,13 +387,7 @@ function DeliveryOrderContent() {
 
   const handleExportExcel = async () => {
     try {
-      const baseUrl = process.env.NEXT_PUBLIC_API_URL;
-      const token = localStorage.getItem("token");
-      const res = await fetch(`${baseUrl}sales/delivery-orders.php?action=export_excel&delivery_id=${deliveryOrderDetailId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!res.ok) throw new Error("Failed to export Excel");
-      const blob = await res.blob();
+      const blob = await exportDeliveryOrderExcel(deliveryOrderDetailId);
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;

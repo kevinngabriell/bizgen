@@ -275,3 +275,17 @@ export async function deleteSalesProfit(profit_id: string): Promise<any> {
 
     return json;
 }
+
+export async function exportsalesProfitExcel(profit_id: string): Promise<Blob> {
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL;
+    const token = localStorage.getItem("token");
+
+    const res = await fetch(`${baseUrl}sales/report/profit-summary.php?profit_id=${profit_id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+    });
+
+    if (!res.ok) throw new Error('Failed to export Excel');
+
+    return res.blob();
+}
+

@@ -16,6 +16,7 @@ import {
   updateSalesProfit,
   processSalesProfitAction,
   GetDetailProfitHistory,
+  exportsalesProfitExcel,
 } from "@/lib/sales/profit";
 import { AlertMessage } from "@/components/ui/alert";
 import { GetSalesOrderItemData, getDetailSalesOrder } from "@/lib/sales/sales-order";
@@ -438,17 +439,11 @@ function ProfitSummaryContent() {
 
   const handleExportExcel = async () => {
     try {
-      const baseUrl = process.env.NEXT_PUBLIC_API_URL;
-      const token = localStorage.getItem("token");
-      const res = await fetch(`${baseUrl}sales/profit-summary.php?action=export_excel&profit_id=${profitDetailId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!res.ok) throw new Error("Failed to export Excel");
-      const blob = await res.blob();
+      const blob = await exportsalesProfitExcel(profitDetailId);
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `${referenceNo}.xlsx`;
+      a.download = `${profitID}.xlsx`;
       a.click();
       URL.revokeObjectURL(url);
     } catch (err: any) {
