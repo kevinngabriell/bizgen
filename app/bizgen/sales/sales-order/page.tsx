@@ -256,6 +256,19 @@ function SalesOrderContent() {
 
   const [items, setItems] = useState([{ id: Date.now(), purchaseOrderNo: "", productName: "", quantity: "", uom: "", unitPrice: "", dpp: "", ppn: "", total: "", notes: "" }]);
 
+  const calcDppPpn = (baseDpp: number, selectedTax: GetTaxData | undefined) => {
+    let dpp = baseDpp;
+    let ppn = 0;
+    if (selectedTax) {
+      const rate = parseFloat(selectedTax.tax_rate || "0");
+      if (rate === 12) {
+        dpp = Math.round(baseDpp / 1.12 * 1.11);
+      }
+      ppn = dpp * (rate / 100);
+    }
+    return { dpp, ppn };
+  };
+
   const handleItemChange = (id: number, field: string, value: string) => {
     setItems(prev =>
       prev.map(item => {
@@ -265,13 +278,7 @@ function SalesOrderContent() {
         const price = parseFloat(updated.unitPrice || "0");
         const baseDpp = qty * price;
         const selectedTax = taxOptions.find(t => t.tax_id === taxSelected);
-        let dpp = baseDpp;
-        let ppn = 0;
-        if (selectedTax) {
-          const rate = parseFloat(selectedTax.tax_rate || "0");
-          dpp = baseDpp;
-          ppn = baseDpp * (rate / 100);
-        }
+        const { dpp, ppn } = calcDppPpn(baseDpp, selectedTax);
         const total = dpp + ppn;
         return { ...updated, dpp: dpp.toFixed(2), ppn: ppn.toFixed(2), total: total.toFixed(2) };
       })
@@ -562,13 +569,7 @@ function SalesOrderContent() {
                         const price = parseFloat(item.unitPrice || "0");
                         const baseDpp = qty * price;
                         const selectedTax = taxOptions.find(t => t.tax_id === selected);
-                        let dpp = baseDpp;
-                        let ppn = 0;
-                        if (selectedTax) {
-                          const rate = parseFloat(selectedTax.tax_rate || "0");
-                          dpp = baseDpp;
-                          ppn = baseDpp * (rate / 100);
-                        }
+                        const { dpp, ppn } = calcDppPpn(baseDpp, selectedTax);
                         const total = dpp + ppn;
                         return { ...item, dpp: dpp.toFixed(2), ppn: ppn.toFixed(2), total: total.toFixed(2) };
                       })
